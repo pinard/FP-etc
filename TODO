@@ -1,0 +1,160 @@
+* TODO list for allout matters
+
+.. alltohtml
+   À retrouver et intégrer
+
+.. alltotexi
+. : Réviser
+.  @ bpi/admin/Laurent/cvlb-fr1.all
+.  @ bpi/admin/Laurent/cvlb-fr2.all
+.  @ bpi/admin/Marc/entente1.all
+.  @ bpi/admin/Marc/entente2.all
+.  @ bpi/admin/acelf/forum.all
+.  @ bpi/africain/SIRI/CV/cvlb-fr1.all
+.  @ bpi/ancien/ocil/admin/bilan94.all
+.  @ bpi/ancien/ocil/admin/bpi-otaf.all
+.  @ bpi/ancien/ocil/admin/ctr/bilan94.all
+.  @ bpi/ancien/ocil/admin/rac-1195.all
+.  @ bpi/ancien/ocil/data/corpus/orig/sango.all
+.  @ bpi/ancien/ocil/doc/bib-afr.all
+.  @ bpi/ancien/ocil/doc/bid-fai.all
+.  @ bpi/ancien/ocil/doc/entente1.all
+.  @ bpi/ancien/ocil/doc/gnufr.all
+.  @ bpi/ancien/ocil/doc/index.all
+.  @ bpi/ancien/ocil/doc/lic-rpg.all
+.  @ bpi/ancien/ocil/doc/ocil.all
+.  @ bpi/ancien/ocil/doc/ptx.all
+.  @ bpi/ancien/ocil/doc/recode.all
+.  @ bpi/ancien/ocil/doc/wdiff.all
+.  @ bpi/ancien/ocil/rapport/bib-afr.all
+.  @ bpi/ancien/ocil/rapport/bilan.all
+.  @ bpi/ancien/ocil/rapport/index.all
+.  @ bpi/ancien/ocil/rapport/ocil.all
+.  @ bpi/ancien/ocil/rapport/po-mode.all
+.  @ bpi/ancien/ocil/rapport/ptx.all
+.  @ bpi/ancien/ocil/rapport/recode.all
+.  @ bpi/ancien/ocil/rapport/sango.all
+.  @ bpi/ancien/ocil/rapport/wdiff.all
+.  @ bpi/ancien/ocil/web/bpi-ocil.all
+.  @ bpi/ancien/ocil/web/ocil-demo.all
+.  @ bpi/ancien/oqil/rapport/a-biblio.all
+.  @ bpi/ancien/oqil/rapport/a-bottin.all
+.  @ bpi/ancien/oqil/rapport/a-enqu.all
+.  @ bpi/ancien/oqil/rapport/a-gloss.all
+.  @ bpi/ancien/oqil/rapport/a-invint.all
+.  @ bpi/ancien/oqil/rapport/a-inviso.all
+.  @ bpi/ancien/oqil/rapport/a-invit2.all
+.  @ bpi/ancien/oqil/rapport/a-invtei.all
+.  @ bpi/ancien/oqil/rapport/a-normes.all
+.  @ bpi/ancien/oqil/rapport/a-projet.all
+.  @ bpi/ancien/oqil/rapport/a-sigles.all
+.  @ bpi/ancien/oqil/rapport/besoins.all
+.  @ bpi/ancien/oqil/rapport/charset.all
+.  @ bpi/ancien/oqil/rapport/conclu.all
+.  @ bpi/ancien/oqil/rapport/d-aidred.all
+.  @ bpi/ancien/oqil/rapport/d-aidtra.all
+.  @ bpi/ancien/oqil/rapport/d-intlan.all
+.  @ bpi/ancien/oqil/rapport/d-lexica.all
+.  @ bpi/ancien/oqil/rapport/d-speech.all
+.  @ bpi/ancien/oqil/rapport/d-texdoc.all
+.  @ bpi/ancien/oqil/rapport/index.all
+.  @ bpi/ancien/oqil/rapport/intro.all
+.  @ bpi/ancien/oqil/rapport/merci.all
+.  @ bpi/ancien/oqil/rapport/nls.all
+.  @ bpi/ancien/oqil/rapport/oqil.all
+.  @ bpi/ancien/oqil/rapport/org-eag.all
+.  @ bpi/ancien/oqil/rapport/org-int.all
+.  @ bpi/ancien/oqil/rapport/org-iso.all
+.  @ bpi/ancien/oqil/rapport/org-oth.all
+.  @ bpi/ancien/oqil/rapport/org-tei.all
+.  @ bpi/ancien/oqil/rapport/organi.all
+.  @ bpi/ancien/oqil/rapport/projet.all
+.  @ bpi/ancien/oqil/rapport/resum.all
+.  @ bpi/ancien/oqil/web/bpi-oqil.all
+.  @ bpi/ancien/riofil/bid/riofbid.all
+.  @ bpi/ancien/riofil/bid/riofbid2.all
+.  @ bpi/ancien/riofil/bid/riofbid3.all
+.  @ bpi/ancien/riofil/bid/riofctr.all
+.  @ bpi/ancien/riofil/rio-rfi1.all
+.  @ bpi/ancien/riofil/riof-don.all
+.  @ bpi/ancien/riofil/riofctr.all
+.  @ bpi/ancien/rpg/licence-RPG.all
+.  @ bpi/ancien/sct/admin/contrat/licence-RPG.all
+.  @ bpi/ancien/sct/admin/contrat/rpg-serv.all
+.  @ bpi/ancien/sct/bnf/all/10-112-fab.all
+.  @ bpi/ancien/sct/bnf/all/10-112.all
+.  @ bpi/ancien/sct/bnf/all/10-126.all
+.  @ bpi/ancien/sct/bnf/all/10-212.all
+.  @ bpi/ancien/sct/bnf/all/10-227.all
+.  @ bpi/ancien/sct/bnf/all/1041.all
+.  @ bpi/ancien/sct/bnf/all/11-212.all
+.  @ bpi/ancien/sct/bnf/all/11-235.all
+.  @ bpi/ancien/sct/bnf/all/11-237.all
+.  @ bpi/ancien/sct/bnf/all/11-242.all
+.  @ bpi/ancien/sct/bnf/all/11-271.all
+.  @ bpi/ancien/sct/bnf/all/1113.all
+.  @ bpi/ancien/sct/bnf/all/1114.all
+.  @ bpi/ancien/sct/bnf/all/1131.all
+.  @ bpi/ancien/sct/bnf/all/1213.all
+.  @ bpi/ancien/sct/bnf/all/1342-fab.all
+.  @ bpi/ancien/sct/bnf/all/1342.all
+.  @ bpi/ancien/sct/bnf/all/1411.all
+.  @ bpi/ancien/sct/bnf/all/1453.all
+.  @ bpi/ancien/sct/bnf/all/1456.all
+.  @ bpi/ancien/sct/bnf/all/1457.all
+.  @ bpi/ancien/sct/bnf/all/1472.all
+.  @ bpi/ancien/sct/bnf/all/1476.all
+.  @ bpi/ancien/sct/bnf/all/32159.all
+.  @ bpi/ancien/sct/bnf/all/7131.all
+.  @ bpi/ancien/sct/bnf/all/7132.all
+.  @ bpi/ancien/sct/bnf/all/8118.all
+.  @ bpi/ancien/sct/bnf/all/9111.all
+.  @ bpi/mostex/enrich-0/1456-ref.all
+.  @ bpi/mostex/enrich-0/1456.all
+.  @ bpi/mostex/enrich-0/9111-ref.all
+.  @ bpi/mostex/enrich-0/9111.all
+.  @ bpi/mostex/enrich/test-dc.all
+.  @ bpi/mostex/webindex/index.all
+.  @ bpi/web/cv/lb/cvlb-fr1.all
+.  @ dmf/admin/demo/options.all
+.  @ dmf/admin/divers/menu.all
+.  @ dmf/code/web/bpi-demo.all
+.  @ dmf/code/web/bpi-dmf.all
+.  @ dmf/vieux/web/bpi-demo.all
+.  @ dmf/vieux/web/bpi-dmf.all
+.  @ docum-0.0/linux.all
+.  @ docum-0.0/postfix.all
+.  @ docum-0.0/style.all
+.  @ docum-0.0/yast.all
+.  @ html/python.all
+.  @ libit/modules/rmail/python.all
+.  @ linux/rfc-fp.all
+.  @ net/routage/tunnel/rmail/linux.all
+.  @ pers/français/accents.all
+.  @ pers/web/doc/cvbref.all
+
+.. asciitoall
+. : Extraire de l'enveloppe
+.  , s/^>([fF]rom)/$1/
+.  , ------- ==> $subject = 0 est trop sévère, cela amène des pertes
+.  , Reconnaître l'introduction de signatures, et les signatures.
+.  , Reconnaître les blocs de `Xocal Variables:' et `End:'.
+. : En-têtes
+.  , Reconnaître les lignes centrées.
+.  , Reconnaître les lignes toutes en majuscules.
+.  , Reconnaître les diverses lignes de séparateurs.
+.  , Capitalize first word of @chapter...
+. : Énumérations et tabulations
+.  , Reconnaître les citations de messageries, enlever le préfixe
+     et indenter.
+.  , Reconnaître les divers types d'énumerations tabulées.
+.  , Reconnaître comme éléments de tables non justifiées lorsque
+     ces caractéristiques apparaîssent dans des lignes groupées, et
+     accepter des lignes déviantes isolées en sandwidch, peut-être:
+.   ; les lignes courtes
+.   ; 3 espaces ou plus en succession
+.   ; les en-tête de messages ou d'articles
+.   ; les séquences incongrues dans un texte LN
+.   ; les lignes ne contenant que des séparateurs
+.   ; les preuves de code C, ou de texte shell
+.  , Trouver les examples

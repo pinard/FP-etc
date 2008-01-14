@@ -1,0 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2006 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2006.
+
+u"""\
+Reconstitution d'un choix minimal des spécifications du py.test de Codespeak,
+mais dans un environnement Unicode.
+"""
+
+__metaclass__ = type
+from Etc import py
+py.test.main(*sys.argv[1:])

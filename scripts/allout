@@ -1,0 +1,14 @@
+#!/usr/bin/python
+# -*- coding: UTF-8 -*-
+# Copyright (C) 2003 PROGICIELS Bourbeau-Pinard, inc. Montreal.
+# François Pinard <pinard@progiciels-bpi.ca>, 2003-03.
+
+u"""\
+Handle an Allout file in various ways.
+"""
+
+__metaclass__ = type
+import sys
+from Etc.Allout.main import main
+
+main(*sys.argv[1:])

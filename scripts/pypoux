@@ -1,0 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2006 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2006.
+
+u"""\
+Recherche et diagnostic de poux stylistiques dans une hiérarchie Python.
+"""
+
+__metaclass__ = type
+from Etc.pypoux import main
+main(*sys.argv[1:])
