@@ -605,7 +605,7 @@ class Html_File_List(Html):
                 continue
             name = os.path.normpath(os.path.join(directory, base))
             if os.path.isdir(os.path.join(self.top, name)):
-                if (base in ('.svn', 'RCS', 'CVS',
+                if (base in ('.git', '.svn', 'RCS', 'CVS',
                              'archives', 'build', 'web')
                         or base.startswith('build-')
                         or base.startswith(u'Prépare-')):
