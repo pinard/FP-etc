@@ -1,0 +1,42 @@
+2003-07-01  François Pinard  <pinard@iro.umontreal.ca>
+
+	* Allout/texi.py: Support HTML.
+
+2003-05-17  François Pinard  <pinard@iro.umontreal.ca>
+
+	* : Version 0.1.
+
+	* Allout/main.py, Allout/list.py, Allout/allout.py: New modules.
+	They result from splitting and reorganizing previous allout.py.
+	* Allout/texi.py: New name for Allout/totexi.py.  Revised.
+	* allout: New, to replace the script directory and contents.
+	* setup.py: Adjusted.
+
+2003-05-01  François Pinard  <pinard@iro.umontreal.ca>
+
+	* Allout/totexi.py (Main.output_text): Stick text immediately
+	following index entries with text immediately preceding it.
+
+2003-04-16  François Pinard  <pinard@iro.umontreal.ca>
+
+	* Allout/totexi.py: Allow splitting $< on many lines.
+
+2003-04-08  François Pinard  <pinard@iro.umontreal.ca>
+
+	* Allout/totexi.py: Add $< processing for indices.
+
+2003-03-30  François Pinard  <pinard@iro.umontreal.ca>
+
+	* Makefile, setup.py, Allout/__init__.py: New.
+	* scripts/alltotexi, scripts/impallout: New.
+	* scripts/allout.py: New name for allout.py.
+	* Allout/totexi.py: New, imported from an old project.
+
+2003-03-29  François Pinard  <pinard@iro.umontreal.ca>
+
+	* allout.py: Accept older bullets.  Handle text prefix before
+	first bullet.  Revise and document.  Add option -a.
+
+2003-03-23  François Pinard  <pinard@iro.umontreal.ca>
+
+	* : New, adapted from older bin/impallout.
