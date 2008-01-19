@@ -1,15 +1,21 @@
+.. role:: code(strong)
+
 ==============================
 README for the FP Etc. project
 ==============================
 
 .. contents::
+.. sectnum::
 
 This package contains a random collection of files which are useful to
 me (so the "FP" initials), and probably might be useful to others as
 well, but do not otherwise belong to any package (so the "etc.").
 
-Allout-Vim
+Components
 ==========
+
+Allout-Vim
+----------
 
 This package offers Allout mode, as found within Emacs, within a
 Python-enabled Vim.  This is my first packaging of a Vim script.
@@ -18,7 +24,7 @@ See the `Allout-Vim documentation file`__.
 __ /allout-vim/doc.txt
 
 Babyl
-=====
+-----
 
 This `Python script`__ is able to read message files either in Babyl
 format (used by Emacs RMAIL), Unix mailbox format, Usenet articles, and
@@ -32,7 +38,7 @@ By converting a message file to the format it already has, the tool may
 also be used for repairing slightly damaged files.
 
 Gantt
-=====
+-----
 
 This `Python script`__ is an activity scheduler, and Gantt diagram
 printer.  It can read many projects simultaneously and automatically
@@ -49,7 +55,7 @@ manual`__, written in French.
 __ /gantt.html
 
 Pynits
-======
+------
 
 This package offers a few commands, editing Python sources within a
 Python-enabled Vim, for tidying up long (or even short!) lines.
@@ -58,7 +64,7 @@ See the `README file for Pynits`__.
 __ /pynits.html
 
 RKE
-===
+---
 
 The Runge-Kutta-England tool is a differential equation solver written
 in C, which I used a few times in continuous simulation contexts.  This
@@ -67,3 +73,13 @@ implementing an adaptative step size.  There is an extensive usage
 documentation for it: see the `README file for RKE`__.
 
 __ /rke.html
+
+Fetching
+========
+
+If you happen to have :code:`git` installed, you may get most of these
+files, and their history as well, through the command::
+
+  git clone git://fp-etc.progiciels-bpi.ca/fp-etc
+
+This feature is being tuned.  Comments and suggestions are welcome.
