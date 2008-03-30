@@ -1,0 +1,91 @@
+  * Projet s450 - Contrôle du temps CP sur le Cray.
+
+  .. Exécutants
+  . : Francois Pinard
+      [=@fp /.5]
+  . : Jean-François Gagnon
+      [=@jfg /.5]
+  . : Neil Gardner
+      [=@ng /.5]
+  . : Cray Canada inc.
+      [=@cci /.6]
+
+  .. Calendrier
+  . : Départ
+      [+ 1985-05-01]
+  . : Congé
+      [+1 1985-05-20 @]
+  . : Congé
+      [+1 1985-06-24 @]
+  . : Congé
+      [+1 1985-07-01 @]
+  . : Vacances
+      [+6 1985-05-31 @fp]
+  . : Vacances
+      [+5 1985-06-24 @fp]
+  . : Vacances
+      [+3 1985-06-02 @ng]
+  . : Vacances
+      [+2 1985-06-28 @jfg]
+
+  .. Activités
+  . : %cos0190
+      [+6]
+  . : ape.defin
+      [3.5 @ng *1]
+  . : ape.codif
+      [4 @ng *.5]
+  . : ape.prepa
+      [4.5 @ng *.95]
+  . : ape.produ
+      [.1 @ng *1]
+  . : ape.ajust
+      [1.5 >ape.defin >ape.codif >ape.prepa >ape.produ @ng *.5]
+  . : uvald.comdk
+      [1.5 @fp *.95]
+  . : uvald.moddic
+      [3 >uvald.comdk @fp *.8]
+  . : uvald.sauve
+      [1 @fp]
+  . : xmit.init
+      [1.5 >ape.ajust >uvald.moddic @jfg *.05]
+  . : xmit.maj
+      [4 @jfg *.8]
+  . : xmit.zero
+      [1 @jfg *.8]
+  . : xmit.exp
+      [1 >xmit.init >xmit.maj >xmit.zero >uval.exp @jfg]
+  . : uval.dacp
+      [.5 @jfg *1]
+  . : uval.stp
+      [1 >uval.dacp @jfg *.2]
+  . : uval.verrou
+      [1.5 @jfg *.5]
+  . : uval.exp
+      [3 >uval.stp @jfg]
+  . : uval.proc
+      [1 >xmit.exp @jfg]
+  . : cp.anal
+      [1.5 >ape.defin @cci *1]
+  . : cp.maj
+      [3.5 >uvald.moddic >cp.anal @cci *.25]
+  . : us.cl
+      [2 >csd.dim @fp *.65]
+  . : us.note
+      [1 @fp]
+  . : us.anal
+      [4 @fp]
+  . : us.ignore
+      [1 >us.anal @fp]
+  . : csd.dim
+      [.5 >%cos0190 @cci *.9]
+  . : csd.code
+      [1 @cci *1]
+  . : csd.jcsdef
+      [2 >%cos0190 >csd.code @cci *.9]
+  . : csd.jcm
+      [3 >uval.exp >xmit.exp >csd.code @cci]
+  . : struc.obj
+      [3 @fp]
+  . : struc.def
+      [1 >struc.obj @fp]
