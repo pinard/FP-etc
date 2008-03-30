@@ -2,7 +2,7 @@
 # Copyright © 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2003-03.
 
-PYSETUP = python setup.py --quiet
+PYSETUP = python setup.py
 DISTRIBUTION = Etc-0.2
 
 all:
