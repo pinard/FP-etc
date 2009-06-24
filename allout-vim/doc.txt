@@ -17,6 +17,7 @@ may now offer help at browsing or editing these Allout files.
 6. Heading production                   |allout-production|
 7. Adjusting levels                     |allout-levels|
 8. Selecting and deletion               |allout-deletion|
+9. Similar tools                        |allout-references|
 
 ==============================================================================
 1. Allout concepts					*allout-concepts*
@@ -98,7 +99,7 @@ extension by the following command: >
 <
 You might also want to activate syntax colouring, see |:syntax|.
 
-All Allout commands start with the |'maplocalleader'|, which is `\' if
+All Allout commands start with the |<LocalLeader>|, which is `\' if
 the user did not change it.  We use this default leader in all examples
 of mapping, below (yet for our own use, we prefer `;' for the global
 leader and `,' for the local leader).
@@ -253,5 +254,31 @@ Command "\v" selects the whole sub-tree rooted at the current node, and puts
 it into visual line mode, with the cursor left positioned on the heading.
 
 Command "\D" deletes the whole sub-tree rooted at the current node.
+
+==============================================================================
+9. Similar tools					*allout-references*
+
+Since Allout files handily represent a documentation tree, and are best
+handled with fold editing, there are similar to many tools.  Since many
+tools have their own format, and formats have their own tools, we do not
+overly try to distinguish between tools and formats here.  This section
+is meant to list a few of them.  Suggestions for additions are welcome.
+
+Emacs Allout
+
+   Allout mode is standard in Emacs.  If one preloads the `allout'
+   module in Emacs, activating the Outline mode is intercepted and
+   actives Allout mode instead.
+
+   I would like that Allout files stay inter-operable between Vim and
+   Emacs.  However, the command set does not try to be the same: key
+   bindings were adapted for being more natural to Vim users, and
+   similar commands may behave a bit differently.
+
+Leo
+
+   Leo is a self-contained folding editor written in Python and using a
+   Tk editor.  It is much more powerful than Allout, yet slower and more
+   complex.  It can be made to use Vim instead of Tk as an editor.
 
 vim:tw=78:ts=8:ft=help:norl:

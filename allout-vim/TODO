@@ -1,0 +1,35 @@
+* TODO items for Allout support in Vim
+
+.. Documentation issues
+. : Simplify documentation to be line-oriented instead of node-oriented.
+. : Document `skip=' settings for all commands.
+.. Improving commands
+. : \_ on the previous line (Improving commands) goes one line too far.
+. : Make sure error reporting is consistent and proper.
+. : Revise all `skip=' settings, to see if these are the most useful.
+. : Renumber subsequent bullets when creating or deleting headings.
+. : Do not always insert separating whitespace while creating headings.
+.. Mode interactions
+. : Visual mode
+.  , Repeat the operation on all selected lines
+.  , Limit the operation to only selected lines
+. : Insert mode
+.  , Automatically adding a margin for text after a heading
+.  , Shifting an explicit heading back to the left margin
+.  , Allow navigation commands without leaving mode
+.  , Allow heading creation splitting at point, not doing \$ first
+. : Refilling
+.  , Paragraph boundaries should exclude headings.
+.  , Refilling might optionally occur while shifting text.
+.. New commands
+. : \H, \J, \K and \L repeat their lowercase counterparts until error.
+. : \1, \2 ... \9 jump to the N'th sub-node.
+. : \| to completely remove left margin
+. : By splitting existing commands in two:
+.  , \v to select textual contents only, \V to select full level
+.  , \d to delete textual contents only, \D to delete full level
+.  , \h to hide textual contents only, \H to hide full level
+. : Implement \@ to support link bullets.
+.  , Open files in Vim
+.  , Send URLs to external browsers
+.  , `Ex'ecute lines starting with `:'

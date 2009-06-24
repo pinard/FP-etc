@@ -1,0 +1,9 @@
+2003-12-30  François Pinard  <pinard@iro.umontreal.ca>
+
+	* ChangeLog, TODO: New files.
+	* README: Simplified.
+	* Makefile: Adjusted.
+
+2003-12-29  François Pinard  <pinard@iro.umontreal.ca>
+
+	* : Initial release.

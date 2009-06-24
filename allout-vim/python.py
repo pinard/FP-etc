@@ -10,76 +10,82 @@ Allout support for Vim.
 from __future__ import generators
 import sys, vim
 
-def register_key_bindings():
-    # The Vim commands do not seem to work; I did not figure out why yet.
-    # So for now, bindings get (tediously) established from `allout.vim'.
-    for key, function in (
-            ('j', next_visible_heading),
-            ('k', previous_visible_heading),
-            ('u', up_current_level),
-            ('l', forward_current_level),
-            ('h', backward_current_level),
-            ('$', end_of_current_entry),
-            ('^', beginning_of_current_entry),
-            ('c', hide_current_subtree),
-            ('i', show_children),
-            ('o', show_current_subtree),
-            ('O', show_all),
-            ('0', show_current_entry),
-            ('_', open_sibtopic),
-            ('+', open_subtopic),
-            ('-', open_supertopic),
-            ('=', normalize_margin),
-            ('>', shift_in),
-            ('<', shift_out),
-            ('<CR>', rebullet_topic),
-            ('#', number_siblings),
-            ('~', revoke_numbering),
-            ('v', visual_topic),
-            ('D', kill_topic),
+def register_key_bindings(normal_leader, insert_leader):
+    for key, modes, name in (
+            ('j',    'ni', 'next_visible_heading'),
+            ('k',    'n',  'previous_visible_heading'),
+            ('u',    'n',  'up_current_level'),
+            ('l',    'n',  'forward_current_level'),
+            ('h',    'n',  'backward_current_level'),
+            ('$',    'n',  'end_of_current_entry'),
+            ('^',    'n',  'beginning_of_current_entry'),
+            ('c',    'n',  'hide_current_subtree'),
+            ('i',    'n',  'show_children'),
+            ('o',    'n',  'show_current_subtree'),
+            ('O',    'n',  'show_all'),
+            ('0',    'n',  'show_current_entry'),
+            ('_',    'n',  'open_sibtopic'),
+            ('+',    'n',  'open_subtopic'),
+            ('-',    'n',  'open_supertopic'),
+            ('=',    'n',  'normalize_margin'),
+            ('>',    'nv', 'shift_in'),
+            ('<',    'nv', 'shift_out'),
+            ('<CR>', 'n',  'rebullet_topic'),
+            ('#',    'n',  'number_siblings'),
+            ('~',    'n',  'revoke_numbering'),
+            ('v',    'n',  'visual_topic'),
+            ('D',    'n',  'kill_topic'),
             ):
-        has_binding = int(vim.eval('hasmapto(\'<Plug>Allout_%s\')' % function))
-        #if not has_binding:
-        #    vim.command(
-        #            'map <buffer> <unique> <LocalLeader>%s <Plug>Allout_%s'
-        #            % (key, function))
-        #vim.command(
-        #        'noremap <buffer> <unique> <script> <Plug>Allout_%s <SID>%s'
-        #        % (function, function))
-        #vim.command(
-        #        'noremap <buffer> <SID>%s :python allout.%s()<CR>'
-        #        % (function, function))
+        for mode in modes:
+            python_command = ':python allout.%s(\'%s\')' % (name, mode)
+            sid_name = '<SID>%s_%s' % (mode, name)
+            plug_name = '<Plug>Allout_%s_%s' % (mode, name)
+            mapped = int(vim.eval('hasmapto(\'%s\')' % plug_name))
+            if mode == 'i':
+                if not mapped:
+                    vim.command('%smap <buffer> <unique> %s%s %s'
+                                % (mode, insert_leader, key, plug_name))
+                vim.command('%snoremap <buffer> %s <C-O>%s<CR>'
+                            % (mode, sid_name, python_command))
+            else:
+                if not mapped:
+                    vim.command('%smap <buffer> <unique> %s%s %s'
+                                % (mode, normal_leader, key, plug_name))
+                vim.command('%snoremap <buffer> %s %s<CR>'
+                            % (mode, sid_name, python_command))
+            vim.command('%snoremap <buffer> <unique> <script> %s %s'
+                         % (mode, plug_name, sid_name))
 
 # A Vim cursor has a 1-based ROW and a 0-based COL.  Beware than in its
 # mode line, Vim displays both ROW and COL as 1-based.
 
 # Navigation.
 
-def next_visible_heading():
-    for row, level in all_following_lines(skip=True):
+def next_visible_heading(mode):
+    for row, level in all_following_lines(mode + 's'):
         if level is not None:
             vim.current.window.cursor = row, level + 1
             return
     no_such_line()
 
-def previous_visible_heading():
-    for row, level in all_preceding_lines(skip=True):
+def previous_visible_heading(mode):
+    for row, level in all_preceding_lines(mode + 's'):
         if level is not None:
             vim.current.window.cursor = row, level + 1
             return
     no_such_line()
 
-def up_current_level():
-    heading_row, heading_level = heading_line(skip=True)
-    for row, level in all_preceding_lines(heading_row, skip=True):
+def up_current_level(mode):
+    heading_row, heading_level = heading_line(mode + 's')
+    for row, level in all_preceding_lines(mode + 's', heading_row):
         if level is not None and level < heading_level:
             vim.current.window.cursor = row, level + 1
             return
     no_such_line()
 
-def forward_current_level():
-    heading_row, heading_level = heading_line(skip=True)
-    for row, level in all_following_lines(skip=True):
+def forward_current_level(mode):
+    heading_row, heading_level = heading_line(mode + 's')
+    for row, level in all_following_lines(mode + 's'):
         if level is not None:
             if level == heading_level:
                 vim.current.window.cursor = row, level + 1
@@ -88,9 +94,9 @@ def forward_current_level():
                 break
     no_such_line()
 
-def backward_current_level():
-    heading_row, heading_level = heading_line(skip=True)
-    for row, level in all_preceding_lines(heading_row, skip=True):
+def backward_current_level(mode):
+    heading_row, heading_level = heading_line(mode + 's')
+    for row, level in all_preceding_lines(mode + 's', heading_row):
         if level is not None:
             if level == heading_level:
                 vim.current.window.cursor = row, level + 1
@@ -99,29 +105,29 @@ def backward_current_level():
                 break
     no_such_line()
 
-def end_of_current_entry():
+def end_of_current_entry(mode):
     row = None
-    for row in all_text_lines(skip=True):
+    for row in all_text_lines(mode + 's'):
         pass
     if row is not None:
         vim.current.window.cursor = row, 0
         vim.command('normal $')
 
-def beginning_of_current_entry():
-    for row in all_text_lines(skip=True):
+def beginning_of_current_entry(mode):
+    for row in all_text_lines(mode + 's'):
         vim.current.window.cursor = row, 0
         vim.command('normal ^')
         break
 
 # Exposure control.
 
-def hide_current_subtree():
+def hide_current_subtree(mode):
     row, level = row_and_level()
     if level is None:
         vim.command('normal zc')
     else:
         try:
-            row = all_text_lines(skip=True).next()
+            row = all_text_lines(mode + 's').next()
         except StopIteration:
             pass
         else:
@@ -130,10 +136,10 @@ def hide_current_subtree():
             vim.command('normal zc')
             vim.current.window.cursor = cursor
 
-def show_children():
-    heading_row, heading_level = heading_line()
+def show_children(mode):
+    heading_row, heading_level = heading_line(mode)
     cursor = vim.current.window.cursor
-    for row, level in all_level_lines():
+    for row, level in all_level_lines(mode):
         if level is None:
             if not is_invisible(row):
                 vim.current.window.cursor = row, 0
@@ -144,37 +150,37 @@ def show_children():
                 vim.command('normal zv')
     vim.current.window.cursor = cursor
 
-def show_current_subtree():
+def show_current_subtree(mode):
     cursor = vim.current.window.cursor
-    for row, level in all_level_lines():
+    for row, level in all_level_lines(mode):
         if is_invisible(row):
             vim.current.window.cursor = row, 0
             vim.command('normal zv')
             break
     vim.current.window.cursor = cursor
 
-def show_all():
+def show_all(mode):
     cursor = vim.current.window.cursor
-    for row, level in all_level_lines():
+    for row, level in all_level_lines(mode):
         if is_invisible(row):
             vim.current.window.cursor = row, 0
             vim.command('normal zv')
     vim.current.window.cursor = cursor
 
-def show_current_entry():
-    for row in all_text_lines():
+def show_current_entry(mode):
+    for row in all_text_lines(mode):
         if is_invisible(row):
             vim.current.window.cursor = row, 0
             vim.command('normal zv')
-    row, level = heading_line(row)
+    row, level = heading_line(mode, row)
     vim.current.window.cursor = row, level + 1
 
 # Topic heading production.
 
-def open_sibtopic():
-    row, level = heading_line()
+def open_sibtopic(mode):
+    row, level = heading_line(mode)
     level, bullet, number, line = split_line(row)
-    for row in all_text_lines():
+    for row in all_text_lines(mode):
         pass
     if number is not None:
         number += 1
@@ -182,17 +188,17 @@ def open_sibtopic():
     build_line(row + 2, level, bullet, number, '')
     vim.current.window.cursor = row + 2, level + 1
 
-def open_subtopic():
-    row, level = heading_line()
-    for row in all_text_lines():
+def open_subtopic(mode):
+    row, level = heading_line(mode)
+    for row in all_text_lines(mode):
         pass
     vim.current.buffer[row+1:row+1] = ['', '']
     build_line(row + 2, level + 1, '.', None, '')
     vim.current.window.cursor = row + 2, level + 2
 
-def open_supertopic():
-    heading_row, heading_level = heading_line()
-    for row, level in all_preceding_lines(heading_row):
+def open_supertopic(mode):
+    heading_row, heading_level = heading_line(mode)
+    for row, level in all_preceding_lines(mode, heading_row):
         if level is not None and level < heading_level:
             level, bullet, number, line = split_line(row)
             break
@@ -200,7 +206,7 @@ def open_supertopic():
         no_such_line()
         return
     row = heading_row
-    for row in all_text_lines():
+    for row in all_text_lines(mode):
         pass
     if number is not None:
         number += 1
@@ -210,52 +216,53 @@ def open_supertopic():
 
 # Topic level and prefix adjustment.
 
-def normalize_margin():
+def normalize_margin(mode):
     before = None
-    for row in all_text_lines():
+    for row in all_text_lines(mode):
         line = line_at(row)
         margin = len(line) - len(line.lstrip())
         if before is None or margin < before:
             before = margin
     if before is not None:
-        row, level = heading_line(skip=True)
+        row, level = heading_line(mode + 's')
         if level == 0:
             after = 0
         else:
             after = level + 1
         delta = after - before
-        for row in all_text_lines():
+        for row in all_text_lines(mode):
             level, bullet, number, line = split_line(row)
             build_line(row, level, bullet, number, line, delta)
 
-def shift_in():
-    for row, level in all_level_lines():
+def shift_in(mode):
+    debug()
+    for row, level in all_level_lines(mode):
         level, bullet, number, line = split_line(row)
         build_line(row, level, bullet, number, line, 1)
 
-def shift_out():
-    for row, level in all_level_lines():
+def shift_out(mode):
+    for row, level in all_level_lines(mode):
         level, bullet, number, line = split_line(row)
         build_line(row, level, bullet, number, line, -1)
 
-def rebullet_topic():
-    row, level = heading_line(skip=True)
+def rebullet_topic(mode):
+    row, level = heading_line(mode + 's')
     level, bullet, number, line = split_line(row)
     build_line(row, level, bullet, number, line)
 
-def number_siblings():
-    heading_row, heading_level = heading_line()
+def number_siblings(mode):
+    heading_row, heading_level = heading_line(mode)
     ordinal = 0
-    for row, level in all_level_lines():
+    for row, level in all_level_lines(mode):
         if level == heading_level + 1:
             ordinal += 1
             level, bullet, number, line = split_line(row)
             build_line(row, level, bullet, ordinal, line)
 
-def revoke_numbering():
-    heading_row, heading_level = heading_line()
+def revoke_numbering(mode):
+    heading_row, heading_level = heading_line(mode)
     ordinal = 0
-    for row, level in all_level_lines():
+    for row, level in all_level_lines(mode):
         if level == heading_level + 1:
             ordinal += 1
             level, bullet, number, line = split_line(row)
@@ -263,9 +270,9 @@ def revoke_numbering():
 
 # Topic oriented killing and yanking.
 
-def visual_topic():
+def visual_topic(mode):
     start = None
-    for row, level in all_level_lines():
+    for row, level in all_level_lines(mode):
         if start is None:
             start = row
     if start is None:
@@ -273,9 +280,9 @@ def visual_topic():
     else:
         vim.command('normal %dGV%dG' % (row, start))
 
-def kill_topic():
+def kill_topic(mode):
     start = None
-    for row, level in all_level_lines():
+    for row, level in all_level_lines(mode):
         if start is None:
             start = row
     if start is None:
@@ -285,75 +292,120 @@ def kill_topic():
 
 # Service functions.
 
-# By convention, a ROW of None implies the current row.  LEVEL is None for a
-# non-header text line, 1 for `*' headers, 2 for `..' headers, 3 for `. :'
-# headers, etc.  If first line of file is not a heading, an hypothetical
-# 0-level heading is sometimes assumed.  When SKIP is true, folded lines are
-# skipped.  When an necessary operation cannot be performed because a line
-# does not exist, functions raise StopIteration.
+# MODE is a sequence of flag letters.  Currently, there are one or two
+# letters.  The first letter is `n' when commands executed in normal
+# mode, `v' when in visual mode, or `i' when in insert mode.  The second
+# letter may be `s' to skip over the contents of closed folds.
 
-def all_level_lines(row=None, skip=False):
-    # Generates all (ROW, LEVEL) for headers and non-empty text lines
-    # within the whole level holding ROW, including it sub-levels.
-    # LEVEL is zero for non-header lines.
-    heading_row, heading_level = heading_line(row, skip)
-    yield heading_row, heading_level
-    for row, level in all_following_lines(heading_row, skip):
-        if level is not None and level <= heading_level:
-            break
-        yield row, level
+# By convention, a ROW of None implies the current row.  LEVEL is None
+# for a non-header text line, 1 for `*' headers, 2 for `..' headers, 3
+# for `. :' headers, etc.  If first line of file is not a heading, an
+# hypothetical 0-level heading is sometimes assumed.  When an necessary
+# operation cannot be performed because a line does not exist, functions
+# raise StopIteration.
 
-def all_text_lines(row=None, skip=False):
-    # Generates all rows for non-empty text lines after the heading for the
-    # level holding ROW (None implies current row).
-    row, level = heading_line(row, skip)
-    for row, level in all_following_lines(row, skip):
-        if level is not None:
-            break
-        yield row
+def all_level_lines(mode, row=None):
+    # In normal mode, generates all (ROW, LEVEL) for headers and non-empty
+    # text lines within the whole level holding ROW, including it sub-levels.
+    # LEVEL is zero for non-header lines.  In visual mode, generates (ROW,
+    # LEVEL) for all non-empty selected lines.
+    if 'n' in mode:
+        heading_row, heading_level = heading_line(mode, row)
+        yield heading_row, heading_level
+        for row, level in all_following_lines(mode, heading_row):
+            if level is not None and level <= heading_level:
+                break
+            yield row, level
+    elif 'v' in mode:
+        assert row is None, row
+        for row, level in all_following_lines(mode):
+            yield row, level
 
-def heading_line(row=None, skip=False):
+def all_text_lines(mode, row=None):
+    # In normal mode, generates all rows for non-empty text lines after the
+    # heading for the level holding ROW (None implies current row).  In visual
+    # mode, generates all rows for non-empty non-header lines.
+    if 'n' in mode:
+        row, level = heading_line(mode, row)
+        for row, level in all_following_lines(mode, row):
+            if level is not None:
+                break
+            yield row
+    elif 'v' in mode:
+        assert row is None, row
+        for row, level in all_following_lines(mode):
+            if level is None:
+                yield row
+
+def heading_line(mode, row=None):
     # Returns (ROW, LEVEL) for the closest heading at or before ROW.
+    assert 'n' in mode, mode
     row, level = row_and_level()
     if level is None:
-        for row, level in all_preceding_lines(row, skip):
+        for row, level in all_preceding_lines(mode, row):
             if level is not None:
                 break
         else:
             return 1, 0
     return row, level
 
-def all_following_lines(row=None, skip=False):
-    # Generates (ROW, LEVEL) forward for all non-empty line after ROW.
-    if row is None:
-        row, col = vim.current.window.cursor
-    row = int(vim.eval('nextnonblank(%d)' % (row + 1)))
-    while row:
-        if skip:
+def all_following_lines(mode, row=None):
+    # In normal mode, generates (ROW, LEVEL) forward for all non-empty lines
+    # after ROW.  In visual mode, generates (ROW, LEVEL) for all non-empty
+    # selected lines from first to last.
+    buffer = vim.current.buffer
+    if 'n' in mode:
+        if row is None:
+            row, col = vim.current.window.cursor
+        row = int(vim.eval('nextnonblank(%d)' % (row + 1)))
+        last = len(buffer)
+    elif 'v' in mode:
+        assert row is None, row
+        row, col = buffer.mark('<')
+        if not line_at(row):
+            row = int(vim.eval('nextnonblank(%d)' % (row + 1)))
+        last, col = buffer.mark('>')
+    if 's' in mode:
+        while 0 < row <= last:
             last = int(vim.eval('foldclosedend(%d)' % row))
             if last < 0:
                 yield row_and_level(row)
             else:
                 row = last
-        else:
+            row = int(vim.eval('nextnonblank(%d)' % (row + 1)))
+    else:
+        while 0 < row <= last:
             yield row_and_level(row)
-        row = int(vim.eval('nextnonblank(%d)' % (row + 1)))
+            row = int(vim.eval('nextnonblank(%d)' % (row + 1)))
 
-def all_preceding_lines(row=None, skip=False):
-    # Generates (ROW, LEVEL) backwards for all non-empty line before ROW.
-    if row is None:
-        row, col = vim.current.window.cursor
-    row = int(vim.eval('prevnonblank(%d)' % (row - 1)))
-    while row:
-        if skip:
+def all_preceding_lines(mode, row=None):
+    # In normal mode, generates (ROW, LEVEL) backwards for all non-empty lines
+    # before ROW.  In visual mode, generates (ROW, LEVEL) for all non-empty
+    # selected lines from last to first.
+    buffer = vim.current.buffer
+    if 'n' in mode:
+        if row is None:
+            row, col = vim.current.window.cursor
+        row = int(vim.eval('prevnonblank(%d)' % (row - 1)))
+        first = 1
+    elif 'v' in mode:
+        assert row is None, row
+        row, col = buffer.mark('>')
+        if not line_at(row):
+            row = int(vim.eval('prevnonblank(%d)' % (row - 1)))
+        first, col = buffer.mark('<')
+    if 's' in mode:
+        while first <= row:
             first = int(vim.eval('foldclosed(%d)' % row))
             if first < 0:
                 yield row_and_level(row)
             else:
                 row = first
-        else:
+            row = int(vim.eval('prevnonblank(%d)' % (row - 1)))
+    else:
+        while first <= row:
             yield row_and_level(row)
-        row = int(vim.eval('prevnonblank(%d)' % (row - 1)))
+            row = int(vim.eval('prevnonblank(%d)' % (row - 1)))
 
 def row_and_level(row=None):
     # Returns (ROW, LEVEL) for line at ROW.
@@ -468,3 +520,8 @@ def no_such_line():
 def error(message):
     vim.command('echohl WarningMsg | echo "%s" | echohl None'
                 % message.rstrip().replace('"', '\\"'))
+
+def debug():
+    print repr(vim.eval('mode()')), 
+    print repr(vim.eval('line("\'<")')),
+    print repr(vim.eval('line("\'>")'))

@@ -1,12 +1,20 @@
-* README file for Allout-Vim
+.. README file for Allout-Vim
 
-.. Installation
+   The Allout file format is (yet another) legible representation of the
+   synoptic structure of a textual document.  Emacs support for Allout
+   files is already standard, as an application of fold editing.  This
+   tool eases the handling of Allout files from within a Python-enabled
+   Vim.
 
-   I'm not much familiar with how Vim extensions are packaged and
-   distributed.  If any knowledgeable reader has comments or suggestions
-   about how I might improve this, they are welcome.  In the meantime,
-   installation should be done "by hand", following the instructions
-   given here.
+   This `README' file is already a very simple Allout format file, which
+   you may use for experimenting.  The real documentation is kept in
+   file "vim/doc.txt", which you may browse or print, but this one is
+   _not_ an Allout file however, as it is meant for the Vim help system.
+   Once the installation is completed as per the steps described below,
+   and from within Vim, you may quickly get back to the documentation
+   through the command:
+
+           :help allout
 
 . : System-wide installation
 
@@ -31,26 +39,9 @@
 . : Personal installation
 
     If you do not have super-user privileges, this tool may be installed
-    for yourself only.  From the top-level directory of the unpacked
-    `Allout' distribution, and within VIM, do:
-
-            :!mkdir ~/.vim
-            :!mkdir ~/.vim/syntax
-            :!cp vim/syntax.vim ~/.vim/syntax/allout.vim
-            :!mkdir ~/.vim/ftplugin
-            :!cp vim/ftplugin.vim ~/.vim/ftplugin/allout.vim
-            :!mkdir ~/.vim/doc
-            :!cp vim/doc.vim ~/.vim/doc/allout.vim
-            :helptags ~/.vim/doc
-            :!mkdir ~/.vim/python
-            :!cp Allout/vim.py ~/.vim/python/allout.vim
-
-    The two last steps presume that Python scripts executed from within
-    Vim will try importing from `~/.vim/python'.  I surely like keeping
-    my few Python scripts for Vim within a single special directory, but
-    you may well call it differently, or use other conventions, this is
-    all up to you.  Yet, for the above to work, my own `~/.vimrc' file
-    contains these lines:
+    for yourself only.  Merely type `make install' from the unpacked
+    `allout-vim' distribution.  The `~/.vimrc' file should be modified,
+    or created if necessary, so it holds the following lines:
 
             if has('python')
               python <<EOF
@@ -59,80 +50,7 @@
             EOF
             endif
 
-. : Getting started
+. : Reporting problems
 
-    The best start is through the documentation.  Within Vim, type:
-
-            :help allout
-
-.. Known problems
-
-. : Alpha state
-
-    Despite this tool apparently works well for me, it is pretty new and
-    has not be much tested.  Confidence will grow along the days!
-
-    Specifications are not frozen, and hopefully, they'll never be! :-)
-    I implemented this tool from memory, I did not overly try to exactly
-    mimic the Emacs behaviour.  If users prefer stricter conformance on
-    some points, please email me with precise requests.  One important
-    point is that Allout files should stay inter-operable between
-    Emacs and Vim.  Key bindings were adapted for being more natural to
-    Vim users, I guess that some users will know how to improve on the
-    current set.
-
-. : Error reporting
-
-    If some Allout command may not be completed, due to missing heading
-    and such, there is a `No such line' message written in the message
-    line.  Some commands fail silently.  I should revise this to make
-    sure the reporting is consistent and proper.  This is a mere
-    aesthetic issue, as commands operate correctly in my opinion.
-
-.. Future development
-
-. : New commands
-
-    A few commands might be useful and easy to add.  For example, "\H",
-    "\J", "\K" and "\L" could repeat their lowercase counterparts as
-    much as possible.  "\N" with N between 1 and 9 could jump to the
-    N'th sub-node. "\v" could be renamed "\V", and the new "\v" could
-    select the textual contents only.  Maybe that "\|" could defeat "\="
-    and completely remove the left margin. "\h" could be renamed "\H",
-    and the new "\h" could hide the textual contents only.
-
-    It would be useful having some command to go in insert mode for the
-    textual contents after having inserted the correct left margin.
-    It might be <TAB>, but I'm not sure it is the best choice for Vim.
-
-. : Renumbering
-
-    When inserting a numbered heading (`#N' bullet), subsequent numbered
-    headings at the same level should be automatically renumbered.
-    (Renumbering should also occur when shuffling text around, yet I do
-    not know how `allout.py' may get control after random Vim commands.)
-    Currently, one has to eActing on lplicitly ask for renumbering.
-
-. : Acting on links
-
-    Link headings (`@' bullets) are not adequately supported.  There
-    should be commands, like "\@", for operating on them.  I'm not fully
-    sure to which extent however.  I've not much doubt that editable
-    files should be opened in Vim.  Maybe that URLs should be sent to
-    browsers.  Contents starting with `:' could be seen as Ex commands
-    to be executed; yet I do not feel like implementing any kind of
-    automatic or unattended execution.
-
-.. Other related tools
-
-. : Emacs Allout
-
-    Allout mode is standard in Emacs.  If one preloads the `allout'
-    module in Emacs, activating the Outline mode is intercepted and
-    actives Allout mode instead.
-
-. : Leo
-
-    Leo is a self-contained folding editor written in Python and using
-    a Tk editor.  It is much more powerful than Allout, yet slower and
-    more complex.  It can be made to use Vim instead of Tk as an editor.
+    Email to mailto:pinard@iro.umontreal.ca for reporting documentation
+    or execution bugs, or for sharing suggestions.
