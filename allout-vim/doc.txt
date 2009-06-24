@@ -1,0 +1,257 @@
+*allout.txt*	Handling Allout files
+
+                            ALLOUT EDITING IN VIM
+
+                               François Pinard
+                           pinard@iro.umontreal.ca
+
+Allout files are a handy synoptic representation of a documentation
+tree.  Such files were originally introduced as a GNU Emacs mode.  Vim
+may now offer help at browsing or editing these Allout files.
+
+1. Allout concepts                      |allout-concepts|
+2. File format                          |allout-files|
+3. Activation                           |allout-activation|
+4. Navigation                           |allout-navigation|
+5. Folding                              |allout-folding|
+6. Heading production                   |allout-production|
+7. Adjusting levels                     |allout-levels|
+8. Selecting and deletion               |allout-deletion|
+
+==============================================================================
+1. Allout concepts					*allout-concepts*
+
+A document may be structured and seen as a tree of nodes.  The same as a
+book is made up of chapters, which are made up of sections, then maybe
+sub-sections, a sequence of ideas, made of paragraphs, etc.  Each node
+corresponds to a chapter, section, sub-section, idea, etc.
+
+A node may have a title, a textual contents, and sub-nodes.  The title
+is a one-liner describing the overall contents of the node.  The textual
+contents is the actual verbose documentation for that node, and if
+present, it is a sequence of one or more complete lines, possibly
+running over many paragraphs.  When a node has sub-nodes, its textual
+contents should be seen either as some documentation specific for this
+node, as an introductory text for all the sub-nodes, or both.
+
+The level of a node expresses how far it is from the root of the
+documentation tree.  The root itself is said to be at level 0, while
+other nodes use higher integral numbers.  Each node is necessarily the
+sub-node of one and only one other node at some lesser level.  The
+single and only 0-level node is special, as it is not the sub-node of
+any other node, and it may not have a title.
+
+Each node title is qualifed through the use of a "bullet", which usually
+is a single character chosen among a limited set.  There are four kind
+of bullets: fixed, floating, numbered or link.  Any bullet may be used
+at any node level, save for the rule that nodes at level 1 are required
+to use the `*' bullet.  Fixed bullets are `*', `+' and `-'. Floating
+bullets are such that each level has its own floating preference: level
+2 prefers `.', level 3 prefers `:', level 4 prefers `,' and level
+5 prefers `;', and the cycle repeats afterwhat, so level 5 prefers
+`.', level 6 prefers ':', etc.  A numbered bullet uses more than one
+character: it is `#' immediately followed by a number.  The only link
+bullet is `@', which means a reference to some other document.
+
+==============================================================================
+2. File format						*allout-files*
+
+An Allout file is a sequential representation of an Allout documentation
+tree.  It starts with the text of the node at level 0, if any.  Then,
+the file exposes all nodes, one after another, in depth-first order;
+that is, when a node contains many sub-nodes, the first sub-node is
+fully and recursively exposed, only then the second sub-node is fully
+and recurively exposed, etc.  Do not worry if you are not very familiar
+with formal tree wanderings, you'll soon find out that this is the most
+natural and easy way to represent a documentation tree.
+
+Each node is exposed as a mandatory heading immediately followed by its
+textual contents.
+
+A heading is a single line holding, from left to right, a prefix
+yielding information about the node level, the node bullet, a space, and
+the node title.  If the node has no title, the space preceding it is
+usually omitted.  The prefix is the empty string for nodes at level 1,
+the string `.' at level 2, the string `. ' at level 3, and so on, adding
+one more space for each supplementary level.  In this way, the relative
+horizontal position of bullets in successive headers gives good visual
+clues for comparing node levels, and identifying sub-node membership.
+
+The textual contents is a sequence of lines, none of which is allowed
+to look like a heading.  There is no danger for textual lines to ever
+look like a heading if they all have a non-empty left margin.  While not
+being mandatory, a handy and nice-looking convention is to use `L+1' as
+the width of left margin, while listing the textual contents of a node
+at level `L'.  Some people prefer sticking all the textual contents to
+the left, and merely avoid starting any line with `*' or `.'.
+
+==============================================================================
+3. Activation						*allout-activation*
+
+Allout mode is activated whenever the |'filetype'| option is set to the value
+`allout'.  This may be achieved automatically for files having `.all' as an
+extension by the following command: >
+
+	:augroup filetypedetect
+	:  autocmd! BufNewFile,BufRead *.all  setfiletype allout
+	:augroup END
+<
+You might also want to activate syntax colouring, see |:syntax|.
+
+All Allout commands start with the |'maplocalleader'|, which is `\' if
+the user did not change it.  We use this default leader in all examples
+of mapping, below (yet for our own use, we prefer `;' for the global
+leader and `,' for the local leader).
+
+==============================================================================
+4. Navigation						*allout-navigation*
+
+Allout editing adds a few navigation to all those Vim already has for
+wandering around in any buffer, and to those commands specialized for
+moving over folds in particular.
+
+Mapping equivalences:
+	\j	<Plug>Allout_next_visible_heading
+	\k	<Plug>Allout_previous_visible_heading
+	\u	<Plug>Allout_up_current_level
+	\l	<Plug>Allout_forward_current_level
+	\h	<Plug>Allout_backward_current_level
+	\$	<Plug>Allout_end_of_current_entry
+	\^	<Plug>Allout_beginning_of_current_entry
+
+Commands "\j" and "\k" jump the cursor forward or backwards from heading
+to heading, regardless of the level of each node.  Commands "\u" (up)
+jumps the cursor back to the heading for which the current node is a
+sub-node.  Commands "\l" and "\h" jump the cursor forward or backwards
+from heading to heading while keeping the same node level, and within
+sibling nodes.
+
+Commands "\$" and "\^" jump the cursor on the last or first of the whole
+textual contents for the current node, yet excluding white lines.
+
+The mnemonics of the mapping come from similarity with other commands.
+Compare "\h", "\j", "\k" and "\l" with "h", "j", "k" and "l". "\^" and
+"\$" for the textual contents are a bit like "^" and "$" for a line.
+"\u" comes from Emacs "C-c C-u", which behaves similarily.
+
+==============================================================================
+5. Folding						*allout-folding*
+
+Vim already has many facilities for folding a buffer, and Allout builds
+on them.  First make sure you are already familiar with the folding
+concept by reading |usr_28.txt|.  The few Allout specific commands for
+folding, described here, may suffice in practice for most needs.
+
+Mapping equivalences:
+	\c	<Plug>Allout_hide_current_subtree
+	\i	<Plug>Allout_show_children
+	\o	<Plug>Allout_show_current_subtree
+	\O	<Plug>Allout_show_all
+	\0	<Plug>Allout_show_current_entry
+
+Command "\c" hides (closes) the current node contents, yet leaving its
+heading visible.  Command "\i" also hides the current node contents, yet
+it manages so both the node heading, as well as all headings for its
+immediate sub-nodes, are visible.
+
+Command "\o" reveals (opens) a bit of the folded lines for the current
+node, while command "\O" (Open) reveals all of it.  Command "\0" (that's
+number zero) reveals the textual contents for the current node, and also
+positions the cursor on its heading.
+
+The mnemonics of the mapping come from similarity with other commands.
+Compare "\c" with "zc", "\o" with "zo" and "\O" with "zO".  "\0" for
+textual contents is bit like "0" for a line. "\i" has been choosen
+because of Emacs "C-c C-i", which behaves similarily.
+
+To deepen folding matters, peek at the |Folding| reference.  Here are
+a few considerations which apply if you want to use normal Vim folding
+commands over an Allout buffer.  The folding method uses an expression
+to define folds, so you may not create or delete folds on your own:
+you may only open or close existing folds.  The fold level of headings
+is exactly their Allout level, but all textual contents use the same
+high value for a level.  This choice for textual contents has two nice
+effects: first is that any textual contents is strongly _tied_ to the
+heading before any sub-nodes; second is that it is possible to close the
+fold represented by textual contents without closing the sub-nodes.
+
+==============================================================================
+6. Heading production					*allout-production*
+
+A few commands help at creating new nodes.  These nodes are always created
+textually after the current node.
+
+Mapping equivalences:
+	\_	<Plug>Allout_open_sibtopic
+	\+	<Plug>Allout_open_subtopic
+	\-	<Plug>Allout_open_supertopic
+
+Command "\_" creates a new node as the next sibling of the current node.
+Command "\+" creates a new node as the first sub-node of the current
+node.  Command "\-" creates a new node as an uncle of the current node,
+and gives to this uncle all siblings after itself, if any.
+
+The bullet of the created heading is deduced from the bullet used by
+the previous sibling for the new node, if any.  The cursor is left
+positioned on the created heading, as the user will likely edit its
+title right away.
+
+The mnemonics of the mapping come from how the node level compares from
+the current node to the node being created. "_" means no change, "+"
+means an increase, and "-" means a decrease.
+
+==============================================================================
+7. Adjusting levels					*allout-levels*
+
+Many commands adjust or modify existing nodes in various ways.  They
+allow for changing the level of a sub-tree, or slightly modifying either
+the heading or the textual contents of a node.
+
+Mapping equivalences:
+	\=	<Plug>Allout_normalize_margin
+	\>	<Plug>Allout_shift_in
+	\<	<Plug>Allout_shift_out
+	\<CR>	<Plug>Allout_rebullet_topic
+	\#	<Plug>Allout_number_siblings
+	\~	<Plug>Allout_revoke_numbering
+
+Command "\=" works on the textual contents of the current node, rigidly
+shifting it left or right so the common left margin merely frees the
+bullet of the above heading.
+
+Commands "\>" and "\<" act on the whole sub-tree rooted at the current
+node, and textually shift that sub-tree right or left.  More precisely,
+command "\>" takes the whole sub-tree rooted at the current node, and
+adds it as the last child of the previous sibling.  Command "\<" takes
+the whole sub-tree rooted at the current node, and makes it an uncle of
+the previous sibling; all subsequent siblings are stolen and added to
+the uncle's children, if any.
+
+There are a few subtleties to the above two commands, documented here
+more for completeness than by necessity, as the commands do what the
+intuition suggests anyway.  While shifting in a level-1 tree, its
+bullet is considered floating despite it was `*' to start with.  When
+shifting out a level-1 tree, the heading bullet is lost without hope of
+recovering it by shifting in, both the node title and textual contents
+are added to the textual contents for the level-0 root.
+
+Command "\<CR>" command repairs a floating bullet in the heading for the
+current level, if it is not the preferred one at that level.  Command
+"\#" changes all bullets for immediate sub-nodes of the current node
+so they become numbered bullets, with the numeric value select so they
+effectively count sub-nodes.  Command "\~" turns all numbered bullets to
+floating bullets, for immediate sub-nodes of the current node.
+
+==============================================================================
+8. Selecting and deletion				*allout-deletion*
+
+Mapping equivalences:
+	\v	<Plug>Allout_view_topic
+	\D	<Plug>Allout_kill_topic
+
+Command "\v" selects the whole sub-tree rooted at the current node, and puts
+it into visual line mode, with the cursor left positioned on the heading.
+
+Command "\D" deletes the whole sub-tree rooted at the current node.
+
+vim:tw=78:ts=8:ft=help:norl:
