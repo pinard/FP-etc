@@ -67,7 +67,7 @@ class Main:
     verbose = False
 
     # Various patterns.
-    vrom = 'From [^ ]+( at [^ ]+)?'
+    from_ = 'From [^ ]+( at [^ ]+)?'
     remote = 'remote from [^ ]+'
     day = '(Mon|Tue|Wed|Thu|Fri|Sat|Sun)'
     date = '([ 0-2]?[0-9]|3[01])'
@@ -79,9 +79,9 @@ class Main:
 
     # Unix mailbox envelopes.
     MATCH_1 = re.compile('\37?%s +%s %s %s %s( %s)? %s( %s)?$' % (
-        vrom, day, month, date, time, zone, year, remote)).search
+        from_, day, month, date, time, zone, year, remote)).search
     MATCH_2 = re.compile('\37?%s +%s, %s %s %s %s( %s)?( %s)?$' % (
-        vrom, day, date, month, year, time, zone, remote)).search
+        from_, day, date, month, year, time, zone, remote)).search
     MATCH_3 = re.compile('\37?%s-%s-%s %s-%s,[0-9]+;[0-9]+$' % (
         date, month, year, time, zone)).search
     MATCH_4 = re.compile('\37?From .* %s %s %s %s %s$' % (
@@ -97,7 +97,7 @@ class Main:
     MATCH_7 = re.compile('#! rnews [0-9]+$').match
     MATCH_8 = re.compile('\37?Article [0-9]+ of [^ ]+:$').match
 
-    del vrom, remote, day, date, month, year, time, zone
+    del from_, remote, day, date, month, year, time, zone
 
     def __init__(self):
         self.outputs = []
