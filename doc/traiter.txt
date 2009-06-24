@@ -1,0 +1,1051 @@
+====================================
+Manuel de référence pour ``traiter``
+====================================
+----------------------------------
+Traitement dynamique de pages HTML
+----------------------------------
+
+:Version: 0.0
+:Date: 2003-11-24
+:Auteur: François Pinard
+
+Ce court document explique l'usage du script ``traiter`` qui permet de
+rendre dynamique une page HTML.
+
+.. contents:: Table des matières
+.. section-numbering::
+
+L'interaction Web
+=================
+
+Dans le contexte Web, un fureteur utilisé par un usager répète le scénario
+suivant:
+
+* Un URL est choisi par l'utilisateur.  Ce choix peut être très explicite,
+  il peut par exemple frapper http://voirbd.sram.qc.ca dans l'espace
+  prévu à cette fin par le fureteur.  Ou encore, ce choix peut être indirect
+  par le fait de cliquer sur un fragment de texte ou une image, auquel est
+  associé un URL; par exemple, dans la page précédente, le fait de cliquer
+  sur ``Authent`` choisit automatiquement::
+
+     http://voirbd.sram.qc.ca/cgi-bin/voirbd?url=amv://rd.sram.qc.ca/9879
+
+  sans que l'utilisateur doive frapper cette notation plutôt rébarbative.
+  Ou encore, un URL peut être choisi lorsque l'utilisateur clique sur l'un
+  des boutons prévus pour la soumission d'un formulaire, après l'avoir rempli.
+
+* Cet URL amène le fureteur à établir un contact vers un serveur possiblement
+  éloigné, auquel il transmet la demande.  Cette demande, en plus d'identifier
+  un serveur visé, spécifie en général une page HTML que l'on désire voir, et
+  possiblement des paramètres ou modalités pour le visionnement de cette page.
+
+  Aux tous débuts du Web, une page HTML donnée avait toujours un même aspect,
+  fixé une fois pour toutes lors de l'écriture de la page initiale.  Mais le
+  besoin s'est rapidement développé de pouvoir, pour certaines pages, obtenir
+  des résultats calculés dynamiquement, au vol, en fonction de l'évolution
+  des données ou de l'information disponible depuis la production originale
+  de la page en question.
+
+  Le fragment ``?url=amv://rd.sram.qc.ca/9879``, dans l'exemple plus
+  haut, annonce une modalité de la requête émanant du serveur, qui amène des
+  variations importantes dans le résultat ultérieurement affiché.  Et dans
+  le cas d'un formulaire, le fureteur transmet, en même temps que la demande,
+  la valeur de tous les champs remplis par l'utilisateur.
+
+* Le serveur détermine, par l'examen de la demande, si l'information à
+  retourner possède un contenu fixe et immuable.  Si c'est le cas, cette
+  information est habituellement disponible, toute préparée, dans un fichier
+  que le serveur peut directement lire, puis transmettre au fureteur d'où
+  provient la requête.
+
+  Dans les autres cas, le serveur déclenche généralement un programme
+  sur l'ordinateur qui le contient, et dont l'effet est d'engendrer de
+  toutes pièces une page HTML destinée au fureteur.  À ce programme CGI, le
+  serveur transmet les modalités qu'il a reçues du fureteur, ou les données
+  remplies provenant du formulaire, afin que ce programme en tienne compte.
+  Le serveur prend aussi des dispositions pour que le programme retourne au
+  fureteur la page qu'il fabrique.
+
+* Le fureteur compose un affichage à partir du code HTML provenant de
+  l'ordinateur auquel il s'est adressé, afin que l'utilisateur puisse voir
+  la réponse qu'il a obtenue.
+
+Le progiciel documenté ici est utile dans le cas où le serveur doive
+déclencher un programme produisant dynamiquement une page HTML.
+
+Particularités de l'approche choisie
+====================================
+
+Pages dynamiques
+----------------
+
+Un script CGI est un programme exécutable dont l'effet habituel est de
+produire complètement une page HTML pour affichage dans un fureteur Web.
+Un tel script met l'accent sur la programmation, le contenu HTML est en
+quelque sorte un accessoire imbriqué à l'intérieur de la programmation.
+Cette approche a le désavantage important de toujours faire intervenir un
+programmeur entre le deviseur de pages HTML et la mise-en-service de tout
+changement, même lorsque le changement est purement esthétique et n'a rien
+à voir avec l'algorithme implanté par le script CGI.
+
+Une page HTML dynamique cherche à inverser la présentation, en imbriquant
+les aspects de la programmation à l'intérieur de la page HTML, contrairement
+à ce que l'on l'observe dans un script CGI traditionnel.  Il devient plus
+facile au deviseur de pages HTML d'en changer l'esthétique sans nuire aux
+aspects de la programmation.  Le programmeur peut de son côté modifier
+les aspects de programmation sans avoir à prendre en charge l'entièreté
+de la page produite.
+
+Autrement dit, le paradigme de la page HTML dynamique a l'avantage de
+permettre un meilleur partage du travail entre artiste et programmeur.
+
+Le langage d'extension
+----------------------
+
+Les aspects de la programmation, dans une page HTML dynamique, sont souvent
+orientés vers un langage de programmation particulier, qui assez souvent
+dans la pratique, est inventé de toutes pièces pour la circonstance; il
+s'avère plus ou moins touffu selon la quantité et la qualité des services
+que ce langage particulier veut offrir.
+
+Ce programme ``traiter`` implante une technique qui marie un langage de
+programmation créé afin de dynamiser les pages HTML, au moyen d'un langage de
+programmation pré-existant, disponbile comme langage d'extension du premier.
+
+Cette approche a l'avantage de maintenir une grande simplicité et de
+permettre une grande humilité dans le langage de dynamisation, tout en
+profitant de la puissance et de la maturité d'un langage pré-existant.
+Elle a cependant le désavantage de demander au programmeur de connaître
+et d'utiliser deux langages plutôt qu'un.
+
+Nous avons choisi Python comme langage d'extension, non seulement à cause
+des valeurs intrinsèques de ce langage et des bibliothèques logicielles
+qui l'accompagnent, mais aussi parce qu'au SRAM, plusieurs interfaces aux
+bases de données et autres services locaux existent déjà pour ce langage.
+Cela permet donc de marier sans grand effort les pages HTML dynamiques
+aux autres outils du SRAM.
+
+Ce document détaille toutes les directives du mini-langage de ``traiter``,
+mais il ne présente pas le langage Python, amplement décrit ailleurs.
+
+Demi-compilation
+----------------
+
+Le programme ``traiter`` transforme d'abord une page HTML dynamique en
+une séquence d'instructions d'un langage plus élémentaire, puis il exécute
+cette séquence.  L'exécution de ces instructions produit progressivement
+la page HTML à afficher.
+
+Cette demi-compilation n'a pas d'impact notable sur le temps de traitement
+d'une page HTML dynamique dont la structure est plutôt simple ou linéaire,
+mais elle accélère sensiblement le traitement de pages remplies de directives
+itératives et conditionnelles.
+
+Environnement d'évaluation
+--------------------------
+
+Plusieurs des directives reconnues par ``traiter`` admettent des
+expressions Python, ou des fragments de code Python exécutable.  Toutes les
+évaluations ont lieu dans un contexte unique où les variables globales et
+les variables locales sont partagées.
+
+Les variables globales du contexte contiennent les modules ``os``,
+``re``, ``string`` et ``sys``, que la page HTML dynamique peut
+utiliser librement.  On trouve aussi dans le contexte une fonction
+``main`` et une classe ``Traiter``, que la page HTML dynamique
+n'utilise habituellement pas.
+
+Dans le cas d'une page HTML dynamique appelée directement par un ``href``,
+il n'y a aucune variable locale, au départ du traitement de la page.
+Mais dans le cas d'une page HTML dynamique déclenchée par un formulaire
+HTML, les variables locales sont initialisées à partir des noms et des
+valeurs du formulaire rempli.  Cet automatisme s'avère très pratique,
+mais il mérite quand même quelques précautions.
+
+* Chaque nom de champ, dans un formulaire, devrait idéalement respecter les
+  règles d'écriture d'un identificateur valide en Python.
+
+* Si plusieurs champs portent le même nom dans un formulaire, seule la
+  dernière valeur sera conservée.  Ce comportement pourrait changer dans une
+  version ultérieure de ``traiter``, parce qu'il pourrait être parfois
+  souhaitable de recevoir toutes les valeurs.
+
+* Finalement, et c'est ennuyeux, un champ laissé blanc dans un formulaire ne
+  sera pas transmis en général, et par conséquent, ne donnera pas lieu à la
+  création d'une variable locale.  Afin d'éviter toute erreur ultérieure à
+  propos de variables non définies, le plus simple est de garantir une valeur
+  pour toutes les variables problématiques au début de la page HTML dynamique.
+  Voici un exemple montrant comment garantir l'initialisation d'une variable
+  nommée ``option``.
+
+  ::
+
+     <!--: Faire
+         try:
+             option
+         except NameError:
+             option = None
+     :-->
+
+Toute affectation, ``import``\ ation, ou autre sorte de définition dans
+un fragment Python contenu dans une directive ``Faire``, modifiera le
+contexte des variables locales uniquement.
+
+   **Note.** Ce détail est particulièrement important dans le cas de
+   définitions de fonctions, puisque le corps de telles fonctions n'a pas
+   automatiquement accès aux variables du contexte local d'évaluation.  Les
+   expressions dans une fonction n'ont accès qu'aux propres variables locales
+   de cette fonction, ou aux variables globales.  Il faut par conséquent user
+   d'astuce, et passer en paramètre soit les variables précises du contexte
+   local que la fonction doit connaître, soit ce contexte entier sous la
+   forme d'un dictionnaire, par l'usage de l'appel ``locals()``.
+
+Traitement
+----------
+
+Un document HTML dynamique écrit en fonction de ce programme ``traiter``
+a pour but de ressembler à une page HTML habituelle, mais parsemée de
+directives.  À moins que les délimiteurs de directives soient redéfinis,
+ces délimiteurs sont choisis de manière à ce que chaque directive ressemble
+à un commentaire HTML.  Il se trouve du texte HTML entre les directives,
+et les directives contrôlent exactement de quelle façon et dans quel ordre
+ces éléments de texte sont assemblés pour produire une page HTML résultante.
+
+Chaque élément de texte fait possiblement l'objet de substitutions au moment
+de son assemblage final, ces substitutions remplacent toutes les chaînes
+``%(``\ *variable*\ ``)s`` par la valeur actuelle de la *variable*
+indiquée dans le contexte local d'évaluation.  Le caractère ``s`` qui
+suit la parenthèse fermante indique le format Python à utiliser pendant
+la substitution; tout caractère de format défini dans Python peut être
+utilisé s'il y a lieu.  Une conséquence de cette mécanique est qu'il faut
+en général, dans un fragment de texte HTML, doubler un caractère pour-cent
+que l'on veut produire en bout de course.
+
+   **Note.** Deux erreurs sont assez fréquentes en regard de ce qui
+   précède.  D'une part, il est facile d'oublier de doubler un caractère
+   pour-cent.  D'autre part, on peut aussi oublier le ``s`` final qui
+   identifie le format de la substitution.
+
+Les directives ``Chacun``, ``Si`` et ``Tantque`` peuvent s'imbriquer
+de manière arbitrairement complexe, et il faut un mécanisme pour décrire la
+portée de ces directives.  Certains langages utilisent des délimiteurs ou
+mots-clés spéciaux pour marquer cette structuration, le langage Python
+lui-même utilise l'indentation dans le même but.  Dans le langage de
+directives implanté par ``traiter``, la structuration est clarifiée
+par l'usage de directives de fermeture ``FinChacun``, ``FinSi``
+et ``FinTantque`` respectivement.
+
+Techniques de mise-au-point
+---------------------------
+
+Les scripts CGI sont souvent difficiles à mettre au point, ce fait est
+notoire.  Les fureteurs n'ont à peu près aucune capacité introspective
+qui puisse nous y aider.  La mise-au-point est généralement laborieuse.
+Les outils conçus pour alléger ce fardeau foisonnent, à ce point qu'on a
+l'impression qu'aucun ne remplit vraiment sa tâche.
+
+Quoique nous n'ayons ni l'intention ni la prétention de réussir là où
+tout semble échouer, nous avons voulu porter une attention particulière,
+dans la mécanique de ce programme ``traiter``, à la détection et au
+diagnostic des erreurs, qui pourraient survenir durant le traitement de
+pages HTML dynamiques.
+
+En ce qui concerne ``traiter``, une page HTML dynamique s'exécute soit en
+mode de développement, soit en mode de production.  Si une erreur survient
+durant le traitement d'une page HTML dynamique en mode de développement,
+``traiter`` élabore une description de l'environnement de l'erreur et
+amène le fureteur à afficher directement cette description, significative
+pour le programmeur.  Mais en mode de production, il ne serait pas
+raisonnable d'ennuyer l'utilisateur par toute cette information technique.
+Si une erreur survient en mode de production, l'information servant à la
+mise-au-point est encapsulée dans un courrier, et envoyée à l'adresse
+appropriée, pendant que l'utilisateur reçoit un message significatif,
+mais bref, à l'effet qu'une erreur est survenue.
+
+De plus, en mode de production, il est possible de contrôler avec finesse
+et flexibilité la page présentée à l'usager en cas d'erreur, par la mise en
+place d'une page HTML prévue à cet effet (souvent nommée ``erreur.html``).
+Si ce fichier existe, son contenu sera traité comme toute autre page HTML
+dynamique par ``traiter``, et le résultat de ce traitement apparaîtra
+en lieu et place du message bref à produire par ``traiter`` lui-même,
+en l'absence de cette page qui rapporte d'erreur.
+
+Pour faciliter la mise-au-point de page HTML sans utiliser le script CGI,
+il est possible d'appeler le programm ``traiter`` en utilisant un premier
+argument pour donner le nom du fichier contenant la page HTML à traiter,
+et les arguments suivants pour simuler un formulaire rempli; chaque
+argument supplémentaire a alors la forme *nom*\ ``=``\ *valeur*.
+L'option ``-w`` provoque le filtrage du résultat par ``w3m`` pour
+produire une approximation textuelle de la page HTML résultant du traitement.
+
+Détails d'installation
+======================
+
+Configuration du projet
+-----------------------
+
+Quoique cela ne soit pas strictement nécessaire, chaque projet utilisant
+``traiter`` possède un fichier de configuration, que l'on retrouve
+généralement installé dans:
+
+.. parsed-literal::
+
+   /usr/local/etc/*projet*.conf
+
+où *projet* est le nom donné au projet.  Par exemple, pour le projet
+ÉCHO, le fichier::
+
+   /usr/local/etc/écho.conf
+
+contient, entre autres choses::
+
+   # Fichier de configuration pour le projet ÉCHO.
+   # Copyright (C) 2001, 2002 Progiciels Bourbeau-Pinard inc.
+   # François Pinard <pinard@iro.umontreal.ca>, 2001.
+
+   [DEFAULT]
+   Library: /usr/local/lib/écho
+   PythonPath: /usr/local/lib/écho:/usr/local/lib/python
+
+   [traiter]
+   Production: 0
+   MailFrom: aide-echo@sram.qc.ca
+   MailTo: pinard@carouge.sram.qc.ca
+   MailRelay: rd.sram.qc.ca
+   PageErreur: erreur.page
+
+Dans la section ``[DEFAULT]``, la ligne ``Library:`` introduit une
+liste de répertoires, séparés par des deux-points, qui sont ajoutés au
+début du chemin de fouille pour les programme exécutables.  La ligne
+``PythonPath`` introduit une liste de répertoires, séparés par
+des deux-points, qui sont ajoutés au début du chemin de fouille pour
+l'importation de modules Python.  Si l'une ou l'autre de ces lignes est
+absente, le chemin de fouille correspondant ne sera pas modifié.
+
+Dans la section ``[traiter]``, la ligne ``Production:`` annonce
+le mode d'opération pour ``traiter``, ``0`` indiquant le mode de
+développement, ``1`` indiquant le mode de production.  Si cette ligne
+n'est pas trouvé, ``traiter`` fonctionnera en mode de développement.
+
+Les lignes ``MailFrom:``, ``MailTo:`` et ``MailRelay:`` ne sont
+honorées qu'en mode de production, elles introduisent respectivement le
+champ ``From:`` et le champ ``To:`` à utiliser dans les courriels
+diagnostics automatiquement envoyés aux développeurs, ainsi que le serveur
+SMTP à utiliser pour l'injection du courriel dans le système de livraison.
+Si l'une de ces trois lignes est manquante, les diagnostics ne seront
+simplement pas envoyés par courriel.
+
+Quant à la ligne ``PageErreur``, elle donne le nom de la page HTML que
+``traiter`` transformera pour afficher, dans le fureteur de l'usager,
+le fait qu'une erreur est survenue.  La notation de la page d'erreur est
+relative au répertoire qui contient la page HTML où l'erreur s'est produite.
+Si cette ligne est absente, alors ``traiter`` produira une page HTML
+contenant un diagnostic détaillant l'erreur, à l'intention d'un technicien
+du projet bien plus qu'à l'intention de l'un de ses usagers.
+
+Configuration de Apache
+-----------------------
+
+Normalement, chaque projet susceptible d'utiliser ``traiter`` est un
+site Apache séparé, assez souvent via la mécanique des sites virtuels.
+.. REVOIR: DocumentRoot et ScriptAlias.
+Le script ``traiter`` lui-même doit être disponible en tant que
+script CGI exécutable pour ce site (virtuel ou non).
+.. REVOIR: Copier de /usr/local/bin/traiter, distinction avec traiter.py.
+
+S'il existe un fichier de configuration de projet, comme décrit à la
+ligne précédente, ``traiter`` doit être informé de l'endroit où
+se trouve se fichier de configuration.  Ceci se fait par la variables
+d'environnement ``CONFIG_PROJET``, nécessaire, qui contient le nom
+du projet, et la variable d'environnement ``CONFIG_``\ *projet*,
+optionelle, où *projet* est le nom du projet en majuscules, qui
+contient le nom du fichier de configuration à utiliser pour le projet en
+question.  Si la variable ``CONFIG_``\ *projet* n'est pas fournie,
+``traiter`` présume que le fichier de configuration se trouve dans
+``/usr/local/bin/``\ *projet*\ ``.conf``, où cette fois-ci, *projet*
+est le nom du projet qui n'a pas été mis en majuscules.
+
+Par exemple, pour le projet ÉCHO, le site virtuel Apache approprié contient
+la directive suivante::
+
+   SetEnv CONFIG_PROJET écho
+
+qui dirige ``traiter`` vers le fichier de configuration
+``/usr/local/etc/écho.conf``.
+
+Nous avons trouvé commode de cacher quelque peu la mécanique d'appel de
+``traiter`` dans Apache, dans le but de créer l'illusion qu'une page
+HTML se traite magiquement.  Pour ce faire, nous avons choisi d'utiliser
+l'extension ``.page`` plutôt que l'extension ``.html`` pour ces
+pages HTML que ``traiter`` doit transformer.  Quelques déclarations
+suffisent, dans Apache, pour y parvenir.  Par exemple, nous avons::
+
+   AddType text/html .page
+   Action traiter-sram /cgi-bin/traiter
+   AddHandler traiter-sram .page
+
+pour informer Apache que chaque document ayant l'extension ``.page``
+doit avoir son nom automatiquement préfixé par ``/cgi-bin/traiter/``,
+et que le résultat de la transformation sera invariablemenent du HTML.
+
+Malheureusement, si cette astuce fonctionne correctement dans le cas de
+références ``href=``, elle est inopérante dans le cas d'une référence
+provenant du champ ``action`` dans un formulaire HTML: il faut alors,
+dans ce cas, écrire explicitement le préfixe ``/cgi-bin/traiter/``.
+.. REVOIR: Donner des exemples href et action.
+
+.. REVOIR: Log Apache pour erreur fondamentale avant que traiter démarre.
+.. REVOIR: Log Apache pour pages non résolues.
+
+Passage des paramètres
+----------------------
+
+Lorsque le serveur Web se prépare à remplir une requête du style:
+
+.. parsed-literal::
+
+   <a href="/cgi/traiter/*choix*.html">
+
+il enclenche l'exécution du programme ``traiter``.  Mais au préalable,
+il résout *choix*\ ``.html`` en fonction de la configuration
+``DocumentRoot``, et produit pour ce fichier une notation absolue qu'il
+laisse dans la variable d'environnement ``PATH_TRANSLATED``.  C'est là
+que le programme ``traiter`` choisit la page HTML dynamique à traiter.
+
+En fait, le serveur Web examine la requête reçue de gauche à droite.
+Le premier élément à n'être pas un répertoire est nécessairement le script
+à exécuter (``traiter`` dans ce cas-ci), et tout ce qui suit est le
+nom de la page HTML dynamique qui se retrouvera ajustée et inscrite dans
+``PATH_TRANSLATE``.
+
+La page d'erreur
+----------------
+
+Quoique ``traiter`` sache produire une page HTML diagnostique de
+contenu pré-déterminé, lorsqu'il détecte une erreur d'exécution durant la
+transormation d'une page HTML, il est possible au gestionnaire du projet
+d'affiner la présentation du diagnostique à l'usager.  Voici, par exemple,
+la page d'erreur du projet ÉCHO (que nous utilisons systématiquement pour
+les exemples dans ce document, vous l'avez sûrement remarqué!)::
+
+   <!--: Faire
+     from Local import commun
+     config = commun.config()
+     production = config.getboolean('traiter', 'Production')
+     adresse = config.get('traiter', 'MailTo')
+     entretien = os.path.exists('/usr/local/etc/entretien')
+   :-->
+   <html>
+   <head>
+   <title>erreur.html</title>
+   </head>
+   <body>
+   <!--: Si production :-->
+   <!--: Si entretien :-->
+   Le système ÉCHO est temporairement non disponible.  Veuillez ré-essayer
+   un peu plus tard en journée.  Nous nous excusons de cet inconvénient.
+
+   Robert Lachance, SRAM.
+   <!--: Sinon :-->
+   Une erreur est survenue lors du traitement de votre requête.  Veuillez
+   contacter madame Louise Groulx ou monsieur Robert Lachance au numéro :
+   (514) 271-4055.
+
+   Vous pouvez, si vous le préférez, envoyer un courriel à l'adresse :
+   %(adresse)s.  Vous devrez alors préciser les circonstances
+   sous lesquelles l'erreur s'est produite.
+   <!--: FinSi :-->
+   <!--: Sinon :-->
+   Oups!  Problème inattendu durant le traitement...
+   <pre>
+   %(gros_diagnostic)s
+   </pre>
+   <!--: FinSi :-->
+   </body>
+   </html>
+
+Cette page d'erreur ajuste son contenu en fonction du fait que le projet est
+en mode développement ou en mode production, et lorsqu'en mode production,
+dépendamment que le site est en mode d'entretien temporaire ou non.
+
+Deux variables supplémentaires sont prédéfinies dans ``traiter``, juste
+avant la transformation de la page d'erreur.  ``petit_diagnostic``
+contient la ligne de diagnostic produite par ``traiter`` et
+concernant la compilation ou la transformation de la page HTML dynamique.
+``gros_diagnostic`` contient d'abord les lignes du petit diagnostic,
+puis l'état courant de la pile d'exécution Python, les noms et valeurs
+des variables locales du contexte d'exécution des fragments Python de
+la page transformée (y compris les variables provenant du formulaire),
+ainsi que les noms et valeurs des variables de l'environnement du script
+``traiter`` lui-même, tel que cet environnement est préparé par Apache.
+
+Le mini-langage utilisé
+=======================
+
+Pré-traitement
+--------------
+
+Une directive de pré-traitement est interprétée immédiatement durant
+la phase de compilation, et n'a aucun effet particulier à l'exécution.
+Dans le langage ``traiter``, il n'y a présentement qu'une seule
+directive de pré-traitement [#]_.
+
+.. [#] Dans une version précédente, la directive ``Inclure`` était,
+       elle aussi, associée au pré-traitement.
+
+La directive ``Délimiter``
+..........................
+
+Lorsque ``traiter`` démarre la compilation d'une page HTML dynamique,
+il ne reconnaît les directives qui lui sont destinées que lorsqu'elles sont
+encloses entre ``<!--:`` et ``:-->\n``.  Ces délimiteurs ne font
+pas partie de la directive et ne servent qu'à la reconnaître.  Ils sont
+simplement éliminés une fois leur fonction remplie, et n'apparaîtront pas
+non plus dans la page HTML produite.
+
+Dans le délimiteur de fin, ``\n`` représente réellement une fin de ligne,
+et non pas la séquence de caractères ``\`` et ``n``.  Cela signifie
+qu'une directive ne sera pas reconnue comme telle, si les caractères
+``:-->`` de son délimiteur de fin ne sont pas immédiatement suivis
+d'une fin de ligne, empêchant ainsi d'accumuler plusieurs directives
+``traiter`` différentes sur la même ligne.  Le fait d'inclure la fin
+de ligne dans le délimiteur de fin a une autre conséquence intéressante.
+Si plusieurs directives ``traiter`` sont données en séquence contiguë,
+une par ligne, on ne trouvera pas dans la page HTML produite une fin de
+ligne superflue à chaque directive, puisque chaque fin de ligne est en
+quelque sorte *avalée* par la directive qu'elle termine.
+
+   **Note.** Il existe un inconvénient au fait d'inclure le délimiteur
+   de fin de ligne immédiatement après l'angle fermant.  Cela interdit
+   d'avoir des espaces ou retours de chariot excédentaires en fin de ligne.
+   Si l'éditeur de texte utilisé par le programmeur laisse traîner de tels
+   espaces, ou encore, si les fins de ligne sont codées à la manière de
+   MS-Windows plutôt qu'à la manière de Unix, le délimiteur de fin ne sera
+   pas reconnu.  Cela peut mener à des diagnostics apparemment incongrus et
+   inexplicables de la part du programme ``traiter``.
+
+On peut mettre à profit la rigueur de la reconnaissance pour empêcher
+temporairement l'exécution d'une directive, sans véritablement l'enlever
+de la page HTML dynamique.  Par exemple, en remplaçant ``<!--:``
+par ``<!--``, c'est-à-dire par la simple élimination du deux-points,
+ce qui était une directive devient maintenant un simple commentaire HTML.
+Il suffit de remettre en place le deux-points pour réactiver la directive.
+
+   **Note.** L'autre côté de cette médaille, c'est que l'oubli involontaire
+   d'une chose aussi simple que ce deux-points aura un malencontreux effet:
+   la directive sera ignorée, et ce, souvent sans autre forme de diagnostic.
+
+Les délimiteurs par défaut sont peut-être un peu lourds à écrire, nous les
+avons préférés plus visibles que discrets: habituellement, l'essentiel
+d'une page HTML dynamique contient beaucoup plus de code HTML que de
+directives ``traiter``.
+
+Toutefois, si plusieurs directives ``traiter`` sont groupées de manière
+compacte, des délimiteurs plus discrets pourraient être d'un usage plus
+confortables.  Un changement de délimiteurs peut aussi devenir nécessaire
+lorsqu'une directive ``traiter`` doit contenir une copie textuelle
+du délimiteur de fin courant, afin d'empêcher cette copie d'être perçue,
+à tort, comme la fin de la directive.
+
+La directive ``Délimiter`` modifie les délimiteurs utilisés pour détecter
+les directives qui suivent textuellement, dans la page HTML dynamique,
+et ce jusqu'à l'occurrence d'une nouvelle directive ``Délimiter``.
+Elle accepte deux paramètres séparés par une virgule, le premier indique
+le nouveau délimiteur de début, le second le nouveau délimiteur de fin.
+Chaque paramètre est habituellement vu comme une chaîne comprise entre
+délimiteurs de chaîne, mais en fait, chaque paramètre peut être une
+expression Python.  Toutefois, ces expressions sont évaluées dans un
+contexte constant, où aucune variable n'est définie.  Par exemple, si
+elles sont données dans cet ordre, les lignes::
+
+   <!--: Délimiter ':', '\n' :-->
+   : Délimiter "<<", ">>"
+   << Délimiter "<!" '--:', """:-->
+   """ >>
+
+provoquent trois changements de paire de délimiteurs, la dernière directive
+rétablissant les délimiteurs par défaut.  La seconde directive commence au
+``:`` et s'arrête à la fin de ligne.  La troisième directive démontre
+aussi que l'on peut utiliser toute syntaxe de chaîne admise par Python.
+Le lecteur attentif a peut-être vu qu'une fin de ligne intempestive sera
+produite, dans le code HTML engendré, par la troisième directive.  Ceci est
+dû au fait que ``>>`` suffit à terminer cette troisième directive, mais
+la fin de ligne qui suit ce terminateur ne fait partie d'aucune directive.
+
+Une directive ``Délimiter`` peut aussi n'avoir aucun paramètre, dans
+lequel cas les délimiteurs précédant les délimiteurs actuels sont restitués.
+En fait, lorsque de nouveaux délimiteurs sont spécifiés explicitement,
+les anciens sont empilés.  Ce qui fait que l'exemple précédent est en
+pratique équivalent à celui-ci::
+
+   <!--: Délimiter ':', '\n' :-->
+   : Délimiter "<<", ">>"
+   << Délimiter >>
+   : Délimiter
+
+Dans toute directive, l'espacement entre les délimiteurs et la directive
+contenue, est un choix plus esthétique que nécessaire.  Ainsi, en éliminant
+autant d'espaces que possible, l'exemple précédent pourrait s'écrire::
+
+   <!--:Délimiter ':','\n':-->
+   :Délimiter "<<",">>"
+   <<Délimiter>>
+   :Délimiter
+
+Énoncés simples
+---------------
+
+La directive ``Inclure``
+........................
+
+La directive ``Inclure`` provoque le traitement d'une autre page HTML
+dynamique, dont le résultat s'inscrit en lieu et place de la directive
+``Inclure`` en question.  Ce qui précédait la directive ``Inclure``
+précède le résultat de l'inclusion, ce qui la suit suivra aussi le résultat
+de l'inclusion.  Cette directive exige un paramètre, qui est le nom du
+fichier à inclure.  Par exemple::
+
+   <!--: Inclure Menu.page :-->
+
+insérera le contenu du fichier ``Menu.page`` à la place de cette
+directive ``Inclure``.  Un nom de fichier relatif est interprété par
+rapport au répertoire courant au moment de l'exécution de cette directive.
+
+Les variables du formulaire et autres variables locales de la page couramment
+traitée sont disponibles durant le traitement de la page incluse.  Toutefois,
+la page incluse doit être structurellement consistante, et tout-à-fait
+indépendante de la page courante.  L'effet d'une directive ``Délimiter``
+dans cette page n'est pas visible dans la page incluse, et l'effet d'une
+directive ``Délimiter`` dans la page incluse sera sans effet dans cette
+page-ci.  Une structure conditionnelle ou itérative dans cette page-ci ne
+peut se terminer dans la page incluse, et une structure conditionnelle ou
+itérative qui débute dans la page incluse doit s'y terminer.
+
+En outre, une page incluse peut elle-même en inclure une autre, et
+``traiter`` n'impose pas de limite théorique a de telles imbrications.
+
+Si une erreur de traitement survient dans une page incluse, et cela, quel
+que soit le niveau d'imbrication des inclusions, ni la page principale,
+ni aucune des pages incluses ne sera produite.  Le mécanisme habituel
+associé à un traitement erroné a priorité sur toute inclusion.
+
+La directive ``Faire``
+......................
+
+La directive ``Faire`` introduit un fragment de code Python, présenté
+comme une succession d'énoncés Python, qu'il faut exécuter lorsque cette
+directive est traitée.  L'effet habituel de ces énoncés est de définir
+ou de modifier les valeurs de variables faisant partie du contexte local
+d'évaluation, mais ils peuvent aussi provoquer autant d'effets de bord
+que l'on désire.
+
+Son paramètre est le texte du code à exécuter.  Comme Python est un langage
+donnant un sens strict à l'indentation, la directive ``Faire`` reflète
+les caprices de Python, assortis aux siens propres.  Si le code Python
+s'écrit en une seule ligne, il est permis (mais non obligatoire) de placer
+ce code immédiatement après le mot-clé de la directive.  Par exemple::
+
+   <!--: Faire import tempfile :-->
+
+aura pour effet de définir ``tempfile`` une fois pour toutes, pour
+qu'il soit disponible dans toutes les autres structures Python à traiter
+par la suite.  Et::
+
+   <!--: Faire compteur = compteur + 1 :-->
+
+augmentera la valeur de la variable ``compteur``.
+
+Mais lorsque plus d'une ligne est requise pour exprimer les énoncés Python,
+alors la chaîne ``Faire`` ne doit être suivie d'aucun caractère sur sa
+ligne, et les énoncés Python doivent commencer sur une ligne subséquente.
+Si, par exemple, une page HTML dynamique requiert deux fichiers temporaires,
+ils peuvent être choisis par la directive suivante::
+
+   <!--: Faire
+       import tempfile
+       temp1 = tempfile.mktemp()
+       temp2 = tempfile.mktemp()
+   :-->
+
+Voici un autre exemple::
+
+   <!--: Faire
+     import Grilles
+     try:
+       col_cou
+     except NameError:
+       col_cou = None
+     html_boutons = Grilles.html_boutons(col_cou)
+   :-->
+
+La directive ``Faire`` ajoutera le module ``Grilles`` aux variables
+locales, y définira ``col_cou`` à ``None`` à moins que cette variable
+existe déjà, puis ajoutera ``html_boutons`` aux variable locales, en
+lui donnant la valeur retournée par la fonction ``Grilles.html_boutons``
+avec ``col_cou`` comme paramètre.
+
+La marge que l'on observe pour les énoncés Python, dans les exemples qui
+précèdent, n'est qu'esthétique.  Cette marge pourrait être plus grande ou
+plus petite, sans aucun dommage.  En fait, elle est automatiquement reconnue
+et éliminée par ``traiter`` juste avant de donner à Python les énoncés
+pour qu'il les compile.  Plus exactement, la marge de la première ligne
+non-blanche sert de référence à toute indentation ultérieure, mais uniquement
+pour le code Python apparaissant dans la même directive ``Faire``.
+L'indentation des lignes Python entre elles demeure significative, bien sûr.
+
+Les énoncés ``Faire`` ne devraient pas tenter l'insertion directe de
+texte HTML, par ``print`` ou autrement.  Pour ce faire, il faut plutôt
+construire le texte voulu et de l'affecter comme valeur d'une variable,
+puis utiliser une substitution ``%(``\ *variable*\ ``)s`` dans le texte
+qui suit la directive.
+
+La directive ``Afficher``
+.........................
+
+La directive ``Afficher`` a pour but habituel de faciliter la
+mise-au-point du fonctionnement des pages HTML dynamiques, elle n'est que
+rarement utilisée en dehors d'un contexte de mise-au-point.  Cette directive
+a pour effet d'engendrer du code HTML qui révèle de l'information sur la page
+HTML dynamique, son environnement système: des informations relatives, donc,
+au fonctionnement de ``traiter`` lui-même.  Cette directive accepte un
+seul paramètre, choisissant le type de l'information à afficher.
+
+``arguments``
+   La directive ``<!--: Afficher arguments :-->`` étale sur un tableau
+   chaque paramètre reçu par le programme ``traiter``, via le mécanisme
+   Unix usuel de transmission ``argc``/``argv``.  Elle a pour effet
+   d'afficher les paramètres du script ``traiter`` tels que reçus dans la
+   variable Python ``sys.argv``.  Un tableau montre la représentation des
+   chaînes reçues en regard de l'ordinal du paramètre.
+
+``code``
+   La directive ``<!--: Afficher code :-->`` directive restitue une
+   version claire du résultat de la demi-compilation de la page HTML dynamique.
+   Le tableau contient quatre colonnes.  La première colonne indique le
+   numéro de l'instruction, utile à la fois pour identifier la destination
+   d'une instruction de saut ou de bouclage, mais aussi pour interpréter les
+   commentaires résultant de la directive ``Tracer``.  La seconde colonne
+   indique le nom de la directive compilée, qui ne correspond pas toujours
+   à la directive originale.  La troisième colonne fournit les paramètres
+   de cette directive, ces paramètres concernent la version demi-compilée
+   et apparaissent assez différemment de ceux de la directive originale.
+   La quatrième colonne donne la référence de cette directive compilée,
+   sous la forme d'un nom de fichier source et de numéro de ligne.
+
+      **Note.** Durant le traitement d'une page incluse, cette directive
+      n'affiche uniquement que le code demi-compilé correspondant à cette page
+      incluse.
+
+``environnement``
+   La directive ``<!--: Afficher environnement :-->`` présente toutes
+   les variables d'environnement et leur valeur.  Plus précisément, elle
+   montre l'environnement d'exécution du script ``traiter``, tel qu'il
+   est établi par le programme déclencheur.  Dans le cas de ``traiter``,
+   ce programme est souvent un élément du système Apache, le serveur HTTP que
+   nous utilisons au SRAM.  Apache construit de toutes pièces un environnement
+   aux scripts qu'il exécute.  Le tableau contient, en regard de chaque nom
+   de variable d'environnement, une représentation de sa valeur.  Les noms
+   sont lexicographiquement triés.
+
+``variables``
+   La directive ``<!--: Afficher variables :-->`` montre toutes les
+   variables locales du contexte d'évaluation des expressions Python, et fournit
+   de l'information quant à la valeur qui est courante au moment de l'exécution
+   de cette directive.  Les variables locales contiennent toutes les variables
+   provenant du formulaire HTML ayant déclenché le traitement de la page HTML
+   dynamique, ainsi que toutes celles créées par le fonctionnement du script
+   lui-même.  Le tableau contient, en regard de chaque nom de variable locale,
+   une représentation de sa valeur.  Les noms sont lexicographiquement triés.
+
+La directive ``Tracer``
+.......................
+
+La directive ``Tracer`` engendre la production de commentaires HTML,
+insérés dans la page résultante du traitement.  Cette production a lieu
+pour certaines des directives exécutées à la suite de cette directive
+``Tracer``, et ce jusqu'à ce qu'une directive ``FinTracer`` soit
+dynamiquement rencontrée et exécutée.  Pour y parvenir, la directive
+``Tracer`` lève un indicateur spécial.  Des éléments de trace sont
+produits à l'occasion de sauts dans le flot de contrôle d'exécution de la
+page HTML dynamique, ainsi que lors de la vérification ou le changement
+de variables contrôlant ce flot.  Cette directive n'accepte aucun paramètre::
+
+   <!--: Tracer :-->
+
+Puisque la trace elle-même apparaît sous la forme de commentaires
+HTML dans la page produite, elle ne devrait généralement pas influer
+sur l'apparence du résultat tel que vu par l'usager.  Toutefois, le
+fureteur offre un bouton ``[View page source]``, ou quelque chose du
+genre [#]_.
+
+.. parsed-literal::
+
+   <!-- Trace *instruction*: *message* -->
+   <!-- *fichier*:*ligne*: *directive* -->
+
+Dans ces commentaires, *instruction* est l'ordinal de l'instruction dans
+le code demi-compilé, tel qu'il apparaît en première colonne du tableau
+produit par ``<!--: Afficher code :-->``.  ``message`` explique
+la raison de cet élément de trace, il peut être absent lorsque la trace
+n'a pas besoin d'un tel commentaire.  ``ficher`` et ``ligne`` forment
+une référence dans le source de la page HTML dynamique, et ``directive``
+rappelle quelle directive se trouve inscrite à cet endroit.
+
+.. [#] Pour voir la page HTML sans l'interpréter, ``Netscape`` offre le
+   raccourci ``Alt-U``, qui permet de voir le code transmis sans
+   aucuen interprétation, incluant les commentaires de trace.  Chaque élément
+   de trace utilise deux commentaires, ainsi:
+
+La directive ``FinTracer``
+..........................
+
+La directive ``FinTracer`` fait dynamiquement cesser toute action de
+trace résultant de l'exécution antérieure d'une directive ``Tracer``.
+Cette directive n'accepte aucun paramètre.
+
+La directive ``FinTracer`` abaisse l'indicateur que la directive
+``Tracer`` avait possiblement levé, et a donc pour effet de faire cesser
+l'insertion de commentaires HTML de trace dans la page HTML produite.
+Cette directive n'accepte aucun paramètre::
+
+   <!--: FinTracer :-->
+
+..
+
+   **Note.** Une seule directive ``FinTracer`` suffit à contrer
+   l'action de possiblement plusieurs ``Tracer`` antérieurs.  Il est
+   possible que ce comportement change ultérieurement, de manière à ce que
+   chaque ``FinTracer`` n'annule l'effet que d'un seul ``Tracer``.
+
+La directive ``Sauver``
+.......................
+
+La directive ``Sauver`` a pour effet d'intercepter la production de
+tout le code HTML qui la suit, et ce jusqu'à la prochaine directive
+``FinSauver`` qui lui correspond au même niveau d'imbrication
+structurelle.  Toute cette production devient alors la valeur d'une
+variable Python, qui est nommée par l'argument de la directive
+``Sauver``.  La valeur est une seule chaîne de caractères, même
+lorsque plusieurs lignes doivent être représentées---la chaîne
+contiendra dans ce cas des fins-de-ligne imbriquées.
+
+Lorsque la production de code HTML est ainsi déviée vers une variable, elle
+n'a pas lieu dans l'assemblage final du document, à moins que l'auteur de la
+page HTML ait pris des dispositions à cet effet.  Par exemple:
+
+.. parsed-literal::
+
+   <!--: Sauver *variable* :-->
+   Ceci est un bloc
+   de texte prenant
+   plusieurs lignes.
+   <!--: FinSauver :-->
+   %(*variable*)s
+
+a le même effet que::
+
+   Ceci est un bloc
+   de texte prenant
+   plusieurs lignes.
+
+en plus d'avoir sauvé dans *variable* ces trois lignes de texte.  Mais
+si `%(*variable*)s`:parsed-literal avait été omis dans l'exemple
+précédent, aucun texte n'aurait été produit pour ce code dans
+l'assemblage final.
+
+Possiblement combinée aux feuilles de style, cette directive
+``Sauver`` est particulièrement utile pour donner un aspect homogène
+à un ensemble de pages HTML, par exemple pour fournir un même menu sur
+toutes les pages, installer un pied-de-page uniforme, etc.  Supposons
+que le fichier ``gabarit.html``, destiné à contenir les éléments
+communs, ait le contenu suivant::
+
+   <html>
+    <title>%(titre)s</title>
+    <body>
+   Préfixe commun à toutes les pages.
+   %(texte)s
+   Suffixe commun à toutes les pages.
+    </body>
+   </html>
+
+Une page HTML nommée ``exemple.html`` peut être assujettie au gabarit
+donné plus haut en l'écrivant ainsi::
+
+   <!--: Faire titre = "Titre de l'exemple" :-->
+   <!--: Sauver texte :-->
+   Corps de l'exemple, qui est
+   possiblement un long texte HTML.
+   <!--: FinSauver :-->
+   <!--: Inclure gabarit.html :-->
+
+Le traitement de ``exemple.html`` fournit le résultat suivant::
+
+   <html>
+    <title>Titre de l'exemple</title>
+    <body>
+   Préfixe commun à toutes les pages.
+   Corps de l'exemple, qui est
+   possiblement un long texte HTML.
+   Suffixe commun à toutes les pages.
+    </body>
+   </html>
+
+Le fichier ``exemple.html`` qui précède peut étonner un peu, par
+le fait que l'on utilise une directive ``Faire`` pour définir la
+variable ``titre`` et une directive ``Sauver`` pour définir
+la variable ``texte``.  Pourquoi cette nuance?  Quelle est la
+différence?  La directive ``Faire`` exécute un ou plusieurs énoncés
+Python, et dans ce cas-ci, une simple affectation à la variable
+``titre``.  La valeur affectée doit nécessairement être donnée comme
+une chaîne de caractères exprimée selon la syntaxe de Python.  Bien sûr,
+on aurait pu remplacer cette ligne ``Faire`` par::
+
+   <!--: Sauver titre :-->
+   Titre de l'exemple
+   <!--: FinSauver :-->
+
+mais cette écriture implique que la valeur de ``titre`` sera
+terminée par une fin-de-ligne, ce qui n'est pas nécessairement voulu.
+D'autre part, la verbosité supplémentaire de l'écriture la rend moins
+attrayante, puisqu'un titre de page se limite à quelque mots la plupart
+du temps.  Et inversement, il n'est pas impensable d'utiliser une
+directive ``Faire``, plutôt que ``Sauver``, pour donner une valeur
+à la variable ``texte``, un peu de la manière suivante::
+
+   <!--: Faire
+   texte = """\
+   Corps de l'exemple, qui est
+   possiblement un long texte HTML.
+   """
+   :-->
+
+quoiqu'à la réflexion, c'est beaucoup moins avantageux.  Le fait est que
+le code HTML entre les directives ``Sauver`` et ``FinSauver`` peut
+être aussi long et complexe que l'on veut, demander des substitutions
+de variables, appeler d'autres directives de traitement, même inclure
+d'autres pages, contenir des structures imbriquées, etc.  Quoique
+théoriquement possibles, toutes ces belles choses ne seraient pas
+vraiment disponibles, dans la simple pratique, avec la seule directive
+``Faire``.
+
+La variable Python citée dans la directive ``Sauver`` ne reçoit
+sa valeur qu'à la fin du traitement de la région de code HTML se
+trouvant entre ``Sauver`` et ``FinSauver``.  Par conséquent,
+toute référence à cette variable à l'intérieur de la région risque
+fort de provoquer une erreur, à moins que cette variable précise ait
+préalablement reçu une valeur déjà, c'est alors cette ancienne valeur
+qui est utilisée.
+
+La directive ``FinSauver``
+..........................
+
+La directive ``FinSauver`` indique la limite textuelle de la portée d'un
+énoncé ``Sauver``.  Elle n'a pas d'arguments.
+
+Structures conditionnelles
+--------------------------
+
+La directive ``Si``
+...................
+
+La directive ``Si`` s'applique à la section de code HTML qui la suit,
+jusqu'à la prochaine directive ``SinonSi``, ``Sinon`` ou ``FinSi``
+au même niveau d'imbrication structurelle.  Cette directive choisit si ce
+code HTML sera produit ou non, dépendamment de la valeur d'une expression
+Python, donnée comme paramètre de la directive.  Par exemple::
+
+   <!--: Si int(pourcent) >= 60 :-->
+   Vous avez réussi le test.
+   <!--: FinSi :-->
+
+n'incluera la phrase citée dans le HTML produit qu'à la condition qu'au
+moment du traitement de cette directive, ``pourcent`` soit le nom
+d'une variable --- possiblement une chaîne exprimant un nombre décimal ---
+dont la valeur est au moins 60.
+
+La directive ``SinonSi``
+........................
+
+La directive ``SinonSi`` s'applique à la section de code HTML qui la suit,
+jusqu'à la prochaine directive ``SinonSi``, ``Sinon`` ou ``FinSi``
+au même niveau d'imbrication structurelle débuté par une directive ``Si``.
+Cette directive choisit si ce code HTML sera produit ou non, dépendamment de
+la valeur d'une expression Python, donnée comme paramètre de la directive.
+Toutefois, le code ne sera pas produit si l'une des branches antérieures
+dans cette structure ``Si`` a déjà amené une production de code HTML
+(même vide).
+
+La directive ``Sinon``
+......................
+
+La directive ``Sinon`` s'applique à la section de code HTML qui la suit,
+jusqu'à la directive ``FinSi`` au même niveau d'imbrication structurelle
+deébuté par une directive ``Si``.  Ce code sera produit seulement si
+aucune des branches antérieures dans cette structure ``Si`` n'a déjà
+amené une production de code HTML (même vide).  Cette directive n'a pas
+de paramètres.
+
+La directive ``FinSi``
+......................
+
+La directive ``FinSi`` indique la limite textuelle de la portée d'un
+énoncé ``Si``.  Elle n'a pas de paramètres.
+
+Structures itératives
+---------------------
+
+La directive ``Chacun``
+.......................
+
+La directive ``Chacun`` s'applique à la section de code HTML qui la suit,
+jusqu'à la directive ``FinChacun`` qui lui correspond.  Elle a pour but de
+traiter et de produire ce code HTML, zéro, une ou plusieurs fois.  À chaque
+itération, une variable du contexte recevra une valeur prise successivement
+à partird'une séquence de valeurs.  La directive s'écrit ainsi:
+
+.. parsed-literal::
+
+   <!--: Chacun *variable*: *valeurs* :-->
+
+Apparaît d'abord la variable du contexte qui recevra les valeurs successives,
+un deux-points nécessaire, puis une expression Python qui fournit une
+séquence de valeurs.
+
+La directive ``FinChacun``
+..........................
+
+La directive ``FinChacun`` indique la limite textuelle de la portée
+d'un énoncé ``Chacun``.  Elle n'a pas de paramètres.
+
+La directive ``Tantque``
+........................
+
+La directive ``Tantque`` s'applique à la section de code HTML qui
+la suit, jusqu'à la directive ``FinTantque`` qui lui correspond.
+Elle a pour but de traiter et de produire ce code HTML, zéro, une ou
+plusieurs fois.  Une expression Python est evaluée avant chaque itération,
+et la répétition s'interrompt lorsque cette expression s'avère fausse.
+La directive s'écrit ainsi:
+
+.. parsed-literal::
+
+   <!--: Tantque *expression* :-->
+
+La directive ``FinTantque``
+...........................
+
+La directive ``FinTantque`` indique la limite textuelle de la portée
+d'un énoncé ``Tantque``.  Elle n'a pas de paramètres.
+
+La directive ``Suffit!``
+........................
+
+La directive ``Suffit!`` interrompt immédiatement le développement
+associé à la structure ``Chacun`` ou ``Tantque`` la plus imbriquée
+qui contienne cette directive ``Suffit!``.
+
+Le point d'exclamation fait partie de la commande et il est requis.
+Cette directive ne souffre aucun paramètre, et s'écrit ainsi::
+
+   <!--: Suffit! :-->
