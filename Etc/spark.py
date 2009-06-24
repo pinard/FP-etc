@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 #  Copyright (c) 1998-2002 John Aycock
 
 #  Permission is hereby granted, free of charge, to any person obtaining
@@ -20,14 +20,13 @@
 #  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 #  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-#__metaclass__ = type
 __metaclass__ = type
-from Etc.Unicode import apply, deunicode, file, open, os, reunicode, sys
-
 __version__ = u'SPARK-0.7 (pre-alpha-7)'
 
 import re
 import string
+
+class Error(Exception): pass
 
 def _namelist(instance):
         namelist, namedict, classlist = [], {}, [instance.__class__]
@@ -39,6 +38,8 @@ def _namelist(instance):
                                 namelist.append(name)
                                 namedict[name] = 1
         return namelist
+
+class ScannerError(Error): pass
 
 class Scanner:
 
@@ -65,8 +66,7 @@ class Scanner:
                 return string.join(rv, u'|')
 
         def error(self, s, pos):
-                print u"Lexical error at position %s" % pos
-                raise SystemExit
+                raise ScannerError(u"Lexical error at position %s" % pos)
 
         def position(self, newpos=None):
                 oldpos = self.pos
@@ -92,8 +92,7 @@ class Scanner:
 
         def t_default(self, s):
                 ur'( . | \n )+'
-                print u"Specification error: unmatched input"
-                raise SystemExit
+                raise ScannerError(u"Specification error: unmatched input")
 
 #  Extracted from Parser and made global so that [un]picking works.
 
@@ -102,6 +101,8 @@ class _State:
         def __init__(self, stateno, items):
                 self.T, self.complete, self.items = [], [], items
                 self.stateno = stateno
+
+class ParserError(Error): pass
 
 class Parser:
 
@@ -306,8 +307,7 @@ class Parser:
                 return None
 
         def error(self, token):
-                print u"Syntax error at or near `%s' token" % token
-                raise SystemExit
+                raise ParserError(u"Syntax error at or near `%s' token" % token)
 
         def parse(self, tokens):
                 sets = [ [(1, 0), (2, 0)] ]
@@ -724,7 +724,7 @@ class ASTBuilder(Parser):
 #  of a subtree, call the prune() method -- this only makes sense for a
 #  preorder traversal.  Node type is determined via the typestring() method.
 
-class ASTTraversalPruningException:
+class ASTTraversalPruningException(Error):
         pass
 
 class ASTTraversal:
