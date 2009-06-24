@@ -1,115 +1,202 @@
 #!/usr/bin/env python
-# -*- coding: Latin-1 -*-
-# Copyright © 2004 Progiciels Bourbeau-Pinard inc.
-# François Pinard <pinard@iro.umontreal.ca>, 2004.
+# -*- coding: UTF-8 -*-
+# Copyright Â© 2004 Progiciels Bourbeau-Pinard inc.
+# FranÃ§ois Pinard <pinard@iro.umontreal.ca>, 2004.
 
 """\
-Détails supplémentaires pour le support de Python.
+A few supplementary tools for Python support within Vim.
+
+This script may also be used as a program, rather than imported within
+Vim, mainly for debugging purposes.  The first Python line of FILE is
+read and reformatted on standard output, the remainder of FILE is ignored.
+
+Usage: pynits.py [OPTION]... [FILE]
+
+Operation mode:
+  -h   Print this help and exit.
+  -d   Enable debugging trace.
+  -P   Enable code profiling.
+
+Enabling heuristics:
+  -b   Columnar formatting, no refilling.
+  -c   Columnar formatting, with refilling.
+  -l   Format all on a single line, `-w' ignored.
+  -p   Full formatting, no refilling.
+  -q   Full formatting, with refilling (default).
+
+Formatting options:
+  -w WIDTH   Line width in columns (default is 80).
+  -i STEP    Indentation step in columns (default is 4).
+
+If FILE is not specified, standard input is read.
 """
 
 __metaclass__ = type
-import gettext, os, re, sys, vim
+import gettext, os, re, sys
 
 try:
-     _ = (gettext.translation('pynits',
-             os.path.join(os.path.dirname(os.path.dirname(__file__)), 'locale'))
-         .gettext)
+    import vim
+except ImportError:
+    class vim:
+        class error(Exception): pass
+        class current:
+            buffer = []
+            class window: cursor = 1, 0
+        def eval(texte):
+            return {'&shiftwidth': str(Editeur.indentation),
+                    '&textwidth': str(Editeur.limite)}[texte]
+        eval = staticmethod(eval)
+        def command(texte): pass
+        command = staticmethod(command)
+
+localedir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'locale')
+try:
+    _ = gettext.translation('pynits', localedir).gettext
 except IOError:
-    def _(texte):
-        return texte
+    def _(texte): return texte
+
+def declarer_ordinaux(*noms):
+    # DÃ©clarer, dans l'espace local de l'appelant, des variables Ã©numÃ©ratives
+    # dont les NOMS sont fournis en arguments, et retourner ce type prÃ©cis
+    # dont les variables juste crÃ©Ã©es sont les seuls Ã©lÃ©ments.  Lorsque
+    # qu'imprimÃ©es, ces variables affichent leur nom plutÃ´t que leur valeur.
+    class Ordinal(int):
+        def __new__(cls, nom, valeur):
+            return int.__new__(cls, valeur)
+        def __init__(self, nom, valeur):
+            self.nom = nom
+        def __repr__(self):
+            return self.nom
+        def __str__(self):
+            return self.nom
+    locaux = sys._getframe(1).f_locals
+    for valeur, nom in enumerate(noms):
+        locaux[nom] = Ordinal(nom, valeur)
+    return Ordinal
+
+class Main:
+    def __init__(self):
+        self.commande = None
+
+    def main(self, *arguments):
+        profilage = False
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'Pbcdhi:lpqw:')
+        for option, valeur in options:
+            if option == '-P':
+                profilage = True
+            elif option == '-b':
+                self.commande = disposeur.disposer_en_colonne
+            elif option == '-c':
+                self.commande = disposeur.disposer_en_colonne_remplir
+            elif option == '-d':
+                Editeur.mise_au_point = True
+            elif option == '-i':
+                Editeur.indentation = int(valeur)
+            elif option == '-h':
+                sys.stdout.write(_(__doc__))
+                sys.exit(0)
+            elif option == '-l':
+                self.commande = disposeur.disposer_en_ligne
+            elif option == '-p':
+                self.commande = disposeur.disposer_en_retrait
+            elif option == '-q':
+                self.commande = disposeur.disposer_en_retrait_remplir
+            elif option == '-w':
+                Editeur.limite = int(valeur)
+        assert len(arguments) < 2, arguments
+        if arguments:
+            fichier = file(arguments[0])
+        else:
+            fichier = sys.stdin
+        if self.commande is None:
+            self.commande = disposeur.disposer_en_retrait_remplir
+        vim.current.buffer[:] = fichier.read().splitlines()
+        if profilage:
+            import profile, pstats
+            profile.run('run.commande(\'n\')', '.profile-data')
+            sys.stderr.write('\n')
+            stats = pstats.Stats('.profile-data')
+            stats.strip_dirs().sort_stats('time', 'cumulative').print_stats(10)
+        else:
+            self.commande('n')
+            sys.stderr.write('\n')
+        for ligne in vim.current.buffer[:curseur_courant()[0]]:
+            sys.stdout.write(ligne + '\n')
 
 def installer_vim():
-    leader = '\\'
-    if int(vim.eval('exists("maplocalleader")')):
-        leader = vim.eval('maplocalleader')
-    # REVOIR: Je ne réussis pas à utiliser ni `,s' ni `,t': bizarre!
-    # REVOIR: Délai inexpliqué pour les commandes `,c' et `,m'.
-    register_local_keys('pynits',
-                        ((leader, 'n', 'trouver_broutille'),
-                         ('"', 'n', 'forcer_guillemets'),
-                         ('\'', 'n', 'forcer_apostrophes'),
-                         ('(', 'n', 'ajouter_parentheses'),
-                         (')', 'n', 'eliminer_parentheses'),
-                         ('.', 'n', 'corriger_broutille'),
-                         ('c', 'n', 'disposer_en_colonne'),
-                         ('l', 'n', 'disposer_en_ligne'),
-                         ('m', 'n', 'disposer_en_mixte'),
-                         ('od', 'n', 'choisir_mise_au_point'),
-                         ('om', 'n', 'montrer_syntaxe'),
-                         ('or', 'n', 'choisir_remplisseur'),
-                         ('q', 'n', 'disposer_en_mixte_remplie'),
-                         ('r', 'n', 'disposer_en_colonne_remplie')))
+    # REVOIR: Je ne rÃ©ussis pas Ã  utiliser ni `,s' ni `,t': bizarre!
+    # REVOIR: DÃ©lai inexpliquÃ© pour les commandes `,c' et `,m'.
+    register_local_keys(
+        'pynits',
+        (('<LocalLeader><LocalLeader>', 'n', 'trouver_broutille'),
+         ('<LocalLeader>"', 'n', 'forcer_guillemets'),
+         ('<LocalLeader>\'', 'n', 'forcer_apostrophes'),
+         ('<LocalLeader>(', 'n', 'ajouter_parentheses'),
+         ('<LocalLeader>)', 'n', 'eliminer_parentheses'),
+         ('<LocalLeader>.', 'n', 'corriger_broutille'),
+         ('<LocalLeader>b', 'n', 'disposer_en_colonne'),
+         ('<LocalLeader>c', 'n', 'disposer_en_colonne_remplir'),
+         ('<LocalLeader>d', 'n', 'choisir_mise_au_point'),
+         ('<LocalLeader>f', 'n', 'choisir_remplisseur'),
+         ('<LocalLeader>l', 'n', 'disposer_en_ligne'),
+         ('<LocalLeader>p', 'n', 'disposer_en_retrait'),
+         ('<LocalLeader>q', 'n', 'disposer_en_retrait_remplir'),
+         ('<LocalLeader>y', 'n', 'montrer_syntaxe'),
+         ('Q', 'n', 'disposer_en_retrait_remplir')))
+    Editeur.indentation = int(vim.eval('&shiftwidth'))
     Editeur.limite = int(vim.eval('&textwidth')) or 80
-    Disposeur.indentation = int(vim.eval('&shiftwidth'))
 
 def register_local_keys(plugin, triplets):
-    if int(vim.eval('exists("maplocalleader")')):
-        normal_leader = vim.eval('maplocalleader')
-    else:
-        normal_leader = '\\'
-    insert_leader = ord('\x02')
-    for key, modes, name in triplets:
+    for keys, modes, name in triplets:
         for mode in modes:
             python_command = ':python %s.%s(\'%s\')' % (plugin, name, mode)
             sid_name = '<SID>%s_%s' % (mode, name)
             plug_name = '<Plug>%s_%s_%s' % (plugin.capitalize(), mode, name)
-            mapped = int(vim.eval('hasmapto(\'%s\')' % plug_name))
+            vim.command('%smap <buffer> %s %s' % (mode, keys, plug_name))
+            vim.command('%snoremap <buffer> <script> %s %s'
+                        % (mode, plug_name, sid_name))
             if mode == 'i':
-                if not mapped:
-                    vim.command('%smap <buffer> <unique> %s%s %s'
-                                % (mode, insert_leader, key, plug_name))
                 vim.command('%snoremap <buffer> <silent> %s <C-O>%s<CR>'
                             % (mode, sid_name, python_command))
             else:
-                if not mapped:
-                    vim.command('%smap <buffer> <unique> %s%s %s'
-                                % (mode, normal_leader, key, plug_name))
                 vim.command('%snoremap <buffer> <silent> %s %s<CR>'
                             % (mode, sid_name, python_command))
-            vim.command('%snoremap <buffer> <unique> <script> %s %s'
-                        % (mode, plug_name, sid_name))
-
-# Doit-on compter les rangées et colonnes à partir de 0 ou de 1?  Dans la
-# ligne de mode sous la fenêtre, Vim affiche rangée et colonne tous deux
-# comptés à partir de 1.  Dans `vim.current.cursor', la rangée est comptée
-# à partir de 1 et la colonne à partir de 0.  Dans `vim.current.buffer',
-# les rangées sont indicées à partir de 0, comme il se doit en Python.
-# Ce programme se colle à la convention de `vim.current.cursor'; il faut
-# donc systématiquement soustraire 1 à la rangée pour manipuler le tampon.
-
-PIED_DE_MOUCHE = '¶'
 
-## Redisposition contrôlé par la syntaxe.
+## Redisposition contrÃ´lÃ©e par la syntaxe.
 
 import compiler, compiler.ast, compiler.consts, compiler.visitor
 
-# Noeuds syntaxiques bidon représentant quelques codes Python accessoires.
-class Elif(compiler.ast.If): pass
-class Else(compiler.ast.Pass): pass
-class Except(compiler.ast.Tuple): pass
-class Finally(compiler.ast.Pass): pass
-class Try(compiler.ast.Pass): pass
+# Noeuds syntaxiques bidon reprÃ©sentant quelques codes Python accessoires.
+# L'attribut RUSTINE a pour effet d'empÃªcher la productin de `pass'.
+class Elif(compiler.ast.If):
+    rustine = True
+class Else(compiler.ast.Pass):
+    rustine = True
+class Except(compiler.ast.Tuple):
+    rustine = True
+class Finally(compiler.ast.Pass):
+    rustine = True
+class Try(compiler.ast.Pass):
+    rustine = True
 
 class Disposeur:
 
-    # Accroissement de la marge par niveau d'intentation.
-    indentation = 4
-
-    # Limite en lignes d'exploration vers l'arrière pour trouver le début d'une
-    # ligne logique de code Python.
+    # Limite en lignes d'exploration vers l'arriÃ¨re pour trouver le dÃ©but
+    # d'une ligne logique de code Python.
     limite_arriere = 12
 
-    # Limite en lignes de l'exploration vers l'avant pour trouver la fin d'une
-    # ligne logique de code Python.
-    limite_avant = 25
+    # Limite en lignes de l'exploration vers l'avant pour trouver la fin
+    # d'une ligne logique de code Python.
+    limite_avant = 200
 
-    # Outil à utiliser pour remplir les commentaires.
+    # Outil Ã  utiliser pour remplir les commentaires.
     choix_remplisseurs = 'fmt', 'par', 'vim', 'python'
     remplisseur = 'fmt'
 
     def montrer_syntaxe(self, mode):
         # Imprimer la syntaxe d'une ligne (pour aider la mise-au-point).
-        rangee = vim.current.window.cursor[0]
+        rangee = curseur_courant()[0]
         try:
             debut, fin, marge, commentaires, arbre = self.trouver_ligne_python(
                 rangee)
@@ -119,29 +206,34 @@ class Disposeur:
             sys.stdout.write(str(arbre))
 
     def disposer_en_ligne(self, mode):
-        self.traiter_ligne(Editeur.LIGNE, None)
+        Editeur.strategie = LIGNE
+        self.traiter_ligne(None)
 
     def disposer_en_colonne(self, mode):
-        self.traiter_ligne(Editeur.COLONNE, False)
+        Editeur.strategie = COLONNE
+        self.traiter_ligne(False)
 
-    def disposer_en_colonne_remplie(self, mode):
-        self.traiter_ligne(Editeur.COLONNE, True)
+    def disposer_en_colonne_remplir(self, mode):
+        Editeur.strategie = COLONNE
+        self.traiter_ligne(True)
 
-    def disposer_en_mixte(self, mode):
-        self.traiter_ligne(Editeur.MIXTE, False)
+    def disposer_en_retrait(self, mode):
+        Editeur.strategie = RETRAIT
+        self.traiter_ligne(False)
 
-    def disposer_en_mixte_remplie(self, mode):
-        self.traiter_ligne(Editeur.MIXTE, True)
+    def disposer_en_retrait_remplir(self, mode):
+        Editeur.strategie = RETRAIT
+        self.traiter_ligne(True)
 
-    def traiter_ligne(self, strategie, remplir):
-        # Redisposer la ligne selon STRATEGIE et possiblement REMPLIR.
-        rangee = vim.current.window.cursor[0]
+    def traiter_ligne(self, remplir):
+        # Redisposer la ligne et remplir selon REMPLIR.
+        rangee = curseur_courant()[0]
         tampon = vim.current.buffer
-        ligne = tampon[rangee - 1].lstrip()
+        ligne = tampon[rangee].lstrip()
         if ligne.startswith('#'):
             fin = self.traiter_commentaire(rangee)
         elif ligne:
-            fin = self.traiter_code_python(rangee, strategie, remplir)
+            fin = self.traiter_code_python(rangee, remplir)
         else:
             fin = self.traiter_blanche(rangee)
         # Placer le curseur sur la ligne suivante.
@@ -150,12 +242,16 @@ class Disposeur:
         else:
             fin = len(tampon)
             colonne = 0
-        vim.current.window.cursor = fin, colonne
+        try:
+            changer_curseur_courant(fin, colonne)
+        except vim.error:
+            # REVOIR: Il y a erreur Vim en disposant, par exemple, `x = 0.0'.
+            pass
 
     def traiter_blanche(self, rangee):
         debut = fin = rangee
         tampon = vim.current.buffer
-        if '\f' in tampon[rangee-1]:
+        if '\f' in tampon[rangee]:
             insertion = '\f\n'
         else:
             insertion = '\n'
@@ -172,34 +268,34 @@ class Disposeur:
     def traiter_commentaire(self, rangee):
         debut = fin = rangee
         tampon = vim.current.buffer
-        prefixe = ' ' * marge_gauche(tampon[rangee-1]) + '#'
+        prefixe = ' '*marge_gauche(tampon[rangee]) + '#'
         while debut > 1 and tampon[debut-2].startswith(prefixe):
             debut -= 1
         while fin < len(tampon) and tampon[fin].startswith(prefixe):
             fin += 1
         if self.remplisseur == 'vim':
             vim.command('normal %dGgq%dG' % (debut, fin))
-            return vim.current.window.cursor[0] + 1
+            return curseur_courant()[0]
         if self.remplisseur == 'fmt':
             import os, tempfile
             nom = tempfile.mktemp()
-            file(nom, 'w').writelines([tampon[rangee - 1] + '\n'
+            file(nom, 'w').writelines([tampon[rangee] + '\n'
                                        for rangee in range(debut, fin + 1)])
             insertion = (os.popen('fmt -u -w%d -p\'%s\' <%s'
-                                  % (Editeur.limite, prefixe+' ', nom))
+                                  % (Editeur.limite, prefixe + ' ', nom))
                          .read)()
             os.remove(nom)
         elif self.remplisseur == 'par':
             import os, tempfile
             nom = tempfile.mktemp()
-            file(nom, 'w').writelines([tampon[rangee-1] + '\n'
+            file(nom, 'w').writelines([tampon[rangee] + '\n'
                                        for rangee in range(debut, fin + 1)])
-            # REVOIR: Examiner PARINIT et voir s'il faut l'intégrer.
+            # REVOIR: Examiner PARINIT et voir s'il faut l'intÃ©grer.
             insertion = os.popen('par w%d <%s' % (Editeur.limite, nom)).read()
             os.remove(nom)
         elif self.remplisseur == 'python':
             import textwrap
-            lignes = [tampon[rangee-1][len(prefixe):]
+            lignes = [tampon[rangee][len(prefixe):]
                       for rangee in range(debut, fin + 1)]
             insertion = textwrap.fill(textwrap.dedent('\n'.join(lignes)),
                                       width=Editeur.limite,
@@ -208,48 +304,56 @@ class Disposeur:
                                       subsequent_indent=prefixe + ' ')
         return self.modifier_tampon(debut, fin + 1, insertion)
 
-    def traiter_code_python(self, rangee, strategie, remplir):
+    def traiter_code_python(self, rangee, remplir):
         try:
             debut, fin, marge, commentaires, arbre = self.trouver_ligne_python(
                 rangee)
         except SyntaxError, diagnostic:
             sys.stderr.write(str(diagnostic))
             return rangee
-        editeur = Editeur(marge, strategie, remplir)
+        editeur = Editeur(marge, remplir)
         try:
             compiler.walk(arbre, editeur,
                           walker=compiler.visitor.ExampleASTVisitor(),
                           verbose=True)
-        except Editeur.Impasse, diagnostic:
-            sys.stderr.write('%s...  (%s)'
-                             % (str(diagnostic), editeur.statistiques()))
-            return rangee
-        else:
-            sys.stdout.write(_("OK!  (%s)") % editeur.statistiques())
+        except Impasse, diagnostic:
+            if not remplir:
+                sys.stderr.write('%s...' % str(diagnostic))
+                return rangee
+            editeur = Editeur(marge, False)
+            try:
+                compiler.walk(arbre, editeur,
+                              walker=compiler.visitor.ExampleASTVisitor(),
+                              verbose=True)
+            except Impasse, diagnostic2:
+                sys.stderr.write('%s...' % str(diagnostic))
+                return rangee
+            sys.stderr.write(_("I ought to disable filling."))
         resultat = str(editeur)
         if resultat.endswith(':\n'):
-            resultat += self.recommenter(marge + self.indentation, commentaires)
+            resultat += self.recommenter(marge + editeur.indentation,
+                                         commentaires)
         else:
             resultat = self.recommenter(marge, commentaires) + resultat
         return self.modifier_tampon(debut, fin, resultat)
 
     def trouver_ligne_python(self, rangee):
-        # Lire le code Python qui débute à la RANGEE donnée ou, au besoin
-        # d'une syntaxe correcte, jusqu'à une douzaine de lignes plus tôt.
+        # Lire le code Python qui dÃ©bute Ã  la RANGEE donnÃ©e ou, au besoin
+        # d'une syntaxe correcte, jusqu'Ã  une douzaine de lignes plus tÃ´t.
         # Retourner (DEBUT, FIN, MARGE, COMMENTAIRES, ARBRE), indiquant la
-        # première et la dernière rangée du code Python trouve, la grandeur
-        # de la marge, une liste des fragments de commentaire trouvés dans
-        # le code Python, et un ARBRE syntaxique représentatif du code trouvé.
+        # premiÃ¨re et la derniÃ¨re rangÃ©e du code Python trouve, la grandeur
+        # de la marge, une liste des fragments de commentaire trouvÃ©s dans
+        # le code Python, et un ARBRE syntaxique reprÃ©sentatif du code trouvÃ©.
         debut = rangee
         while True:
             try:
                 fin, marge, commentaires, texte = self.lire_ligne_python(debut)
                 # En reculant suffisamment, on peut trouver du code Python
                 # valide, mais si ce code ne rejoint pas au moins la ligne
-                # de départ, il faut probablement reculer davantage.
+                # de dÃ©part, il faut probablement reculer davantage.
                 if fin <= rangee:
                     raise SyntaxError(
-                        _("Syntax error, maybe did not back up enough."))
+                        _("Syntax error, maybe did not back up enough?"))
                 if texte.endswith(':\n'):
                     for prefixe in 'class ', 'def ', 'if ', 'for ', 'while ':
                         if texte.startswith(prefixe):
@@ -285,10 +389,10 @@ class Disposeur:
                     raise SyntaxError(diagnostic)
             except SyntaxError:
                 # S'il y a une quelconque erreur de syntaxe, la ligne physique
-                # n'était peut-être pas la première de la ligne logique.
-                # On tente alors l'analyse à nouveau en reculant d'une ligne
-                # physique, mais quand même, pas plus d'une douzaine de fois.
-                if debut <= 1 or debut <= rangee - self.limite_arriere:
+                # n'Ã©tait peut-Ãªtre pas la premiÃ¨re de la ligne logique.
+                # On tente alors l'analyse Ã  nouveau en reculant d'une ligne
+                # physique, mais quand mÃªme, pas plus d'une douzaine de fois.
+                if debut < 1 or debut <= rangee - self.limite_arriere:
                     raise
                 debut -= 1
             else:
@@ -301,7 +405,7 @@ class Disposeur:
             noeud = arbre.node.nodes[0]
             if rustine is True:
                 # Nous avons class, def, if, for ou while.  RUSTINE a pour
-                # effet d'inhiber la production de l'énoncé `pass'.
+                # effet d'inhiber la production de l'Ã©noncÃ© `pass'.
                 noeud.rustine = True
             elif isinstance(noeud, compiler.ast.Pass):
                 # Nous avons try, else ou finally.
@@ -317,16 +421,16 @@ class Disposeur:
         return debut, fin, marge, commentaires, arbre
 
     def lire_ligne_python(self, rangee):
-        # Lire le code Python qui débute à la RANGÉE donnée, en lisant
+        # Lire le code Python qui dÃ©bute Ã  la RANGÃ‰E donnÃ©e, en lisant
         # au besoin les lignes de continuation.  Retourner (FIN, MARGE,
-        # COMMENTAIRES, TEXTE), indiquant la ligne suivant l'énoncé trouvé,
+        # COMMENTAIRES, TEXTE), indiquant la ligne suivant l'Ã©noncÃ© trouvÃ©,
         # la grandeur de la marge, une liste des fragments de commentaire
-        # trouvés dans le code Python, puis le texte complet du code Python
-        # sous la forme d'une seule chaîne, y compris les fins de ligne,
-        # mais sans la marge de départ ni les commentaires.
+        # trouvÃ©s dans le code Python, puis le texte complet du code Python
+        # sous la forme d'une seule chaÃ®ne, y compris les fins de ligne,
+        # mais sans la marge de dÃ©part ni les commentaires.
         debut = rangee
         tampon = vim.current.buffer
-        ligne = tampon[rangee-1].rstrip()
+        ligne = tampon[rangee].rstrip()
         marge = marge_gauche(ligne)
         commentaires = []
         lignes = []
@@ -359,10 +463,10 @@ class Disposeur:
                         commentaires.append(ligne[1:])
                     break
                 if ligne == '\\':
-                    if rangee > len(tampon):
+                    if rangee >= len(tampon):
                         break
                     rangee += 1
-                    ligne = tampon[rangee-1].lstrip()
+                    ligne = tampon[rangee].lstrip()
                     lignes.append(ligne)
                     continue
                 match = re.match(r'u?r?(\'\'\'|""")', ligne)
@@ -371,18 +475,18 @@ class Disposeur:
                     terminateur = match.group(1)
                     ligne = ligne[match.end():]
                     while terminateur not in ligne:
-                        if rangee > len(tampon):
+                        if (rangee - debut == self.limite_avant
+                              or rangee + 1 >= len(tampon)):
                             ligne = None
                             break
                         rangee += 1
-                        ligne = tampon[rangee-1].rstrip()
+                        ligne = tampon[rangee].rstrip()
                         lignes.append(ligne)
                     else:
                         position = ligne.find(terminateur)
                         ligne = ligne[position+3:].lstrip()
                     continue
-                match = re.match(r'u?r?'
-                                 r'(\'([^\\\']+|\\.)*\'|"([^\\"]+|\\.)*")',
+                match = re.match(r'u?r?(\'([^\\\']+|\\.)*\'|"([^\\"]+|\\.)*")',
                                  ligne)
                 if match:
                     quelque_chose = True
@@ -392,20 +496,25 @@ class Disposeur:
                 quelque_chose = True
             if not pile and quelque_chose:
                 break
-            if len(lignes) == self.limite_avant or rangee >= len(tampon):
+            if len(lignes) == self.limite_avant or rangee + 1 >= len(tampon):
                 if pile:
                     raise SyntaxError(_("`%s' expected!")
                                       % '\', `'.join(pile[::-1]))
                 raise SyntaxError(_("No Python code!"))
             rangee += 1
-            ligne = tampon[rangee-1].strip()
+            ligne = tampon[rangee].strip()
         return (debut + len(lignes), marge, commentaires,
                 '\n'.join(lignes) + '\n')
 
     def recommenter(self, marge, commentaires):
+        while commentaires:
+            if not commentaires[-1]:
+                del commentaires[-1]
+            elif not commentaires[0]:
+                del commentaires[0]
+            else:
+                break
         if commentaires:
-            while len(commentaires) > 1 and not commentaires[-1]:
-                commentaires.pop()
             if commentaires[-1][-1] not in '.!?':
                 commentaires[-1] += '.'
             while len(commentaires) > 1 and not commentaires[0]:
@@ -424,31 +533,31 @@ class Disposeur:
     def modifier_tampon(self, debut, fin, texte):
         lignes = texte.splitlines()
         tampon = vim.current.buffer
-        if fin-debut != len(lignes) or tampon[debut-1:fin-1] != lignes:
-            tampon[debut-1:fin-1] = lignes
+        if fin - debut != len(lignes) or tampon[debut:fin] != lignes:
+            tampon[debut:fin] = lignes
         return debut + len(lignes)
 
 disposeur = Disposeur()
 montrer_syntaxe = disposeur.montrer_syntaxe
 disposer_en_ligne = disposeur.disposer_en_ligne
 disposer_en_colonne = disposeur.disposer_en_colonne
-disposer_en_colonne_remplie = disposeur.disposer_en_colonne_remplie
-disposer_en_mixte = disposeur.disposer_en_mixte
-disposer_en_mixte_remplie = disposeur.disposer_en_mixte_remplie
+disposer_en_colonne_remplir = disposeur.disposer_en_colonne_remplir
+disposer_en_retrait = disposeur.disposer_en_retrait
+disposer_en_retrait_remplir = disposeur.disposer_en_retrait_remplir
 
-## Outil d'édition d'un arbre syntaxique.
+## Outil d'Ã©dition d'un arbre syntaxique.
 
-NON_ASSOC, ASSOC_GAUCHE, ASSOC_DROITE = range(3)
+declarer_ordinaux('NON_ASSOC', 'ASSOC_GAUCHE', 'ASSOC_DROITE')
 
 def preparer_editeur():
     # Cette fonction modifie les classes structurales de `compiler.ast' pour
-    # leur ajouter les notions de priorité, d'associativité et possiblement
-    # aussi, la chaîne représentant l'opérateur.  Ces informations sont
-    # bien utiles, par exemple pour choisir quand et comment insérer des
-    # parenthèses lors de la reconstruction de la surface d'un énoncé Python.
+    # leur ajouter les notions de prioritÃ©, d'associativitÃ© et possiblement
+    # aussi, la chaÃ®ne reprÃ©sentant l'opÃ©rateur.  Ces informations sont
+    # bien utiles, par exemple pour choisir quand et comment insÃ©rer des
+    # parenthÃ¨ses lors de la reconstruction de la surface d'un Ã©noncÃ© Python.
     for donnees in (
             (0, NON_ASSOC, 'AssTuple', 'Tuple'),
-            (1, NON_ASSOC ,'Lambda'),
+            (1, NON_ASSOC, 'Lambda'),
             (2, ASSOC_GAUCHE, ('Or', 'or')),
             (3, ASSOC_GAUCHE, ('And', 'and')),
             (4, NON_ASSOC, ('Not', 'not')),
@@ -483,200 +592,237 @@ def preparer_editeur():
 
 preparer_editeur()
 
-# La priorité à l'extérieur de toute expression, ou immédiatement à l'intérieur
-# de parenthèses de priorité ou de cisèlement.
+# La prioritÃ© Ã  l'extÃ©rieur de toute expression, ou immÃ©diatement Ã  l'intÃ©rieur
+# de parenthÃ¨ses de prioritÃ© ou de cisÃ¨lement.
 PRIORITE_ENONCE = -1
-# La priorité à l'intérieur d'un tuple.  C'est aussi la priorité lorsqu'un
-# nouveau tuple doit nécessairement être niché dans des parenthèses.
+# La prioritÃ© Ã  l'intÃ©rieur d'un tuple.  C'est aussi la prioritÃ© lorsqu'un
+# nouveau tuple doit nÃ©cessairement Ãªtre nichÃ© dans des parenthÃ¨ses.
 PRIORITE_TUPLE = 0
-# La priorité jusqu'à laquelle un blanc est garanti de part et d'autre des
-# opérateurs.  Au delà de cette priorité, la présence de blancs est décidé
-# par la variable RUSTINE_ESPACES.
-PRIORITE_RUSTINE = 6
-# La priorité des phénomènes tels que l'appel de fonction, l'indicage et
-# le choix d'attributs.  Ces phénomènes sont associatifs à gauche entre eux,
-# et les parenthèses sont supprimées directement dans la fonction EDITER.
+# La prioritÃ© jusqu'Ã  laquelle un blanc est garanti de part et d'autre des
+# opÃ©rateurs.  Au delÃ  de cette prioritÃ©, la prÃ©sence de blancs est dÃ©cidÃ©
+# par la variable ESPACEMENTS.
+PRIORITE_ESPACEMENT = 6
+# La prioritÃ© des phÃ©nomÃ¨nes tels que l'appel de fonction, l'indiÃ§age et le
+# choix d'attributs.  Ces phÃ©nomÃ¨nes sont associatifs Ã  gauche entre eux,
+# et les parenthÃ¨ses sont supprimÃ©es directement dans la fonction EDITER.
 PRIORITE_APPEL = 14
 
-class Editeur(list):
+# Ã‰numÃ©ration des diverses stratÃ©gies de disposition.  Garder en ordre!
+declarer_ordinaux('LIGNE', 'COLONNE', 'RETRAIT')
 
-    # Trois niveaux de mise-au-point sont définis.
-    explications_mise_au_point = (_("Tracing disabled."),
-                                  _("Strategy per text region."),
-                                  _("Tracing choices between solutions."),
-                                  _("Detailed trace, very verbose."))
-    mise_au_point = 0
+# Lorsqu'une tentative de disposition aboutit dans un cul-de-sac logique.
+class Impasse(Exception): pass
 
-    # Énumération des diverses stratégies de disposition.  Garder cet ordre.
-    LIGNE, COLONNE, MIXTE = range(3)
-    noms_strategies = _("Line"), _("Column"), _("Mixed")
+# Quelques caractÃ¨res spÃ©ciaux utilisÃ©s dans la sortie de mise-au-point.
+POINT_AU_CENTRE = 'Â·'
+PIED_DE_MOUCHE = 'Â¶'
 
-    # Les lignes doivent idéalement tenir dans 80 colonnes par défaut.
+class Editeur:
+    # Un Ã‰DITEUR se comporte comme un "visiteur" syntaxique pour le module
+    # `compile'.  Il sait obÃ©ir Ã  des formats et accumule la structure de
+    # surface au fur et Ã  mesure de sa construction.  De plus, il orchestre
+    # une mÃ©canique de continuations qui s'activent lors d'impasses.
+
+    # La mise au point est plutÃ´t verbeuse.
+    mise_au_point = False
+
+    # Accroissement de la marge par niveau d'intentation.
+    indentation = 4
+
+    # Les lignes doivent idÃ©alement tenir dans 80 colonnes par dÃ©faut.
     limite = 80
-    # La stratégie initiale, qui limite les stratégies de disposition.
-    strategie = MIXTE
 
-    # Lorsqu'une tentative de disposition aboutit dans un cul-de-sac logique.
-    class Impasse(Exception): pass
+    # La stratÃ©gie maximale, qui limite les stratÃ©gies de disposition.
+    strategie = RETRAIT
 
-    def __init__(self, marge, strategie, remplir):
-        list.__init__(self)
-        # MARGE donne le nombre de blancs en début de toute nouvelle ligne.
-        self.marge = marge
-        # REMPLIR à True indique que l'on doit remplir les lignes produites
+    # RECRITURE_SANS note quelques amÃ©liorations stylistiques ponctuellement
+    # demandÃ©es par l'utilisateur, mais inactives par dÃ©faut, qui portent
+    # en elles un lÃ©ger risque de modifier la sÃ©mantique du rÃ©sultat.
+    # Sont admissibles: 'apply', 'find', 'has_key', 'print' et 'string'.
+    recriture_sans = []
+
+    def __init__(self, marge, remplir):
+        # BLOCS est une liste de blocs de lignes.  Chacun de ces blocs
+        # est une chaÃ®ne contenant une ou plusieurs lignes, y compris les
+        # terminateurs de ligne.  La caractÃ©ristique d'un bloc de plus d'une
+        # ligne est qu'il ne peut participer Ã  une opÃ©ration de remplissage.
+        self.blocs = []
+        # LIGNE donne le nombre de lignes complÃ©tÃ©es ou dÃ©butÃ©es.
+        self.ligne = 0
+        # COLONNE donne le nombre de colonnes dans la derniÃ¨re ligne.
+        self.colonne = 0
+        # MARGES est une pile de marges.  Chaque marge donne le nombre de
+        # blancs en dÃ©but de toute nouvelle ligne.
+        self.marges = [marge]
+        # FLOTTEMENTS est une pile de flottements.  Chaque flottement donne un
+        # nombre de colonnes libres Ã  garantir sur la derniÃ¨re ligne produite,
+        # une sorte de marge droite supplÃ©mentaire.
+        self.flottements = [0]
+        # REMPLIR Ã  True indique que l'on doit remplir les lignes produites
         # tantque la marge ne change pas, False ou None sinon.  La valeur
         # None indique en plus qu'il n'y a pas de nombre maximum de colonnes.
         self.remplir = remplir
-        # Niveau de récursion dans les appels à EDITER.
-        self.niveau = 0
-        # STRATEGIE indique la stratégie maximale à essayer.  Les stratégies
-        # d'ordinal plus petit seront toujours essayées d'abord.
-        self.strategie = strategie
-        # PRIORITE est la priorité du texte couramment engendré.
-        self.priorite = PRIORITE_ENONCE
-        # ENONCE_DEL indique qu'il s'agit d'un énoncé `del' et que le
-        # mot-clé `del' est déjà écrit.
+        # DEBUTS est une pile de dÃ©buts.  Chaque dÃ©but est le numÃ©ro d'un
+        # bloc Ã  partir duquel un remplissage aura lieu.
+        self.debuts = []
+        # Niveau de rÃ©cursion dans les appels Ã  EDITER, pour fins de trace.
+        self.profondeur = 0
+        # Imbrication courante de parenthÃ¨ses explicities.
+        self.imbrication = 0
+        # PRIORITES est une pile de prioritÃ©s.  Une prioritÃ© qualifie le
+        # texte couramment engendrÃ©.
+        self.priorites = [PRIORITE_ENONCE]
+        # ENONCE_DEL indique qu'il s'agit d'un Ã©noncÃ© `del' et que le mot-clÃ©
+        # `del' est dÃ©jÃ  Ã©crit.
         self.enonce_del = False
-        # RUSTINE_MARGE peut établir un minimum supplémentaire pour la marge.
-        # Voir la documentation de la fonction EDITER pour plus de détails.
-        self.rustine_marge = None
-        # RUSTINE_PARENTHESES commande l'économie possible de parenthèses.
-        # Voir la documentation de la fonction EDITER pour plus de détails.
-        self.rustine_parentheses = False
-        # RUSTINE_ESPACES contrôle l'économie possible de certaines espaces.
-        # Voir la documentation de la fonction EDITER pour plus de détails.
-        self.rustine_espaces = 2
-        # LIGNE donne le nombre de lignes complétées ou débutées.
-        self.ligne = 0
-        # COLONNE donne le nombre de colonnes dans la dernière ligne.
-        self.colonne = 0
-        # Nombre de choix qu'il a fallu faire.  Un choix survient lorsque
-        # TENTER_ESSAIS voit plus d'une possibilité à explorer.
-        self.compteur_choix = 0
-        # Nombre de stratégies effectivement essayées.  Une stratégie n'est pas
-        # comptée lorsqu'elle est la seule possibilité dans TENTER_ESSAIS.
-        self.compteur_essais = 0
-        # Nombre d'impasses rencontrées durant les essais.
-        self.compteur_impasses = 0
+        # MARGES2 est une pile de secondes marges.  Chaque seconde marge
+        # peut Ã©tablir un minimum supplÃ©mentaire pour la marge.  Voir la
+        # documentation de la fonction EDITER pour plus de dÃ©tails.
+        self.marges2 = [None]
+        # ESPACEMENTS est une pile d'espacements.  Chaque espacement contrÃ´le
+        # l'Ã©conomie possible de certaines espaces.  Voir la documentation
+        # de la fonction EDITER pour plus de dÃ©tails.
+        self.espacements = [2]
+        # ECONOMIE peut provoquer l'Ã©conomie d'une paire de parentheÃ¨se.
+        # Voir la documentation de la fonction EDITER pour plus de dÃ©tails.
+        self.economie = False
+        # STRATEGIES est une pile de stratÃ©gies.  Chaque stratÃ©gie est en
+        # train d'Ãªtre essayÃ©e Ã  un niveau d'imbrication particulier.
+        self.strategies = [LIGNE]
 
     def __str__(self):
         return ('\n'.join([ligne.rstrip(' ')
-                           for ligne in ''.join(self).splitlines()])
+                           for ligne in ''.join(self.blocs).splitlines()])
                 + '\n')
 
-    def statistiques(self):
-        fragments = []
-        write = fragments.append
-        write(self.noms_strategies[self.strategie])
-        if self.remplir:
-            write(_(" filled"))
-        write(': ')
-        if self.compteur_essais:
-            if self.compteur_essais > 1:
-                write(_("%d tries") % self.compteur_essais)
-            else:
-                write(_("one try"))
-        else:
-            write(_("no try"))
-        if self.compteur_choix:
-            if self.compteur_choix > 1:
-                write(_(", %d choices") % self.compteur_choix)
-            else:
-                write(_(", one choice"))
-        if self.compteur_impasses:
-            if self.compteur_impasses > 1:
-                write(_(", %d dead-ends") % self.compteur_impasses)
-            else:
-                write(_(", one dead-end"))
-        return ''.join(fragments)
+    def debug_format(self, format, arguments, position, index):
+        if Editeur.mise_au_point:
+            cadre = sys._getframe()
+            while True:
+                cadre = cadre.f_back
+                nom = cadre.f_code.co_name
+                for prefixe in 'visit', 'operateur_':
+                    if nom.startswith(prefixe):
+                        break
+                else:
+                    continue
+                break
+            self.debug_texte((format[:position].replace('%', '')
+                              + POINT_AU_CENTRE
+                              + format[position:].replace('%', '')),
+                             *((nom[len(prefixe):] + ':',) + arguments[:index]
+                               + (POINT_AU_CENTRE,) + arguments[index:]))
 
-    def debug(self, indice, texte=None):
-        if Editeur.mise_au_point > 2:
-            if texte is None:
-                texte = ''
-            else:
-                texte = ': ' + str(texte)
-            sys.stdout.write('%2d%s %s %s %d %d| %d:%d [%s %s %s]%s\n'
-                % (self.niveau, '  ' * self.niveau, indice,
-                   Editeur.noms_strategies[self.strategie], self.priorite,
-                   self.marge, self.ligne, self.colonne, self.rustine_marge,
-                   self.rustine_parentheses, self.rustine_espaces, texte))
+    def debug_texte(self, *arguments):
+        if Editeur.mise_au_point:
+            self.debug(*arguments)
+            if self.blocs:
+                sys.stdout.write(''.join(self.blocs) + PIED_DE_MOUCHE + '\n')
 
-    def debug_texte(self, indice):
-        if Editeur.mise_au_point > 2:
-            self.debug(_("Text ") + indice)
-            sys.stdout.write(''.join(self) + PIED_DE_MOUCHE + '\n')
+    def debug(self, *arguments):
+        if Editeur.mise_au_point:
+            write = sys.stdout.write
+            write('%-16s' % ('%2d %d,%s,%d %d%s'
+                             % (self.priorites[-1],
+                                self.marges[-1], self.marges2[-1] or '',
+                                self.flottements[-1], self.espacements[-1],
+                                ('', '-')[self.economie])))
+            write('%*d' % (-self.profondeur, self.profondeur))
+            assert self.strategies[0] == LIGNE, self.strategies
+            if len(self.strategies) > 1:
+                write(' ')
+                write(''.join([str(strategie)[0]
+                               for strategie in self.strategies[1:]]))
+            for argument in arguments:
+                write(' ')
+                if argument is None:
+                    write('-')
+                elif isinstance(argument, str):
+                    if len(argument) > 16:
+                        write(argument[:13] + '...')
+                    else:
+                        write(argument)
+                elif isinstance(argument, compiler.ast.Node):
+                    write(argument.__class__.__name__)
+                else:
+                    write(repr(argument))
+            write('\n')
 
-    ## Énoncés.
+    ## Ã‰noncÃ©s.
 
     def visitAssert(self, noeud):
-        format = 'assert %=%^'
-        arguments = [PRIORITE_TUPLE, noeud.test]
-        if noeud.fail is not None:
-            format += ', %^'
-            arguments.append(noeud.fail)
-        self.disposer(format, *arguments)
+        format = 'assert%#'
+        arguments = [PRIORITE_TUPLE]
+        if noeud.fail is None:
+            format += ' %^'
+            arguments += [noeud.test]
+        else:
+            format += ' %(%!%^%|%), %^'
+            arguments += [None, noeud.test, noeud.fail]
+        self.traiter(format, *arguments)
 
     def visitAssign(self, noeud):
         format = ''
         arguments = []
         for gauche in noeud.nodes:
-            format += '%^ = '
-            arguments.append(gauche)
-        format += '%^'
-        arguments.append(noeud.expr)
-        self.disposer(format, *arguments)
+            format += '%(%^%|%) = '
+            arguments += [None, gauche]
+        format += '%(%!%^%)'
+        arguments += [None, noeud.expr]
+        self.traiter(format, *arguments)
 
     def visitAugAssign(self, noeud):
-        self.disposer('%^ %s %^', noeud.node, noeud.op, noeud.expr)
+        self.traiter('%(%^%|%) %s %(%!%^%)', None, noeud.node, noeud.op, None,
+                     noeud.expr)
 
     def visitBreak(self, noeud):
-        self.disposer('break')
+        self.traiter('break')
 
     def visitContinue(self, noeud):
-        self.disposer('continue')
+        self.traiter('continue')
 
     def visitDiscard(self, noeud):
-        self.disposer('%^', noeud.expr)
+        self.traiter('%^', noeud.expr)
 
     def visitElif(self, noeud):
-        format = 'elif '
-        arguments = []
         assert len(noeud.tests) == 1, noeud.tests
         for test, enonce in noeud.tests:
-            format += '%^%:'
-            arguments.append(test)
+            self.traiter('elif %;%^%:', test)
+            self.traiter_corps(noeud, enonce)
         assert noeud.else_ is None, noeud.else_
-        self.disposer(format, *arguments)
 
     def visitElse(self, noeud):
-        self.disposer('else:')
+        self.traiter('else:')
 
     def visitExcept(self, noeud):
         if len(noeud.nodes) == 0:
-            self.disposer('except:')
+            self.traiter('except:')
         elif len(noeud.nodes) == 1:
-            self.disposer('except %^%:', noeud.nodes[0])
+            self.traiter('except %;%^%:', noeud.nodes[0])
         else:
-            self.disposer('except %^%:', compiler.ast.Tuple(noeud.nodes))
+            self.traiter('except %;%^%:', compiler.ast.Tuple(noeud.nodes))
 
     def visitExec(self, noeud):
-        format = 'exec %=%^'
-        arguments = [PRIORITE_TUPLE, noeud.expr]
-        if noeud.locals is not None or noeud.globals is not None:
-            format += ' in %^'
-            arguments += [None, noeud.locals]
-        if noeud.globals is not None:
-            format += ', %^'
-            arguments += [None, noeud.globals]
-        self.disposer(format, *arguments)
+        format = 'exec%#'
+        arguments = [PRIORITE_TUPLE]
+        if noeud.globals is None:
+            if noeud.locals is None:
+                format += ' %^'
+                arguments += [noeud.expr]
+            else:
+                format += ' %(%!%^%|%) in %^'
+                arguments += [None, noeud.expr, noeud.locals]
+        else:
+            format += ' %(%!%^%|%) in %(%!%^%|%), %^'
+            arguments += [None, noeud.expr, None, noeud.locals, noeud.globals]
+        self.traiter(format, *arguments)
 
     def visitFinally(self, noeud):
-        self.disposer('finally:')
+        self.traiter('finally:')
 
     def visitFor(self, noeud):
-        self.disposer('for %^ in %^%:', noeud.assign, noeud.list)
-        self.disposer_pass(noeud, noeud.body)
+        self.traiter('for %;%^ in %^%:', noeud.assign, noeud.list)
+        self.traiter_corps(noeud, noeud.body)
         assert noeud.else_ is None, noeud.else_
 
     def visitFrom(self, noeud):
@@ -685,12 +831,12 @@ class Editeur(list):
         separateur = ' '
         for nom, as in noeud.names:
             format += separateur + '%s'
-            arguments.append(nom)
+            arguments += [nom]
             if as is not None:
                 format += ' as %s'
-                arguments.append(as)
+                arguments += [as]
             separateur = ', '
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     def visitGlobal(self, noeud):
         format = 'global'
@@ -698,20 +844,18 @@ class Editeur(list):
         separateur = ' '
         for nom in noeud.names:
             format += separateur + '%s'
-            arguments.append(nom)
+            arguments += [nom]
             separateur = ', '
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     def visitIf(self, noeud):
-        format = 'if '
-        arguments = []
+        separateur = 'if'
         assert len(noeud.tests) == 1, noeud.tests
         for test, enonce in noeud.tests:
-            format += '%^%:'
-            arguments.append(test)
-            self.disposer_pass(noeud, enonce)
+            self.traiter('%s %;%^%:', separateur, test)
+            self.traiter_corps(noeud, enonce)
+            separateur = 'elif'
         assert noeud.else_ is None, noeud.else_
-        self.disposer(format, *arguments)
 
     def visitImport(self, noeud):
         format = 'import'
@@ -719,35 +863,37 @@ class Editeur(list):
         separateur = ' '
         for nom, as in noeud.names:
             format += separateur + '%s'
-            arguments.append(nom)
+            arguments += [nom]
             if as is not None:
                 format += ' as %s'
-                arguments.append(as)
+                arguments += [as]
             separateur = ', '
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     def visitPass(self, noeud):
-        self.disposer('pass')
+        self.traiter('pass')
 
     def visitPrint(self, noeud):
-        self.disposer_print(noeud, False)
+        self.traiter_print(noeud, False)
 
     def visitPrintnl(self, noeud):
-        self.disposer_print(noeud, True)
+        self.traiter_print(noeud, True)
 
     def visitRaise(self, noeud):
-        format = 'raise%='
+        format = 'raise%#'
         arguments = [PRIORITE_TUPLE]
-        if noeud.expr1 is not None:
-            format += ' %^'
-            arguments.append(noeud.expr1)
-        if noeud.expr2 is not None:
-            format += ', %^'
-            arguments.append(noeud.expr2)
-        if noeud.expr3 is not None:
-            format += ', %^'
-            arguments.append(noeud.expr3)
-        self.disposer(format, *arguments)
+        if noeud.expr3 is None:
+            if noeud.expr2 is None:
+                if noeud.expr1 is not None:
+                    format += ' %^'
+                    arguments += [noeud.expr1]
+            else:
+                format += ' %(%!%^%|%), %^'
+                arguments += [None, noeud.expr1, noeud.expr2]
+        else:
+            format = ' %(%!%^%|%), %(%!%^%|%), %^'
+            arguments += [None, noeud.expr1, None, noeud.expr2, noeud.expr3]
+        self.traiter(format, *arguments)
 
     def visitReturn(self, noeud):
         if est_none(noeud.value):
@@ -756,10 +902,10 @@ class Editeur(list):
         else:
             format = 'return %^'
             arguments = [noeud.value]
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     def visitTry(self, noeud):
-        self.disposer('try:')
+        self.traiter('try:')
 
     def visitTryExcept(self, noeud):
         # body, handlers, else_
@@ -769,12 +915,12 @@ class Editeur(list):
         assert False
 
     def visitWhile(self, noeud):
-        self.disposer('while %^%:', noeud.test)
-        self.disposer_pass(noeud, noeud.body)
+        self.traiter('while %;%^%:', noeud.test)
+        self.traiter_corps(noeud, noeud.body)
         assert noeud.else_ is None, noeud.else_
 
     def visitYield(self, noeud):
-        self.disposer('yield %^', noeud.value)
+        self.traiter('yield %^', noeud.value)
 
     ## Expressions.
 
@@ -784,100 +930,96 @@ class Editeur(list):
             format = '%(%s %^%)'
         else:
             format = '%(%s%^%)'
-        rustine_espaces = self.rustine_espaces
-        self.rustine_espaces -= 1
-        try:
-            self.disposer(format, noeud.priorite, operateur, noeud.expr)
-        finally:
-            self.rustine_espaces = rustine_espaces
+        self.espacements[-1] -= 1
+        self.traiter(format, noeud.priorite, operateur, noeud.expr)
+        self.espacements[-1] += 1
 
     def operateur_binaire(self, noeud):
         priorite = noeud.priorite
         if noeud.associativite == ASSOC_DROITE:
-            format = '%(%^%_%|%s%_'
-            arguments = [priorite, noeud.left, noeud.operateur]
+            format = '%(%(%^%_%|%s%_'
+            arguments = [priorite, None, noeud.left, noeud.operateur]
             noeud = noeud.right
             while noeud == priorite:
                 format += '%^%_%|%s%_'
                 arguments += [noeud.left, noeud.operateur]
                 noeud = noeud.right
-            format += '%^%)'
-            arguments.append(noeud)
+            format += '%^%)%)'
+            arguments += [noeud]
         else:
             paires = []
             while noeud.priorite == priorite:
                 paires.append((noeud.operateur, noeud.right))
                 noeud = noeud.left
             paires.reverse()
-            format = '%(%^'
-            arguments = [priorite, noeud]
+            format = '%(%(%^'
+            arguments = [priorite, None, noeud]
             for operateur, expression in paires:
                 format += '%_%|%s%_%^'
                 arguments += [operateur, expression]
-            format += '%)'
-        rustine_espaces = self.rustine_espaces
-        self.rustine_espaces -= 1
-        try:
-            self.disposer(format, *arguments)
-        finally:
-            self.rustine_espaces = rustine_espaces
+            format += '%)%)'
+        self.espacements[-1] -= 1
+        self.traiter(format, *arguments)
+        self.espacements[-1] += 1
+
+    def operateur_masquage(self, noeud):
+        self.espacements[-1] -= 1
+        self.operateur_multiple(noeud)
+        self.espacements[-1] += 1
 
     def operateur_multiple(self, noeud):
-        rustine_espaces = self.rustine_espaces
-        self.rustine_espaces -= 1
-        try:
-            self.operateur_multiple_logique(noeud)
-        finally:
-            self.rustine_espaces = rustine_espaces
-
-    def operateur_multiple_logique(self, noeud):
-        format = '%(%^'
-        arguments = [noeud.priorite, noeud.nodes[0]]
+        format = '%(%(%^'
+        arguments = [noeud.priorite, None, noeud.nodes[0]]
         for expression in noeud.nodes[1:]:
             if noeud.operateur.isalpha():
                 format += ' %|%s %^'
             else:
                 format += '%_%|%s%_%^'
             arguments += [noeud.operateur, expression]
-        format += '%)'
-        self.disposer(format, *arguments)
+        format += '%)%)'
+        self.traiter(format, *arguments)
 
     visitAdd = operateur_binaire
-    visitAnd = operateur_multiple_logique
+    visitAnd = operateur_multiple
 
     def visitBackquote(self, noeud):
-        self.disposer('repr(%^)', noeud.expr)
+        self.traiter('repr(%^)', noeud.expr)
 
-    visitBitand = operateur_multiple
-    visitBitor = operateur_multiple
-    visitBitxor = operateur_multiple
+    visitBitand = operateur_masquage
+    visitBitor = operateur_masquage
+    visitBitxor = operateur_masquage
 
     def visitCallFunc(self, noeud):
+        if (self.recrire_sans_apply(noeud) or self.recrire_sans_has_key(noeud)
+              or self.recrire_sans_string(noeud)):
+            return
         compte = (len(noeud.args) + bool(noeud.star_args)
                   + bool(noeud.dstar_args))
         if compte == 0:
-            self.disposer('%!%(%^()%)', noeud.priorite, noeud.node)
+            self.traiter('%(%^()%)', noeud.priorite, noeud.node)
             return
-        format = r'%!%(%^(%\%='
+        format = '%!%(%^(%\\'
         arguments = [noeud.priorite, noeud.node, PRIORITE_TUPLE]
         if compte == 1:
             format += '%!'
         separateur = ''
         for expression in noeud.args:
             format += separateur + '%^'
-            arguments.append(expression)
+            arguments += [expression]
             separateur = ', %|'
         if noeud.star_args is not None:
             format += separateur + '*%^'
-            arguments.append(noeud.star_args)
+            arguments += [noeud.star_args]
             separateur = ', %|'
         if noeud.dstar_args is not None:
             format += separateur + '**%^'
-            arguments.append(noeud.dstar_args)
+            arguments += [noeud.dstar_args]
         format += ')%)%/'
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     def visitCompare(self, noeud):
+        if self.recrire_sans_find(noeud):
+            return
         format = '%(%^'
         arguments = [noeud.priorite, noeud.expr]
         for operateur, comparand in noeud.ops:
@@ -887,18 +1029,18 @@ class Editeur(list):
                 format += '%_%|%s%_%^'
             arguments += [operateur, comparand]
         format += '%)'
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     def visitConst(self, noeud):
         if isinstance(noeud.value, str):
-            self.disposer_chaine(noeud.value)
+            self.traiter_chaine(noeud.value)
         elif isinstance(noeud.value, (int, float)):
-            self.disposer_constante(noeud.value)
+            self.traiter_constante(noeud.value)
         else:
             assert False, (type(noeud.value), noeud.value)
 
     def visitDict(self, noeud):
-        format = r'%!%({%\%='
+        format = '%!%({%\\'
         arguments = [noeud.priorite, PRIORITE_TUPLE]
         separateur = ''
         for cle, valeur in noeud.items:
@@ -906,7 +1048,7 @@ class Editeur(list):
             arguments += [cle, valeur]
             separateur = ', %|'
         format += '}%)%/'
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     visitDiv = operateur_binaire
     visitFloorDiv = operateur_binaire
@@ -918,8 +1060,8 @@ class Editeur(list):
             attributs.append(noeud.attrname)
             noeud = noeud.expr
         attributs.reverse()
-        self.disposer('%(%^' + '%|.%s'*len(attributs) + '%)',
-                       noeud.priorite, noeud, *attributs)
+        self.traiter('%(%^' + '%|.%s'*len(attributs) + '%)', noeud.priorite,
+                     noeud, *attributs)
 
     visitInvert = operateur_unaire
 
@@ -947,7 +1089,7 @@ class Editeur(list):
         separateur = ' '
         for ordinaire in ordinaires:
             format += separateur + '%s'
-            arguments.append(ordinaire)
+            arguments += [ordinaire]
             separateur = ', %|'
         if noeud.defaults:
             for cle, valeur in zip(cles, noeud.defaults):
@@ -956,74 +1098,85 @@ class Editeur(list):
                 separateur = ', %|'
         if star_args is not None:
             format += separateur + '*%s'
-            arguments.append(star_args)
+            arguments += [star_args]
             separateur = ', %|'
         if dstar_args is not None:
             format += separateur + '**%s'
-            arguments.append(dstar_args)
+            arguments += [dstar_args]
         format += ': %^%)'
-        arguments.append(noeud.code)
-        self.disposer(format, *arguments)
+        arguments += [noeud.code]
+        self.traiter(format, *arguments)
 
     visitLeftShift = operateur_binaire
 
     def visitList(self, noeud):
-        format = r'%!%([%\%='
+        format = '%!%([%\\'
+        if len(noeud.nodes) == 1:
+            format += '%!'
         arguments = [PRIORITE_APPEL, PRIORITE_TUPLE]
         separateur = ''
         for expression in noeud.nodes:
             format += separateur + '%^'
-            arguments.append(expression)
+            arguments += [expression]
             separateur = ', %|'
         format += ']%)%/'
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     def visitListComp(self, noeud):
-        format = r'%!%([%\%=%^'
-        arguments = [PRIORITE_TUPLE, noeud.expr]
-        for expression in noeud.quals:
-            format += ' %|%^'
-            arguments.append(expression)
-        format += ']%)%/'
-        self.disposer(format, *arguments)
+        self.traiter(r'%!%([%\%^' + '%^'*len(noeud.quals) + ']%)%/',
+                     PRIORITE_APPEL, PRIORITE_TUPLE, noeud.expr, *noeud.quals)
 
     visitMod = operateur_binaire
     visitMul = operateur_binaire
 
     def visitName(self, noeud):
-        self.disposer('%s', noeud.name)
+        self.traiter('%s', noeud.name)
 
     visitNot = operateur_unaire
-    visitOr = operateur_multiple_logique
+    visitOr = operateur_multiple
     visitPower = operateur_binaire
     visitRightShift = operateur_binaire
 
     def visitSlice(self, noeud):
-        format = self.peut_etre_del(noeud) + r'%^%!%([%\%='
+        format = self.peut_etre_del(noeud) + '%^%!%([%\\'
         arguments = [noeud.expr, noeud.priorite, PRIORITE_ENONCE]
         if noeud.lower is not None:
             format += '%|%^'
-            arguments.append(noeud.lower)
+            arguments += [noeud.lower]
         format += '%|:'
         if noeud.upper is not None:
             format += '%^'
-            arguments.append(noeud.upper)
+            arguments += [noeud.upper]
         format += ']%)%/'
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     visitSub = operateur_binaire
 
     def visitSubscript(self, noeud):
-        assert len(noeud.subs) == 1, noeud.subs
-        self.disposer(self.peut_etre_del(noeud) + r'%^%!%([%\%=%|%^]%)%/',
-            noeud.expr, noeud.priorite, PRIORITE_ENONCE, noeud.subs[0])
+        indices = noeud.subs
+        # REVOIR: Le cas du 1-tuple n'est pas simplifiÃ©, pour Ãªtre consistant
+        # avec un bug dans `compiler': d[0] et d[0,] n'y sont pas distinguÃ©s.
+        if (len(indices) == 1 and isinstance(indices[0], compiler.ast.Tuple)
+              and len(indices[0].nodes) > 1):
+            indices = indices[0].nodes
+        format = self.peut_etre_del(noeud) + '%(%^%!%([%\\'
+        arguments = [noeud.priorite, noeud.expr, None, PRIORITE_TUPLE]
+        if len(indices) == 1:
+            format += '%!%^'
+            arguments += indices
+        else:
+            format += ', %|'.join(['%^'] * len(indices))
+            for indice in indices:
+                arguments += [indice]
+        format += ']%)%)%/'
+        self.traiter(format, *arguments)
 
     def visitTuple(self, noeud):
         if len(noeud.nodes) == 0:
             format = '()'
             arguments = []
         elif len(noeud.nodes) == 1:
-            format = '%(%^,%)'
+            format = '%(%!%^,%)'
             arguments = [PRIORITE_TUPLE, noeud.nodes[0]]
         else:
             format = '%('
@@ -1031,10 +1184,10 @@ class Editeur(list):
             separateur = ''
             for expression in noeud.nodes:
                 format += separateur + '%^'
-                arguments.append(expression)
+                arguments += [expression]
                 separateur = ', %|'
             format += '%)'
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     visitUnaryAdd = operateur_unaire
     visitUnarySub = operateur_unaire
@@ -1049,34 +1202,33 @@ class Editeur(list):
             attributs.append(noeud.attrname)
             noeud = noeud.expr
         attributs.reverse()
-        self.disposer(
-            format + '%(%^' + '%|.%s'*len(attributs) + '%)',
-            noeud.priorite, noeud, *attributs)
+        self.traiter(format + '%(%^' + '%|.%s'*len(attributs) + '%)',
+                     noeud.priorite, noeud, *attributs)
 
     def visitAssName(self, noeud):
-        self.disposer(self.peut_etre_del(noeud) + '%s', noeud.name)
+        self.traiter(self.peut_etre_del(noeud) + '%s', noeud.name)
 
     visitAssList = visitList
     visitAssTuple = visitTuple
 
     def visitClass(self, noeud):
-        format = 'class %s'
+        format = 'class %s%;'
         arguments = [noeud.name]
         if noeud.bases:
             format += '('
             separateur = ''
             for base in noeud.bases:
                 format += separateur + '%^'
-                arguments.append(base)
+                arguments += [base]
                 separateur = ', %|'
             format += ')'
         format += '%:'
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
         assert noeud.doc is None, noeud.doc
-        self.disposer_pass(noeud, noeud.code)
+        self.traiter_corps(noeud, noeud.code)
 
     def visitEllipsis(self, noeud):
-        self.disposer('...')
+        self.traiter('...')
 
     def visitFunction(self, noeud):
         flags = noeud.flags
@@ -1097,12 +1249,12 @@ class Editeur(list):
         if noeud.defaults:
             cles = ordinaires[-len(noeud.defaults):]
             ordinaires = ordinaires[:-len(noeud.defaults)]
-        format = 'def %s(%='
+        format = 'def %s%;(%\\'
         arguments = [noeud.name, PRIORITE_TUPLE]
         separateur = ''
         for ordinaire in ordinaires:
             format += separateur + '%s'
-            arguments.append(ordinaire)
+            arguments += [ordinaire]
             separateur = ', %|'
         if noeud.defaults:
             for cle, valeur in zip(cles, noeud.defaults):
@@ -1111,37 +1263,33 @@ class Editeur(list):
                 separateur = ', %|'
         if star_args is not None:
             format += separateur + '*%s'
-            arguments.append(star_args)
+            arguments += [star_args]
             separateur = ', %|'
         if dstar_args is not None:
             format += separateur + '**%s'
-            arguments.append(dstar_args)
-        format += ')%:'
-        self.disposer(format, *arguments)
+            arguments += [dstar_args]
+        format += ')%:%/'
+        self.traiter(format, *arguments)
         assert noeud.doc is None, noeud.doc
-        self.disposer_pass(noeud, noeud.code)
+        self.traiter_corps(noeud, noeud.code)
 
     def visitKeyword(self, noeud):
-        self.disposer('%s=%^', noeud.name, noeud.expr)
+        self.traiter('%s=%^', noeud.name, noeud.expr)
 
     def visitListCompFor(self, noeud):
-        format = 'for %^ in %^'
-        arguments = [noeud.assign, noeud.list]
-        for expression in noeud.ifs:
-            format += ' %^'
-            arguments.append(expression)
-        self.disposer(format, *arguments)
+        self.traiter(' %|for %#%^ in %^' + '%^'*len(noeud.ifs),
+                     PRIORITE_ENONCE, noeud.assign, noeud.list, *noeud.ifs)
 
     def visitListCompIf(self, noeud):
-        self.disposer('if %^', noeud.test)
+        self.traiter(' %|if %^', noeud.test)
 
     def visitModule(self, noeud):
         if noeud.doc is None:
-            self.disposer('%^', noeud.node)
+            self.traiter('%^', noeud.node)
         else:
             assert isinstance(noeud.node, compiler.ast.Stmt)
             assert len(noeud.node.nodes) == 0, noeud.node
-            self.disposer_chaine(noeud.doc, triple=True)
+            self.traiter_chaine(noeud.doc, triple=True)
 
     def visitSliceobj(self, noeud):
         format = ''
@@ -1151,71 +1299,199 @@ class Editeur(list):
             format += separateur
             if not est_none(expression):
                 format += '%^'
-                arguments.append(expression)
+                arguments += [expression]
             separateur = '%|:'
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
     def visitStmt(self, noeud):
         assert len(noeud.nodes) == 1, noeud
-        self.disposer('%^' * len(noeud.nodes), *noeud.nodes)
+        self.traiter('%^' * len(noeud.nodes), *noeud.nodes)
 
-    ## Méthodes de service.
+    ## RÃ©critures spÃ©cialisÃ©es.
+
+    def recrire_sans_apply(self, noeud):
+        if 'apply' not in self.recriture_sans:
+            return
+        from compiler.ast import CallFunc, Name
+        if (isinstance(noeud, CallFunc) and len(noeud.args) == 2
+              and not (noeud.star_args or noeud.dstar_args)
+              and isinstance(noeud.node, Name) and noeud.node.name == 'apply'):
+            self.visit(CallFunc(noeud.args[0], (), star_args=noeud.args[1]))
+            return True
+        return False
+
+    def recrire_sans_find(self, noeud):
+        if 'find' not in self.recriture_sans:
+            return
+        from compiler.ast import CallFunc, Compare, Const, Getattr, UnarySub
+        if (isinstance(noeud, Compare) and len(noeud.ops) == 1
+              and isinstance(noeud.expr, CallFunc)
+              and len(noeud.expr.args) == 1
+              and not (noeud.expr.star_args or noeud.expr.dstar_args)
+              and isinstance(noeud.expr.node, Getattr)
+              and noeud.expr.node.attrname == 'find'):
+            operateur, comparand = noeud.ops[0]
+            if (isinstance(comparand, UnarySub)
+                  and isinstance(comparand.expr, Const)
+                  and comparand.expr.value == 1):
+                if operateur == '==':
+                    operateur = 'not in'
+                elif operateur == '!=':
+                    operateur = 'in'
+                else:
+                    return False
+            elif isinstance(comparand, Const) and comparand.value == 0:
+                if operateur == '<':
+                    operateur = 'not in'
+                elif operateur == '>=':
+                    operateur = 'in'
+                else:
+                    return False
+            self.visit(Compare(noeud.expr.args[0],
+                               [(operateur, noeud.expr.node.expr)]))
+            return True
+        return False
+
+    def recrire_sans_has_key(self, noeud):
+        if 'has_key' not in self.recriture_sans:
+            return
+        from compiler.ast import CallFunc, Compare, Getattr, Name
+        if (isinstance(noeud, CallFunc) and len(noeud.args) == 1
+              and not (noeud.star_args or noeud.dstar_args)
+              and isinstance(noeud.node, Getattr)
+              and noeud.node.attrname == 'has_key'):
+            self.visit(Compare(noeud.args[0], [('in', noeud.node.expr)]))
+            return True
+        return False
+
+    def recrire_sans_print(self, noeud, nl):
+        if 'print' not in self.recriture_sans:
+            return
+        from compiler.ast import Add, CallFunc, Const, Getattr, Mod, Name, Tuple
+        format = ''
+        arguments = []
+        separateur = ''
+        for expression in noeud.nodes:
+            if (isinstance(expression, Mod)
+                  and isinstance(expression.left, Const)
+                  and isinstance(expression.left.value, str)):
+                format += separateur + expression.left.value
+                if isinstance(expression.right, Tuple):
+                    arguments += expression.right.nodes
+                else:
+                    arguments += [expression.right]
+            elif (isinstance(expression, Const)
+                  and isinstance(expression.value, str)
+                  and '%' not in expression.value):
+                format += separateur + expression.value
+            else:
+                format += separateur + '%s'
+                arguments += [expression]
+            separateur = ' '
+        if nl:
+            separateur = '\n'
+        if noeud.dest is None:
+            dest = Getattr(Name('sys'), 'stdout')
+        else:
+            dest = noeud.dest
+        if len(arguments) == 0:
+            self.visit(CallFunc(Getattr(dest, 'write'),
+                                [Const(format + separateur)]))
+        elif len(arguments) == 1:
+            if format == '%s':
+                if (isinstance(arguments[0], Const)
+                      and isinstance(arguments[0].value, str)):
+                    self.visit(
+                        CallFunc(Getattr(dest, 'write'),
+                                 [Const(arguments[0].value + separateur)]))
+                else:
+                    self.visit(
+                        CallFunc(Getattr(dest, 'write'),
+                                 [Add([CallFunc(Name('str'), arguments),
+                                       Const(separateur)])]))
+            else:
+                self.visit(CallFunc(Getattr(dest, 'write'),
+                                    [Mod([Const(format + separateur),
+                                          arguments[0]])]))
+        else:
+            self.visit(CallFunc(Getattr(dest, 'write'),
+                                [Mod([Const(format + separateur),
+                                      Tuple(arguments)])]))
+        return True
+
+    def recrire_sans_string(self, noeud):
+        if 'string' not in self.recriture_sans:
+            return
+        from compiler.ast import CallFunc, Const, Getattr, Name
+        if (isinstance(noeud, CallFunc) and len(noeud.args) > 0
+              and not (noeud.star_args or noeud.dstar_args)
+              and isinstance(noeud.node, Getattr)
+              and isinstance(noeud.node.expr, Name)
+              and noeud.node.expr.name == 'string'):
+            methode = noeud.node.attrname
+            if methode == 'join':
+                if len(noeud.args) == 1:
+                    self.visit(CallFunc(Getattr(Const(' '), 'join'),
+                                        [noeud.args[0]]))
+                    return True
+                if len(noeud.args) == 2:
+                    self.visit(CallFunc(Getattr(noeud.args[1], 'join'),
+                                        [noeud.args[0]]))
+                    return True
+            elif methode in ('capitalize', 'center', 'count', 'expandtabs',
+                             'find', 'index', 'ljust', 'lower', 'lstrip',
+                             'replace', 'rfind', 'rindex', 'rjust', 'rstrip',
+                             'split', 'strip', 'swapcase', 'translate',
+                             'upper', 'zfill'):
+                self.visit(CallFunc(Getattr(noeud.args[0], methode),
+                                    noeud.args[1:]))
+                return True
+        return False
+
+    ## MÃ©thodes de service.
 
     def peut_etre_del(self, noeud):
         if self.enonce_del:
             assert noeud.flags == compiler.consts.OP_DELETE, (
-                    noeud, noeud.flags)
+                noeud, noeud.flags)
             return ''
         if noeud.flags == compiler.consts.OP_DELETE:
             self.enonce_del = True
             return 'del '
-        assert (noeud.flags in (compiler.consts.OP_APPLY,
-                                compiler.consts.OP_ASSIGN)), (
-                    noeud, noeud.flags)
+        assert noeud.flags in (compiler.consts.OP_APPLY,
+                               compiler.consts.OP_ASSIGN), (noeud, noeud.flags)
         return ''
 
-    def disposer_pass(self, noeud, enonce):
+    def traiter_corps(self, noeud, enonce):
         assert isinstance(enonce, compiler.ast.Stmt), enonce
         assert len(enonce.nodes) == 1, enonce
-        assert isinstance(enonce.nodes[0], compiler.ast.Pass), enonce
         if not hasattr(noeud, 'rustine'):
+            self.traiter(r'%\ %|%^%/', PRIORITE_ENONCE, enonce.nodes[0])
 
-            def essai():
-                self.editer(' pass')
-
-            def essai_2():
-                self.editer('%|    pass')
-
-            self.tenter_triplet(essai, essai_2, essai_2)
-
-    def disposer_print(self, noeud, nl):
-        format = 'print%='
+    def traiter_print(self, noeud, nl):
+        if self.recrire_sans_print(noeud, nl):
+            return
+        format = 'print%#'
         arguments = [PRIORITE_TUPLE]
         separateur = ' '
         if noeud.dest is not None:
             format += separateur + '>>%^'
-            arguments.append(noeud.dest)
+            arguments += [noeud.dest]
             separateur = ', '
         for expression in noeud.nodes:
             format += separateur + '%^'
-            arguments.append(expression)
+            arguments += [expression]
             separateur = ', '
         if not nl:
             format += ','
-        self.disposer(format, *arguments)
+        self.traiter(format, *arguments)
 
-    # REVOIR: Peut-être transporter le type original? (raw, '', "", """)
-    def disposer_chaine(self, texte, triple=False):
-        # Formatter TEXTE au mieux.  Si TRIPLE, forcer un triple délimiteur.
+    # REVOIR: Peut-Ãªtre transporter le type original? (raw, '', "", """)
+    def traiter_chaine(self, texte, triple=False):
+        # Formatter TEXTE au mieux.  Si TRIPLE, forcer un triple dÃ©limiteur.
 
-        # DELIMITEUR reçoit le meilleur délimiteur pour représenter TEXTE,
-        # c'est-à-dire un guillemet si la chaîne semble être écrite en langue
-        # naturelle, ou un apostrophe autrement.
-        delimiteur = '\''
-        # RAW est vrai si la chaîne peut avoir le préfixe `r'.
-        raw = '\\' in texte and (len(texte) - len(texte.rstrip('\\'))) % 2 == 0
-        # MEILLEURE est la longueur de la plus grande séquence de lettres.
-        # SEQUENCE est la longueur de la séquence de lettres la plus récente.
+        # MEILLEURE est la longueur de la plus grande sÃ©quence de lettres.
+        # SEQUENCE est la longueur de la sÃ©quence de lettres la plus rÃ©cente.
         # COMPTEUR est le nombre de lettres dans tout TEXTE.
         meilleure = 0
         sequence = 0
@@ -1228,71 +1504,67 @@ class Editeur(list):
                 if sequence > meilleure:
                     meilleure = sequence
                 sequence = 0
-                if raw and caractere != '\\' and not est_imprimable(caractere):
-                    raw = False
-        # Comment déterminer si une chaîne est un fragment en langue naturelle?
-        # Je dois me contenter d'heuristiques simples.  Voici celle que
-        # Richard Stallman m'a suggérée et que j'ai mise en application dans
-        # `po-mode.el'.  Trois lettres d'affilée?  Alors oui.  Jamais deux
-        # lettres d'affilée?  Alors non.  Sinon, alors oui si plus de lettres
-        # que de non-lettres.  Mais ce code ne me satisfait pas vraiment,
-        # je le laisse en commentaire ici!
+
+        # DELIMITEUR reÃ§oit le meilleur dÃ©limiteur pour reprÃ©senter TEXTE,
+        # c'est-Ã -dire un guillemet si la chaÃ®ne semble Ãªtre Ã©crite en
+        # langue naturelle, ou un apostrophe autrement.  Comment dÃ©terminer
+        # si une chaÃ®ne est un fragment en langue naturelle?  Je dois me
+        # contenter d'heuristiques simples.
+        # REVOIR: Une chaÃ®ne comprise dans _() devrait toujours utiliser ".
+
+        # Voici celle que Richard Stallman m'a suggÃ©rÃ©e et que j'ai mise
+        # en application dans `po-mode.el'.  Trois lettres d'affilÃ©e?
+        # Alors oui.  Jamais deux lettres d'affilÃ©e?  Alors non.  Sinon,
+        # alors oui si plus de lettres que de non-lettres.  Mais ce code ne
+        # me satisfait pas vraiment, je le laisse en commentaire ici!
         if False:
-            if meilleure >= 3 or meilleure == 2 and 2*compteur > len(texte):
+            if meilleure >= 3 or meilleure == 2 and 2 * compteur > len(texte):
                 delimiteur = '"'
-        # Je préfère tenter l'heuristique suivante, qui considère qu'un
-        # fragment est en langue naturelle si un blanc y apparaît, si l'on
+            else:
+                delimiteur = '\''
+        # Je prÃ©fÃ¨re tenter l'heuristique suivante, qui considÃ¨re qu'un
+        # fragment est en langue naturelle si un blanc y apparaÃ®t, si l'on
         # y trouve un mot d'au moins quatre lettres, et s'il y a au moins
-        # trois fois plus de lettres que de non-lettres.
-        if ' ' in texte and meilleure >= 4 and 4*compteur > len(texte):
+        # deux fois plus de lettres que de non-lettres.
+        if ' ' in texte and meilleure >= 4 and 3 * compteur > len(texte):
             delimiteur = '"'
+        else:
+            delimiteur = '\''
+        # RAW indique si l'on doit prÃ©fixer la chaÃ®ne par `r'.
+        raw = meilleure_en_raw(texte, delimiteur)
 
         def essai_delimiteur_ligne():
             # Tenter une disposition tout d'un pain sur une ligne.
-            write = self.write
-            if raw:
-                write('r' + delimiteur + texte + delimiteur)
-            else:
-                substitutions = {delimiteur: '\\'+delimiteur, '\\': r'\\',
-                                 '\a': r'\a', '\b': r'\b', '\f': r'\f',
-                                 '\n': r'\n', '\t': r'\t', '\v': r'\v'}
-                write(delimiteur)
-                for caractere in texte:
-                    if caractere in substitutions:
-                        write(substitutions[caractere])
-                    elif not est_imprimable(caractere):
-                        write(repr(caractere)[1:-1])
-                    else:
-                        write(caractere)
-                write(delimiteur)
+            self.write(chaine_python(texte, delimiteur))
 
         def essai_delimiteur_simple():
-            # Tenter une disposition avec des délimiteurs simples, quitte
-            # à découper la chaîne en plusieurs morceaux à concaténer et à
+            # Tenter une disposition avec des dÃ©limiteurs simples, quitte
+            # Ã  dÃ©couper la chaÃ®ne en plusieurs morceaux Ã  concatÃ©ner et Ã 
             # disposer chacun sur une ligne.
             if raw:
                 format_debut = 'r' + delimiteur
             else:
                 format_debut = delimiteur
-                substitutions = {delimiteur: '\\'+delimiteur, '\\': r'\\',
+                substitutions = {delimiteur: '\\' + delimiteur, '\\': r'\\',
                                  '\a': r'\a', '\b': r'\b', '\f': r'\f',
                                  '\n': r'\n', '\t': r'\t', '\v': r'\v'}
             format_fin = '%s' + delimiteur
             format = '%(' + format_debut
             arguments = [None]
-            # Effectuer une édition bidon, juste pour savoir dans quelle
-            # colonne la chaîne débuterait.  Nous prévoierons nous-mêmes
+            # Effectuer une Ã©dition bidon, juste pour savoir dans quelle
+            # colonne la chaÃ®ne dÃ©buterait.  Nous prÃ©voierons nous-mÃªmes
             # les coupures de ligne une fois cette colonne connue.
-            point = Point_reprise(self)
-            self.editer(format, *arguments)
+            reprise = Reprise(self)
+            self.traiter(format, *arguments)
             marge = colonne = self.colonne
-            point.reprise()
-            del point.editeur
-            # Formatter un mot à la fois, blancs préfixes inclus.
-            # Changer de ligne si il n'y a plus de place pour le mot.
+            reprise.ramener()
+            del reprise.editeur
+            # Formatter un mot Ã  la fois, blancs prÃ©fixes inclus.  Changer de
+            # ligne si il n'y a plus de place pour le mot.
+            strategie = self.strategies[-1]
             remplir = self.remplir
-            # On imagine un fragment bidon au début, qui est nul, dans le
-            # but d'inhiber une seconde production d'un début de format.
+            # On imagine un fragment bidon au dÃ©but, qui est nul, dans le
+            # but d'inhiber une seconde production d'un dÃ©but de format.
             fragments_ligne = ['']
             fragments_mot = ['']
             write = fragments_mot.append
@@ -1304,17 +1576,16 @@ class Editeur(list):
                         if fragments_mot:
                             mot = ''.join(fragments_mot)
                             del fragments_mot[:]
-                            # S'assurer de deux colonnes de jeu pour récrire
-                            # le délimiteur si la chaîne doit être brisée sur
-                            # plusieurs lignes, et pour la parenthèse fermante
-                            # clôturant une série de chaînes concaténées.
+                            # S'assurer de deux colonnes de jeu pour rÃ©crire
+                            # le dÃ©limiteur si la chaÃ®ne doit Ãªtre brisÃ©e sur
+                            # plusieurs lignes, et pour la parenthÃ¨se fermante
+                            # clÃ´turant une sÃ©rie de chaÃ®nes concatÃ©nÃ©es.
                             if (remplir is not None
-                                    and colonne+len(mot) > Editeur.limite-2):
-                                if self.strategie == self.LIGNE:
-                                    raise Editeur.Impasse(
-                                        _("String too long"))
+                                  and colonne + len(mot) > Editeur.limite - 2):
+                                if strategie == LIGNE:
+                                    raise Impasse(_("String too long"))
                                 format += format_fin
-                                arguments.append(''.join(fragments_ligne))
+                                arguments += [''.join(fragments_ligne)]
                                 del fragments_ligne[:]
                                 colonne = marge
                             if not fragments_ligne:
@@ -1338,447 +1609,522 @@ class Editeur(list):
                         del fragments_mot[:]
                         # Pour le `-2', voir le commentaire plus haut.
                         if (remplir is not None
-                                and colonne+len(mot) > Editeur.limite-2):
-                            if self.strategie == self.LIGNE:
-                                raise Editeur.Impasse(_("String too long"))
+                              and colonne + len(mot) > Editeur.limite - 2):
+                            if strategie == LIGNE:
+                                raise Impasse(_("String too long"))
                             format += format_fin
-                            arguments.append(''.join(fragments_ligne))
+                            arguments += [''.join(fragments_ligne)]
                             del fragments_ligne[:]
                         if not fragments_ligne:
                             format += '%|' + format_debut
                         fragments_ligne.append(mot)
                         format += format_fin
-                        arguments.append(''.join(fragments_ligne))
+                        arguments += [''.join(fragments_ligne)]
                         del fragments_ligne[:]
                         colonne = marge
                         etat = BLANC
             if fragments_mot:
                 mot = ''.join(fragments_mot)
                 # Pour le `-2', voir le commentaire plus haut.
-                if remplir is not None and colonne+len(mot) > Editeur.limite-2:
-                    if self.strategie == self.LIGNE:
-                        raise Editeur.Impasse(_("String too long"))
+                if (remplir is not None
+                      and colonne + len(mot) > Editeur.limite - 2):
+                    if strategie == LIGNE:
+                        raise Impasse(_("String too long"))
                     format += format_fin
-                    arguments.append(''.join(fragments_ligne))
+                    arguments += [''.join(fragments_ligne)]
                     del fragments_ligne[:]
                 if not fragments_ligne:
                     format += '%|' + format_debut
                 fragments_ligne.append(mot)
             if fragments_ligne:
                 format += format_fin
-                arguments.append(''.join(fragments_ligne))
+                arguments += [''.join(fragments_ligne)]
             format += '%)'
-            # S'assurer aussi qu'aucun remplissage n'aura lieu.
             if remplir is not None:
                 self.remplir = False
             try:
-                self.editer(format, *arguments)
+                self.traiter(format, *arguments)
             finally:
                 self.remplir = remplir
 
         def essai_delimiteur_triple():
-            # Tenter une disposition avec un triple délimiteur.
+            # Tenter une disposition avec un triple dÃ©limiteur.
             fragments = []
             write = fragments.append
             if raw:
-                write('r' + delimiteur * 3 + '\\\n')
+                write('r' + delimiteur*3 + '\\\n')
             else:
-                write(delimiteur * 3 + '\\\n')
-                # `\n' se substitue par lui-même, tout simplement.
+                write(delimiteur*3 + '\\\n')
+                # `\n' se substitue par lui-mÃªme, tout simplement.
                 substitutions = {'\n': '\n', '\\': r'\\', '\a': r'\a',
                                  '\b': r'\b', '\f': r'\f', '\v': r'\v'}
-            for caractere in texte:
-                if raw:
-                    write(caractere)
-                elif caractere in substitutions:
-                    write(substitutions[caractere])
-                elif not est_imprimable(caractere):
-                    write(repr(caractere)[1:-1])
-                else:
-                    write(caractere)
+            if texte:
+                for caractere in texte:
+                    if raw:
+                        write(caractere)
+                    elif caractere in substitutions:
+                        write(substitutions[caractere])
+                    elif not est_imprimable(caractere):
+                        write(repr(caractere)[1:-1])
+                    else:
+                        write(caractere)
+            else:
+                caractere = None
             if caractere != '\n':
                 write('\\\n')
             write(delimiteur * 3)
             self.write(''.join(fragments))
 
-        essais = []
-        if not texte or not triple:
-            essais.append((essai_delimiteur_ligne, self.LIGNE))
-        if texte and not triple:
-            essais.append((essai_delimiteur_simple, self.COLONNE))
-            essais.append((essai_delimiteur_simple, self.MIXTE))
-        if texte:
-            essais.append((essai_delimiteur_triple, self.COLONNE))
-            essais.append((essai_delimiteur_triple, self.MIXTE))
-        self.tenter_essais(*essais)
+        if triple:
+            essai_delimiteur_triple()
+        elif self.strategies[-1] == LIGNE or len(texte) < 25:
+            essai_delimiteur_ligne()
+        else:
+            self.profondeur += 1
+            try:
+                def fonction((routine, strategie)):
+                    self.strategies.append(strategie)
+                    routine()
+                    del self.strategies[-1]
+                branchement = (
+                    Branchement(self, None, None, fonction,
+                                ((essai_delimiteur_ligne, LIGNE),
+                                 (essai_delimiteur_simple, COLONNE),
+                                 (essai_delimiteur_triple, COLONNE))))
+                for position, index, fonction, avenue in branchement:
+                    try:
+                        fonction(avenue)
+                    except Impasse:
+                        pass
+                    else:
+                        branchement.sauver_solution()
+                branchement.completer()
+            finally:
+                self.profondeur -= 1
 
-    def disposer_constante(self, valeur):
-        # Formatter la constante VALEUR, qui ne peut être une chaîne.
+    def traiter_constante(self, valeur):
+        # Formatter la constante VALEUR, qui ne peut Ãªtre une chaÃ®ne.
         if isinstance(valeur, float):
-            sys.stderr.write(_("""\
-WARNING: floating values are not dependable.
-(There is a bug in `import compiler'.  Sigh!)"""))
+            sys.stderr.write(
+                _("WARNING: floating values are not dependable.\n"
+                  "(There is a bug in `import compiler'.  Sigh!)"))
         self.write(repr(valeur))
 
-    def disposer(self, format, *arguments):
-        # DISPOSER tente possiblement plusieurs stratégies, alors que EDITER
-        # se contente de la stratégie déclarée courante.
-        if '%' in format:
+    def traiter(self, format, *arguments):
+        # Produire FORMAT en sortie tout en interprÃ©tant les sÃ©quences
+        # formÃ©es d'un pourcent et d'une lettre de spÃ©cification.  Certaines
+        # spÃ©cifications consomment l'un des ARGUMENTS supplÃ©mentaires fournis,
+        # tous les arguments doivent Ãªtre finalement consommÃ©s par le format.
 
-            def essai():
-                self.editer(format, *arguments)
-
-            for specification in '%(', '%\\', '%|', '%:':
-                if specification in format:
-                    self.tenter_triplet(essai, essai, essai)
-                    break
-            else:
-                essai()
-        else:
-            assert not arguments, (format, arguments)
-            self.write(format)
-
-    def tenter_triplet(self, fonction_ligne, fonction_colonne, fonction_mixte):
-        self.tenter_essais((fonction_ligne, self.LIGNE),
-                           (fonction_colonne, self.COLONNE),
-                           (fonction_mixte, self.MIXTE))
-
-    def tenter_essais(self, *essais):
-        # Établir une liste d'essais admissibles dans le contexte courant.
-        essais_retenus = []
-        for fonction, strategie in essais:
-            if fonction is not None and strategie <= self.strategie:
-                essais_retenus.append((fonction, strategie))
-        if len(essais_retenus) == 0:
-            raise self.Impasse(_("But how?!"))
-        # Tenter tous les essais admissibles de la liste.
-        strategie = self.strategie
-        try:
-            if len(essais_retenus) == 1:
-                # Exécuter l'essai sans prévoir de reprises.
-                fonction, self.strategie = essais_retenus[0]
-                self.debug(_("Try"), '1/1')
-                fonction()
-            else:
-                # Il faudra choisir.  Accumuler un point de reprise par succès.
-                self.compteur_choix += 1
-                self.compteur_essais += len(essais_retenus)
-                point = Point_reprise(self)
-                points = []
-                for compteur, (fonction, self.strategie) in (
-                        enumerate(essais_retenus)):
-                    point.reprise()
-                    self.debug(_("Try"),
-                               '%d/%d' % (compteur + 1, len(essais_retenus)))
-                    try:
-                        fonction()
-                    except self.Impasse:
-                        self.compteur_impasses += 1
-                    else:
-                        points.append(Point_reprise(self))
-                        self.debug(_("Save-%d") % len(points),
-                            '%d/%d' % (compteur + 1, len(essais_retenus)))
-                        if self.strategie == self.LIGNE:
-                            # On ne peut théoriquement pas améliorer une
-                            # stratégie LIGNE réussie.
-                            break
-                # Conserver la meilleure stratégie.
-                if not points:
-                    raise self.Impasse(_("But how?!"))
-                meilleur = min(points)
-                if len(points) > 1:
-                    for compteur, point in enumerate(points):
-                        point.debug(point is meilleur, compteur + 1,
-                                    len(points))
-                meilleur.reprise()
-                # Briser la circularité des références.
-                for point in points:
-                    del point.editeur
-        finally:
-            self.strategie = strategie
-
-    def editer(self, format, *arguments):
-        # Produire FORMAT en sortie tout en interprétant les séquences
-        # formées d'un pourcent et d'une lettre de spécification.  Certaines
-        # spécifications consomment l'un des ARGUMENTS supplémentaires fournis,
-        # tous les arguments doivent être finalement consommés par le format.
-
-        # La séquence `%%' produit un seul `%'.  `%_' produit une espace ou
-        # non, selon la priorité courante ou la valeur de RUSTINE_ESPACES,
-        # RUSTINE_ESPACES indique un nombre de niveaux d'expression pour
-        # lesquels on ajoute un blanc de part et d'autre de chaque opérateur.
-        # S'il vaut zéro ou est négatif, de tels blancs ne sont pas ajoutés.
-        # `%s' et `%^' disposent respectivement une chaîne ou un sous-arbre,
+        # La sÃ©quence `%%' produit un seul `%'.  `%_' produit une espace
+        # ou non, selon la prioritÃ© courante ou la valeur de ESPACEMENTS,
+        # ESPACEMENTS indique un nombre de niveaux d'expression pour
+        # lesquels on ajoute un blanc de part et d'autre de chaque opÃ©rateur.
+        # S'il vaut zÃ©ro ou est nÃ©gatif, de tels blancs ne sont pas ajoutÃ©s.
+        # `%s' et `%^' disposent respectivement une chaÃ®ne ou un sous-arbre,
         # fournis en argument.
 
-        # `%(' et `%)' encadrent un fragment de texte dont la priorité est
-        # possiblement différente, la nouvelle priorité est donnée en argument
-        # pour `%(', cet argument est None si la priorité ne doit pas changer.
-        # Le fragment de texte est placé entre parenthèses si sa priorité du
+        # `%(' et `%)' encadrent un fragment de texte dont la prioritÃ© est
+        # possiblement diffÃ©rente, la nouvelle prioritÃ© est donnÃ©e en argument
+        # pour `%(', cet argument est None si la prioritÃ© ne doit pas changer.
+        # Le fragment de texte est placÃ© entre parenthÃ¨ses si la prioritÃ© du
         # fragment n'est pas plus grande que celle du texte environnant, ou
-        # encore, pour permettre souligner le cisèlement en stratégie COLONNE
-        # ou MIXTE, et dans le cas de cisèlement, ces parenthèses servent
-        # aussi à continuer une ligne de code Python.  Lorsqu'une paire `%('
-        # et `%)' produit effectivement des parenthèses, l'effet de `%('
-        # implique automatiquement `%=%\' avec un argument de -1 pour la
-        # nouvelle priorité, l'effet de '%)' implique automatiquement `%/'.
-        # `%=' force une priorité fournie en argument, sans production de
-        # parenthèses, c'est utile après un délimiteur ouvrant explicite.
+        # encore, pour mieux souligner le cisÃ¨lement en stratÃ©gie COLONNE
+        # ou RETRAIT: dans ce dernier cas, ces parenthÃ¨ses permettent
+        # d'introduire les lignes de continuation.  Lorsqu'une paire `%('
+        # et `%)' produit effectivement des parenthÃ¨ses, l'effet de `%('
+        # implique automatiquement `%\' avec un argument de -1 pour la
+        # nouvelle prioritÃ©, l'effet de '%)' implique automatiquement `%/'.
 
-        # '%\' imbrique la marge davantage, cette marge sera effective pour
-        # les lignes de continuation, '%/' rétablit la marge à sa valeur
-        # précédente et possiblement, tente de combiner les lignes accumulées
+        # '%\' ajoute une indentation Ã  la marge, qui sera effective pour les
+        # lignes de continuation, et force aussi une nouvelle prioritÃ© fournie
+        # en argument, mais sans production de parenthÃ¨ses: c'est utile aprÃ¨s
+        # un dÃ©limiteur ouvrant explicite.  '%/' rÃ©tablit la marge Ã  sa valeur
+        # prÃ©cÃ©dente et possiblement, tente de combiner les lignes accumulÃ©es
         # depuis le changement de marge afin de mieux remplir les lignes.
         # `%|' termine la ligne courante et force le commencement d'une autre.
-        # Ces trois spécifications sont sans effet en stratégie LIGNE.
+        # Ces trois spÃ©cifications sont sans effet en stratÃ©gie LIGNE.
 
-        # `%:' produit un deux-points et aussi, dans l'interprétation du format
-        # qui précède, via RUSTINE_MARGE qui peut fixer une marge minimum,
-        # force une imbrication d'au moins une indentation et demie pour les
-        # lignes de continuation. `%!', via RUSTINE_PARENTHESES, commande
-        # l'économie de la paire de parenthèses qui serait possiblement
-        # provoquée pour fins de ciselage par le `%(' suivant.  Mais l'effet
-        # de RUSTINE_PARENTHESES est désamorcé dès une écriture.
+        # '%;' force, via MARGES2 qui peut fixer une marge minimum, une
+        # imbrication d'au moins une indentation et demie pour les lignes
+        # de continuation, quant Ã  `%:', il produit un deux-points et annule
+        # l'effet du '%;' prÃ©cÃ©dent.  `%!', via ECONOMIE, commande l'Ã©conomie
+        # de la paire de parenthÃ¨ses qui serait possiblement provoquÃ©e pour
+        # fins de ciselage par le `%(' suivant; son effet est dÃ©samorcÃ© dÃ¨s
+        # une Ã©criture.  `%#' force la prioritÃ© fournie en argument.
 
-        self.niveau += 1
-        self.debug(_("Format"), format)
-        strategie = self.strategie
-        pile_delimiteurs = []
-        # Les piles suivantes sont traitées à la fin du `try:/finally:'.
-        pile_marges = []
-        pile_priorites = []
-        pile_rustines_marge = []
-        pile_rustine_parentheses = [self.rustine_parentheses]
-        pile_rustines_espaces = []
-        if '%:' in format:
-            pile_rustines_marge.append(self.rustine_marge)
-            self.rustine_marge = (self.marge + Disposeur.indentation
-                                  + (Disposeur.indentation + 1) // 2)
+        # Dans l'ensemble des appels successifs Ã  EDITER pour un arbre
+        # syntaxique donnÃ©, Ã  chaque `%(' doit correspondre Ã©ventuellement un
+        # `%)', Ã  chaque `%\' un `%/', et Ã  chaque `%;' un `%:'.
+
+        self.profondeur += 1
         try:
+            # BRANCHEMENTS est une pile de branchements.  Chaque branchement
+            # est crÃ©Ã© lors d'un `%(' et Ã©liminÃ© lors d'un '%)'.
+            # Les changements de stratÃ©gie ne se produisent que lors d'un
+            # changement de branchement.
+            branchements = []
+            # Travailler tant que FORMAT n'a pas Ã©tÃ© complÃ¨tement consommÃ©,
+            # ou qu'une impasse ne peut Ãªtre davantage rÃ©cupÃ©rÃ©e.
+            position = 0
             index = 0
-            position = format.find('%')
-            while position >= 0:
-                if position > 0:
-                    self.write(format[:position])
-                specification = format[position + 1]
-                argument = None
-                if specification == '%':
-                    self.write('%')
-                elif specification == '_':
-                    if (self.priorite <= PRIORITE_RUSTINE
-                          or self.rustine_espaces > 0):
-                        self.write(' ')
-                elif specification == 's':
-                    argument = arguments[index]
-                    index += 1
-                    if argument:
-                        self.write(argument)
-                elif specification == '^':
-                    argument = arguments[index]
-                    index += 1
-                    self.debug(_("Visit"), argument)
-                    self.visit(argument)
-                elif specification == '(':
-                    argument = arguments[index]
-                    index += 1
-                    pile_rustines_espaces.append(self.rustine_espaces)
-                    if (argument is not None
-                          and not argument == self.priorite == PRIORITE_APPEL
-                          and argument <= self.priorite):
-                        parentheser = True
-                    elif self.strategie == self.LIGNE:
-                        parentheser = False
-                    elif self.rustine_parentheses:
-                        self.rustine_parentheses = False
-                        parentheser = False
-                    else:
-                        parentheser = True
-                    if parentheser:
-                        self.write('(')
-                        #self.rustine_parentheses = True
-                        pile_delimiteurs.append(')')
-                        self.rustine_espaces = 2
-                        # Même code que pour `%\' plus bas.
-                        pile_marges.append(self.marge)
-                        debut = self.ligne - 1
-                        if strategie is self.MIXTE:
-                            self.marge += Disposeur.indentation
-                            if self.colonne > self.marge:
-                                self.write('\n')
+            self.debug_format(format, arguments, position, index)
+            while True:
+                if position:
+                    self.debug_format(format, arguments, position, index)
+                try:
+                    # Trouver la prochaine spÃ©cification de format, traiter
+                    # le fragment de format qui nous rend jusqu'Ã  elle.
+                    precedente = position
+                    position = format.find('%', precedente)
+                    if position < 0:
+                        if precedente < len(format):
+                            self.write(format[precedente:])
+                        break
+                    if position > precedente:
+                        self.write(format[precedente:position])
+                    # Aiguiller selon la spÃ©cification.
+                    specification = format[position+1]
+                    position += 2
+                    strategie = self.strategies[-1]
+                    if specification == '%':
+                        self.write('%')
+                    elif specification == '_':
+                        if (self.priorites[-1] <= PRIORITE_ESPACEMENT
+                              or self.espacements[-1] > 0):
+                            self.write(' ')
+                    elif specification == 's':
+                        argument = arguments[index]
+                        index += 1
+                        if argument:
+                            self.write(argument)
+                    elif specification == '^':
+                        argument = arguments[index]
+                        index += 1
+                        # Examiner ce qui suit dans FORMAT pour choisir un
+                        # flottement supplÃ©mentaire.
+                        flottement = 0
+                        regard = position
+                        while regard < len(format):
+                            if format[regard] == '%':
+                                regard += 1
+                                if format[regard] in '%_():':
+                                    flottement += 1
+                                elif format[regard] in '|':
+                                    if strategie != LIGNE:
+                                        if format[regard-2] == ' ':
+                                            flottement -= 1
+                                        break
+                            else:
+                                flottement += 1
+                            regard += 1
+                        self.flottements.append(
+                            self.flottements[-1] + flottement)
+                        # Formatter rÃ©cursivement.
+                        self.visit(argument)
+                        del self.flottements[-1]
+                    elif specification == '(':
+                        argument = arguments[index]
+                        index += 1
+                        # Un branchement sauve l'Ã©tat courant de l'Ã‰DITEUR,
+                        # ainsi que la prochaine POSITION dans le format et
+                        # l'INDEX du prochain argument.
+                        if len(self.strategies) == 1:
+                            maximale = RETRAIT
                         else:
-                            self.marge = max(self.colonne, self.marge)
-                    else:
-                        pile_delimiteurs.append(None)
-                    pile_priorites.append(self.priorite)
-                    if argument is not None:
-                        self.priorite = argument
-                elif specification == ')':
-                    delimiteur = pile_delimiteurs.pop()
-                    if delimiteur is not None:
-                        self.write(delimiteur)
-                        # Même code que pour '%/' plus bas.
-                        self.remplir_lignes_depuis(debut)
-                        self.marge = pile_marges.pop()
-                    self.priorite = pile_priorites.pop()
-                    self.rustine_espaces = pile_rustines_espaces.pop()
-                elif specification == '=':
-                    argument = arguments[index]
-                    index += 1
-                    self.priorite = argument
-                    if argument == PRIORITE_TUPLE:
-                        self.rustine_espaces = 2
-                elif specification == '\\':
-                    # Note: RUSTINE_ESPACES est remis à zéro lorsque `%\' est
-                    # utilisé explicitement (comme à la suite de `[' ou `{'),
-                    # mais pas lorsque l'effet de `%\' est implicite via `%('.
-                    self.rustine_espaces = 0
-                    if strategie is not self.LIGNE:
-                        pile_marges.append(self.marge)
-                        debut = self.ligne - 1
-                        if strategie is self.MIXTE:
-                            # Cas de la stratégie MIXTE.
-                            self.marge += Disposeur.indentation
-                            if self.colonne > self.marge:
-                                self.write('\n')
+                            maximale = self.strategies[-1]
+                        avenues = [LIGNE]
+                        if Editeur.strategie != LIGNE:
+                            avenues.append(COLONNE)
+                        if (Editeur.strategie == RETRAIT
+                              and maximale == RETRAIT):
+                            avenues.append(RETRAIT)
+                        def fonction(strategie):
+                            self.strategies.append(strategie)
+                            self.imbriquer_parentheses(
+                                branchement, arguments[index - 1])
+                        branchement = Branchement(self, position, index,
+                                                  fonction, avenues)
+                        branchements.append(branchement)
+                        position, index, fonction, avenue = branchement.next()
+                        fonction(avenue)
+                    elif specification == ')':
+                        branchement = branchements[-1]
+                        self.desimbriquer_parentheses(branchement)
+                        del self.strategies[-1]
+                        branchement.sauver_solution()
+                        try:
+                            position, index, fonction, avenue = (
+                                branchement.next())
+                        except StopIteration:
+                            branchement.completer()
+                            del branchements[-1]
                         else:
-                            # Cas de la stratégie COLONNE.
-                            self.marge = max(self.colonne, self.marge)
-                elif specification == '/':
-                    if strategie is not self.LIGNE:
-                        self.remplir_lignes_depuis(debut)
-                        self.marge = pile_marges.pop()
-                elif specification == '|':
-                    if strategie is not self.LIGNE:
-                        self.write('\n')
-                        if self.rustine_marge is not None:
-                            self.marge = max(self.rustine_marge, self.marge)
-                elif specification == ':':
-                    self.write(':')
-                    if '%:' not in format[position+2:]:
-                        self.rustine_marge = pile_rustines_marge.pop()
-                    pile_marges.append(self.marge)
-                    self.marge += Disposeur.indentation
-                elif specification == '!':
-                    self.rustine_parentheses = True
-                else:
-                    assert False, specification
-                self.debug(_("After %") + specification, argument)
-                format = format[position+2:]
-                position = format.find('%')
+                            fonction(avenue)
+                    elif specification == '\\':
+                        argument = arguments[index]
+                        index += 1
+                        self.imbriquer_marge()
+                        self.priorites.append(argument)
+                        # Note: ESPACEMENTS est remis Ã  zÃ©ro lorsque `%\' est
+                        # utilisÃ© explicitement (comme Ã  la suite de `[' ou
+                        # `{'), mais pas lorsque l'effet de `%\' est implicite
+                        # via `%('.  Au contraire, ESPACEMENTS est forcÃ© Ã  deux
+                        # dans un contexte semblable Ã  l'intÃ©rieur d'un tuple.
+                        if argument == PRIORITE_TUPLE:
+                            self.espacements.append(2)
+                        else:
+                            self.espacements.append(0)
+                    elif specification == '/':
+                        self.desimbriquer_marge()
+                        del self.priorites[-1]
+                        del self.espacements[-1]
+                    elif specification == '|':
+                        if strategie != LIGNE:
+                            self.terminer_ligne()
+                    elif specification == ';':
+                        self.marges2.append(self.marges[-1]
+                                            + self.indentation
+                                            + (self.indentation + 1)//2)
+                    elif specification == ':':
+                        self.write(':')
+                        del self.marges2[-1]
+                        self.marges.append(self.marges[-1]
+                                           + self.indentation)
+                    elif specification == '!':
+                        self.economie = True
+                    elif specification == '#':
+                        argument = arguments[index]
+                        index += 1
+                        self.priorites[-1] = argument
+                        if argument == PRIORITE_TUPLE:
+                            self.espacements[-1] = 2
+                    else:
+                        assert False, specification
+                except Impasse, diagnostic:
+                    while True:
+                        if not branchements:
+                            raise Impasse(_("This is too difficult for me..."))
+                        branchement = branchements[-1]
+                        try:
+                            position, index, fonction, avenue = (
+                                branchement.next())
+                        except StopIteration:
+                            del branchements[-1]
+                        else:
+                            fonction(avenue)
+                            break
             assert index == len(arguments), (index, arguments)
-            if format:
-                self.write(format)
         finally:
-            while pile_rustines_espaces:
-                self.rustine_espaces = pile_rustines_espaces.pop()
-            while pile_rustine_parentheses:
-                self.rustine_parentheses = pile_rustine_parentheses.pop()
-            while pile_rustines_marge:
-                self.rustine_marge = pile_rustines_marge.pop()
-            while pile_priorites:
-                self.priorite = pile_priorites.pop()
-            while pile_marges:
-                self.marge = pile_marges.pop()
-            self.niveau -= 1
+            self.profondeur -= 1
+
+    def imbriquer_parentheses(self, branchement, priorite):
+        if (priorite is not None
+              and not priorite == self.priorites[-1] == PRIORITE_APPEL
+              and priorite <= self.priorites[-1]):
+            parentheser = True
+        elif self.strategies[-1] == LIGNE:
+            parentheser = False
+        elif self.economie:
+            parentheser = False
+            self.economie = False
+        else:
+            parentheser = True
+        if parentheser:
+            self.write('(')
+            self.imbrication += 1
+            branchement.fermante = ')'
+            self.espacements.append(2)
+            self.imbriquer_marge()
+        else:
+            branchement.fermante = None
+            self.espacements.append(self.espacements[-1])
+        if priorite is None:
+            self.priorites.append(self.priorites[-1])
+        else:
+            self.priorites.append(priorite)
+
+    def desimbriquer_parentheses(self, branchement):
+        if branchement.fermante is not None:
+            self.write(branchement.fermante)
+            self.imbrication -= 1
+            self.desimbriquer_marge()
+        del self.priorites[-1]
+        del self.espacements[-1]
+
+    def imbriquer_marge(self):
+        if self.strategies[-1] is RETRAIT:
+            self.marges.append(self.marges[-1] + self.indentation)
+            if self.colonne > self.marges[-1]:
+                self.debuts.append(len(self.blocs))
+                self.terminer_ligne()
+            else:
+                self.debuts.append(len(self.blocs) - 1)
+        else:
+            self.marges.append(max(self.colonne, self.marges[-1]))
+            self.debuts.append(len(self.blocs) - 1)
+
+    def desimbriquer_marge(self):
+        # Combiner en un seul tous les blocs de ligne depuis DEBUT.
+        debut = self.debuts.pop()
+        if self.remplir:
+            index = debut
+            while index + 1 < len(self.blocs):
+                if (self.blocs[index].find('\n', 0, -1) < 0
+                      and self.blocs[index + 1].find('\n', 0, -1) < 0
+                      and ((len(self.blocs[index])
+                            + len(self.blocs[index + 1].lstrip()) - 1)
+                           <= Editeur.limite)):
+                    self.blocs[index] = (
+                        self.blocs[index][:-1]
+                        + self.blocs.pop(index + 1).lstrip())
+                    self.ligne -= 1
+                    continue
+                index += 1
+        texte = ''.join(self.blocs[debut:])
+        self.blocs[debut:] = [texte]
+        self.colonne = len(texte)
+        position = texte.rfind('\n')
+        if position >= 0:
+            self.colonne -= position + 1
+        # Revenir Ã  la marge prÃ©cÃ©dente.
+        del self.marges[-1]
+
+    def terminer_ligne(self):
+        if not self.imbrication:
+            raise Impasse(_("Newline is not nested"))
+        self.write('\n')
+        if self.marges2[-1] is not None:
+            self.marges[-1] = max(self.marges[-1], self.marges2[-1])
 
     def write(self, texte):
         if self.colonne == 0:
+            self.blocs.append('')
             self.ligne += 1
-            texte = ' '*self.marge + texte
-        if self.mise_au_point == 1:
-            texte2 = ''
-            marque = Editeur.noms_strategies[self.strategie][0]
-            for caractere in texte:
-                if caractere.isalnum():
-                    texte2 += marque
-                else:
-                    texte2 += caractere
-            texte = texte2
-        self.append(texte)
-        if '\n' in texte:
-            if texte.endswith('\n'):
-                self.ligne += texte.count('\n') - 1
-                self.colonne = 0
-            else:
-                self.ligne += texte.count('\n')
-                self.colonne = len(texte.split('\n')[-1])
-        else:
-            self.colonne += len(texte)
-        if self.remplir is not None and self.colonne > Editeur.limite:
-            self.debug_texte('I')
-            raise self.Impasse(_("Line overflow"))
-        self.debug_texte('w')
-        self.rustine_parentheses = False
+            texte = ' '*self.marges[-1] + texte
+        self.blocs[-1] += texte
+        self.colonne += len(texte)
+        position = texte.rfind('\n')
+        if position >= 0:
+            self.ligne += texte.count('\n')
+            self.colonne = len(texte) - (position + 1)
+            if self.colonne == 0:
+                self.ligne -= 1
+        if (self.remplir is not None
+              and self.colonne + self.flottements[-1] > Editeur.limite):
+            self.debug_texte(_("Overflow"))
+            raise Impasse(_("Line overflow"))
+        self.economie = False
 
-    def remplir_lignes_depuis(self, index):
-        lignes = ''.join(self).splitlines()
-        if index < len(lignes) - 2:
-            marge = marge_gauche(lignes[index+1])
-            if len(lignes[index]) == marge:
-                # Si le positionnement vertical de la seconde ne change pas,
-                # remplir inconditionnellement des deux premières lignes.
-                lignes[index] += lignes.pop(index + 1)[marge:]
-            if self.remplir:
-                while index < len(lignes) - 1:
-                    if (marge_gauche(lignes[index+1]) == marge
-                          and ((len(lignes[index])
-                                + len(lignes[index+1].rstrip()) - marge)
-                               <= Editeur.limite)):
-                        lignes[index] += lignes.pop(index + 1)[marge:]
-                    else:
-                        index += 1
-                        while (index < len(lignes) - 1
-                               and marge_gauche(lignes[index]) != marge):
-                            index += 1
-            self[:] = ['\n'.join(lignes)]
-            self.ligne = len(lignes)
-            self.colonne = len(lignes[-1])
-            self.debug_texte('r')
+class Branchement:
+    generation = 0
 
-class Point_reprise:
+    def __init__(self, editeur, position, index, fonction, avenues):
+        self.reprise = Reprise(editeur)
+        self.position = position
+        self.index = index
+        self.fonction = fonction
+        self.avenues = avenues
+        # PrÃ©parer l'itÃ©rateur.
+        Branchement.generation += 1
+        self.generation = Branchement.generation
+        self.solutions = []
+        self.next = iter(self).next
+
+    def __del__(self):
+        # Briser la circularitÃ© des rÃ©fÃ©rences.
+        for solution in self.solutions:
+            del solution.editeur
+        if self.reprise is not None:
+            del self.reprise.editeur
+
+    def __iter__(self):
+        # Produire un itÃ©rateur fournissant Ã  la fois un ARGUMENT propre au
+        # branchement et l'une des AVENUES possibles.  ARGUMENT peut contenir
+        # suffisamment d'information pour recommencer l'Ã©dition comme au
+        # dÃ©but du branchement: c'est alors une culbute spÃ©cialisÃ©e qui remplace
+        # un peu, dans ce cas-ci, les continuations que Python n'offre pas.
+        if not self.avenues:
+            raise Impasse(_("This is too difficult for me..."))
+        editeur = self.reprise.editeur
+        for compteur, avenue in enumerate(self.avenues):
+            if compteur > 0:
+                self.reprise.ramener()
+            editeur.debug('@%d %d/%d' % (Branchement.generation,
+                                         compteur + 1,
+                                         len(self.avenues)))
+            yield self.position, self.index, self.fonction, avenue
+
+    def sauver_solution(self):
+        editeur = self.reprise.editeur
+        self.solutions.append(Reprise(editeur))
+        editeur.debug(_("Save-%d") % len(self.solutions))
+
+    def completer(self):
+        if not self.solutions:
+            raise Impasse(_("This is too difficult for me..."))
+        solution = min(self.solutions)
+        if len(self.solutions) > 1:
+            for compteur, reprise in enumerate(self.solutions):
+                reprise.debug_texte(
+                    '%s %d/%d' % (('  ', '->')[reprise is solution],
+                                  compteur + 1, len(self.solutions)),
+                    reprise.ligne, reprise.poids_visuel())
+        solution.ramener()
+
+class Reprise(Editeur):
+    # Un point de reprise peut sauver, ou remettre en place, les listes et
+    # les entiers contenus comme attributs dans un Ã©diteur.  Il se garde
+    # aussi contre les modifications ultÃ©rieures des listes dans l'Ã©diteur.
+
     def __init__(self, editeur):
         self.editeur = editeur
-        self.texte = ''.join(editeur)
-        self.ligne = editeur.ligne
-        self.colonne = editeur.colonne
-        self.strategie = editeur.strategie
+        for nom, valeur in editeur.__dict__.iteritems():
+            if isinstance(valeur, list):
+                setattr(self, nom, valeur[:])
+            elif isinstance(valeur, int):
+                setattr(self, nom, valeur)
+
+    def ramener(self):
+        editeur = self.editeur
+        for nom, valeur in self.__dict__.iteritems():
+            if nom == 'editeur':
+                continue
+            if isinstance(valeur, list):
+                getattr(editeur, nom)[:] = valeur
+            elif isinstance(valeur, int):
+                setattr(editeur, nom, valeur)
 
     def __cmp__(self, other):
         return (cmp(self.ligne, other.ligne)
-                or cmp(self.longueur_noire(), other.longueur_noire())
-                or cmp(self.strategie, other.strategie))
+                or cmp(self.poids_visuel(), other.poids_visuel())
+                or cmp(self.strategies, other.strategies))
 
-    def debug(self, meilleur, ordinal, total):
-        if Editeur.mise_au_point > 1:
-            Editeur.mise_au_point += 1
-            self.editeur.debug(_("Point ") + '·+'[meilleur],
-                               ('%d/%d L%d N%d %s'
-                                % (ordinal, total, self.ligne,
-                                   self.longueur_noire(),
-                                   Editeur.noms_strategies[self.strategie])))
-            Editeur.mise_au_point -= 1
-            sys.stdout.write(self.texte + PIED_DE_MOUCHE + '\n')
-
-    def reprise(self):
-        self.editeur[:] = [self.texte]
-        self.editeur.ligne = self.ligne
-        self.editeur.colonne = self.colonne
-
-    def longueur_noire(self):
-        # Retourner le nombre de caractères non-blancs du texte.
-        return len(self.texte.replace(' ', '').replace('\n', ''))
+    def poids_visuel(self):
+        # Le poids visuel d'un ensemble de lignes est d'autant plus Ã©levÃ© que
+        # les lignes ont leur masse noire de largeur inÃ©gale.  La somme des
+        # carrÃ©s des largeurs se minimise lorsque les lignes sont Ã©quilibrÃ©es
+        # entre elles.  Toutefois, pour favoriser quand mÃªme les alignements
+        # colonne, cette somme ne compte que les lignes de continuations, la
+        # premiÃ¨re ligne ne contribue que de maniÃ¨re linÃ©aire au poids visuel.
+        lignes = ''.join(self.blocs).splitlines()
+        poids = len(lignes[0].strip()) * 12
+        for ligne in lignes[1:]:
+            largeur = len(ligne.strip())
+            poids += largeur * largeur
+        return poids
 
 ## Broutilles stylistiques.
 
-vim.command('highlight Broutille'
-            ' term=reverse cterm=bold ctermbg=1'
-            ' gui=bold guibg=Cyan')
+if vim is not None:
+    vim.command('highlight Broutille term=reverse cterm=bold ctermbg=1'
+                ' gui=bold guibg=Cyan')
 
 def corriger_broutille(mode):
     # Corriger la broutille directement sous le curseur s'il s'en trouve,
-    # puis passer à la broutille suivante.
+    # puis passer Ã  la broutille suivante.
     for broutille in MetaBroutille.registre:
-        if broutille.confirmer_erreur(vim.current.window.cursor):
+        if broutille.confirmer_erreur(*curseur_courant()):
             broutille.corriger()
             broutille.repositionner()
             return
@@ -1786,29 +2132,29 @@ def corriger_broutille(mode):
 
 def trouver_broutille(mode):
     # Trouver la prochaine broutille stylistique.
-    # REVOIR: `,,' répété sur une série de lignes vides n'avance pas le curseur.
+    # REVOIR: `\\' rÃ©pÃ©tÃ© sur une sÃ©rie de lignes vides n'avance pas le curseur.
     tampon = vim.current.buffer
-    rangee, colonne = vim.current.window.cursor
-    ligne = tampon[rangee-1]
-    # Si rien n'a changé depuis la fois précédente, avancer le curseur.
-    # Sinon, ré-analyser la ligne courante à partir du début.
+    rangee, colonne = curseur_courant()
+    ligne = tampon[rangee]
+    # Si rien n'a changÃ© depuis la fois prÃ©cÃ©dente, avancer le curseur.
+    # Sinon, rÃ©-analyser la ligne courante Ã  partir du dÃ©but.
     if (rangee == Broutille.rangee_precedente
-            and colonne == Broutille.colonne_precedente
-            and ligne[colonne:].startswith(Broutille.fragment_precedent)):
+          and colonne == Broutille.colonne_precedente
+          and ligne[colonne:].startswith(Broutille.fragment_precedent)):
         colonne += 1
         if colonne == len(ligne):
             rangee += 1
             colonne = 0
-            if rangee <= len(tampon):
-                ligne = tampon[rangee-1]
+            if rangee + 1 <= len(tampon):
+                ligne = tampon[rangee]
     else:
         colonne = 0
-    # Fouiller à partir du curseur pour trouver une broutille.
-    while rangee <= len(tampon):
-        # Retenir l'appariement le plus à gauche, et parmi eux, le plus long.
+    # Fouiller Ã  partir du curseur pour trouver une broutille.
+    while rangee < len(tampon):
+        # Retenir l'appariement le plus Ã  gauche, et parmi eux, le plus long.
         debut = None
         for broutille in MetaBroutille.registre:
-            paire = broutille.trouver_erreur((rangee, colonne))
+            paire = broutille.trouver_erreur(rangee, colonne)
             if (paire is not None
                     and (debut is None
                          or paire[0] < debut
@@ -1817,7 +2163,7 @@ def trouver_broutille(mode):
                 plainte = broutille.plainte
         if debut is not None:
             # Enluminer la broutille et repositionner le curseur.
-            vim.current.window.cursor = rangee, debut
+            changer_curseur_courant(rangee, debut)
             fragment = ligne[debut:fin]
             if fragment:
                 argument = (fragment.replace('\\', '\\\\')
@@ -1831,16 +2177,16 @@ def trouver_broutille(mode):
             Broutille.colonne_precedente = debut
             Broutille.fragment_precedent = fragment
             return
-        # Aller au début de la ligne suivante.
+        # Aller au dÃ©but de la ligne suivante.
         rangee += 1
         colonne = 0
-        if rangee <= len(tampon):
-            ligne = tampon[rangee-1]
+        if rangee < len(tampon):
+            ligne = tampon[rangee]
     sys.stderr.write("Le reste du fichier me semble beau...\n")
 
 class MetaBroutille(type):
     # Tenir un registre d'une instance par classe de broutille stylistique.
-    # Pré-compiler le gabarit de la classe, s'il s'en trouve.
+    # PrÃ©-compiler le gabarit de la classe, s'il s'en trouve.
     registre = []
 
     def __init__(self, nom, bases, dict):
@@ -1855,51 +2201,49 @@ class Broutille:
     __metaclass__ = MetaBroutille
     # PLAINTE contient une courte explication pour l'utilisateur.
     plainte = "Broutille syntaxique."
-    # Si SYNTEXTE est None, le gabarit fourni peut s'apparier dans les chaìnes
-    # de caractères ou les commentaires.  Autrement, SYNTEXTE est un nombre,
-    # souvent 0, qui est un déplacement par rapport au début du texte apparié
-    # (ou de sa fin s'il est négatif).  Le caractère à ce déplacement ne doit
-    # alors faire partie ni d'une chaîne de caractères, ni d'un commentaire.
+    # Si SYNTEXTE est None, le gabarit fourni peut s'apparier dans les chaÃ¬nes
+    # de caractÃ¨res ou les commentaires.  Autrement, SYNTEXTE est un nombre,
+    # souvent 0, qui est un dÃ©placement par rapport au dÃ©but du texte appariÃ©
+    # (ou de sa fin s'il est nÃ©gatif).  Le caractÃ¨re Ã  ce dÃ©placement ne doit
+    # alors faire partie ni d'une chaÃ®ne de caractÃ¨res, ni d'un commentaire.
     syntexte = None
-    # Après une correction automatique, le curseur se repositionne normalement
-    # sur la broutille suivante, c'est l'action par défaut.  Mais si une
-    # broutille ne fournit pas sa propre méthode CORRIGER, la méthode CORRIGER
-    # par défaut intervient pour indiquer qu'une intervention humaine est
-    # requise et change REPOSITIONNEMENT à True, dans l'instance seulement.
-    repositionnement = True
-    # Les trois variables suivantes sont `globales' à toutes les broutilles,
-    # elles servent à détecter que rien n'a changé depuis que la dernière
-    # broutille a été trouvée, et donc que l'utilisateur a choisi de l'ignorer.
-    # Dans ce cas, il faut s'acheminer inconditionnellement à la broutille
-    # suivante.  Si une correction a eu lieu, la ligne est réanalysée à partir
-    # du début, au cas où la correction engendre elle-même une autre broutille.
+    # AprÃ¨s une correction automatique fiable, c'est-Ã -dire, qui ne change
+    # pas la sÃ©mantique du code Python, REPOSITIONNEMENT peut Ãªtre mis Ã  True
+    # dans l'instance de la broutille, pour indiquer que le curseur doit se
+    # repositionner sur la broutille suivante.  Autrement, ou encore, s'il n'y
+    # a pas de correction automatique, une intervention humaine est requise.
+    repositionnement = False
+    # Les trois variables suivantes sont `globales' Ã  toutes les broutilles,
+    # elles servent Ã  dÃ©tecter que rien n'a changÃ© depuis que la derniÃ¨re
+    # broutille a Ã©tÃ© trouvÃ©e, et donc que l'utilisateur a choisi de l'ignorer.
+    # Dans ce cas, il faut s'acheminer inconditionnellement Ã  la broutille
+    # suivante.  Si une correction a eu lieu, la ligne est rÃ©analysÃ©e Ã  partir
+    # du dÃ©but, au cas oÃ¹ la correction engendre elle-mÃªme une autre broutille.
     rangee_precedente = None
     colonne_precedente = None
     fragment_precedent = ''
 
-    def trouver_erreur(self, curseur):
+    def trouver_erreur(self, rangee, colonne):
         tampon = vim.current.buffer
-        rangee, colonne = curseur
-        ligne = tampon[rangee-1]
+        ligne = tampon[rangee]
         if hasattr(self, 'gabarit'):
             match = self.gabarit.search(ligne, colonne)
             while match:
-                if self.confirmer_erreur((rangee, match.start())):
+                if self.confirmer_erreur(rangee, match.start()):
                     return match.start(), match.end()
-                match = self.gabarit.search(ligne, match.start()+1)
+                match = self.gabarit.search(ligne, match.start() + 1)
         else:
             while True:
-                if self.confirmer_erreur((rangee, colonne)):
+                if self.confirmer_erreur(rangee, colonne):
                     return colonne, len(ligne)
                 if colonne == len(ligne):
                     break
                 colonne += 1
 
-    def confirmer_erreur(self, curseur):
+    def confirmer_erreur(self, rangee, colonne):
         assert hasattr(self, 'gabarit'), self
         tampon = vim.current.buffer
-        rangee, colonne = curseur
-        match = self.gabarit.match(tampon[rangee-1], colonne)
+        match = self.gabarit.match(tampon[rangee], colonne)
         if match is None:
             return
         syntexte = self.syntexte
@@ -1909,16 +2253,15 @@ class Broutille:
         if syntexte < 0:
             syntexte += match.end() - match.start()
         if (vim.eval('synIDattr(synID(%d, %d, 0), "name")'
-                     % (rangee, colonne + 1 + syntexte))
+                     % (rangee + 1, colonne + 1 + syntexte))
               in ('pythonComment', 'pythonRawString', 'pythonString')):
             return
         self.match = match
         return match
 
     def corriger(self):
-        # Par défaut, le programmeur choisit et édite une correction.
+        # Par dÃ©faut, le programmeur choisit et Ã©dite une correction.
         sys.stderr.write("Ici, il me faut l'aide d'un humain!\n")
-        self.repositionnement = False
         self.annuler_precedent()
 
     def repositionner(self):
@@ -1928,10 +2271,11 @@ class Broutille:
     def remplacer_texte(self, nouveau):
         assert hasattr(self, 'gabarit'), self
         tampon = vim.current.buffer
-        rangee = vim.current.window.cursor[0]
-        ligne = tampon[rangee-1]
-        tampon[rangee-1] = (ligne[:self.match.start()]
-            + self.match.expand(nouveau) + ligne[self.match.end():])
+        rangee = curseur_courant()[0]
+        ligne = tampon[rangee]
+        tampon[rangee] = (ligne[:self.match.start()]
+                          + self.match.expand(nouveau)
+                          + ligne[self.match.end():])
         self.annuler_precedent()
 
     def annuler_precedent(self):
@@ -1940,30 +2284,31 @@ class Broutille:
         Broutille.fragment_precedent = ''
 
 class Fichier_Vide(Broutille):
-    # Un module Python ne doit pas être vide.
+    # Un module Python ne doit pas Ãªtre vide.
     plainte = "Module vide."
 
-    def trouver_erreur(self, curseur):
-        if self.confirmer_erreur(curseur):
+    def trouver_erreur(self, rangee, colonne):
+        if self.confirmer_erreur(rangee, colonne):
             return 0, 0
 
-    def confirmer_erreur(self, curseur):
+    def confirmer_erreur(self, rangee, colonne):
         tampon = vim.current.buffer
         return len(tampon) == 0 or len(tampon) == 1 and not tampon[0]
 
     def corriger(self):
-        # Insérer un squelette de programme Python.
+        # InsÃ©rer un squelette de programme Python.
         vim.current.buffer[:] = [
             '#!/usr/bin/env python',
             '# -*- coding: Latin-1',
-            '# Copyright © 2004 Progiciels Bourbeau-Pinard inc.',
-            '# François Pinard <pinard@iro.umontreal.ca>, 2004.',
+            '# Copyright Â© 2004 Progiciels Bourbeau-Pinard inc.',
+            '# FranÃ§ois Pinard <pinard@iro.umontreal.ca>, 2004.',
             '',
             '"""\\',
             '',
             '"""',
             '',
             '__metaclass__ = type',
+            'import sys',
             '',
             'class Main:',
             '    def __init__(self):',
@@ -1979,33 +2324,32 @@ class Fichier_Vide(Broutille):
             'main = run.main',
             '',
             'if __name__ == \'__main__\':',
-            '    import sys',
             '    main(*sys.argv[1:])',
             ]
         self.annuler_precedent()
 
     def repositionner(self):
-        # Déclencher une insertion à l'intérieur du doc-string.
-        vim.current.window.cursor = 7, 0
+        # DÃ©clencher une insertion Ã  l'intÃ©rieur du doc-string.
+        changer_curseur_courant(7, 0)
         vim.command('startinsert')
 
 class Double_LigneVide(Broutille):
-    # Il n'est pas utile d'avoir plusieurs lignes vides d'affilée.
-    plainte = _("Many empty lines in a row.")
+    # Il n'est pas utile d'avoir plusieurs lignes vides d'affilÃ©e.
+    plainte = _("Multiple blank lines in a row.")
 
-    def trouver_erreur(self, curseur):
-        if self.confirmer_erreur(curseur):
+    def trouver_erreur(self, rangee, colonne):
+        if self.confirmer_erreur(rangee, colonne):
             return 0, 0
 
-    def confirmer_erreur(self, curseur):
+    def confirmer_erreur(self, rangee, colonne):
         tampon = vim.current.buffer
-        rangee, colonne = curseur
-        if len(tampon[rangee-1]) == 0:
-            return rangee < len(tampon) and len(tampon[rangee]) == 0
+        if len(tampon[rangee]) == 0:
+            return rangee + 1 < len(tampon) and len(tampon[rangee+1]) == 0
 
     def corriger(self):
-        # Éliminer les lignes superflues.
-        disposer_en_mixte_remplie(vim.current.window.cursor[0])
+        # Ã‰liminer les lignes superflues.
+        disposer_en_retrait_remplir(curseur_courant()[0])
+        self.repositionnement = True
 
 class Tab(Broutille):
     # Il ne doit pas avoir de HT dans un fichier.
@@ -2014,25 +2358,27 @@ class Tab(Broutille):
 
     def corriger(self):
         # Dans la marge gauche, remplacer chaque HT par huit blancs.
-        # Plus loin dans la ligne, utiliser plutôt l'écriture `\t'.
+        # Plus loin dans la ligne, utiliser plutÃ´t l'Ã©criture `\t'.
         if self.match.start() == 0:
             self.remplacer_texte(' ' * 8 * len(self.match.group()))
+            self.repositionnement = True
         else:
             self.remplacer_texte(r'\t' * len(self.match.group()))
 
 class Blancs(Broutille):
-    # Les jetons ne doivent pas être séparés par plus d'un blanc.
-    plainte = _("Many spaces in a row.")
+    # Les jetons ne doivent pas Ãªtre sÃ©parÃ©s par plus d'un blanc.
+    plainte = _("Multiple spaces in a row.")
     gabarit = '([^ ])   *([^ #])'
     syntexte = 1
 
     def corriger(self):
-        # Éliminer les blancs superflus.
+        # Ã‰liminer les blancs superflus.
         avant, apres = self.match.group(1, 2)
         if avant in '([{' or apres in ',;.:)]}':
             self.remplacer_texte(avant + apres)
         else:
             self.remplacer_texte(avant + ' ' + apres)
+        self.repositionnement = True
 
 class Blanc_FinLigne(Broutille):
     # Une ligne ne peut avoir de blancs suffixes.
@@ -2040,42 +2386,199 @@ class Blanc_FinLigne(Broutille):
     gabarit = r'[ \t][ \t]*$'
 
     def corriger(self):
-        # Éliminer les blancs suffixes.
+        # Ã‰liminer les blancs suffixes.
         self.remplacer_texte('')
+        self.repositionnement = True
 
-class GrandeLigne(Broutille):
-    # Les lignes doivent tenir dans Editeur.LIMITE colonnes.
-    plainte = _("Line is too long.")
+class Backslash_FinLigne(Broutille):
+    # Le backslash en fin-de-ligne doit Ãªtre tout simplement Ã©vitÃ©, Ã 
+    # l'exception du cas oÃ¹ il suit immÃ©diatement un triple-guillemets.
+    plainte = _("Escaped newline.")
+    gabarit = r' *\\$'
 
-    def trouver_erreur(self, curseur):
-        tampon = vim.current.buffer
-        rangee, colonne = curseur
-        if colonne <= Editeur.limite and len(tampon[rangee-1]) > Editeur.limite:
-            return Editeur.limite, len(tampon[rangee-1])
-
-    def confirmer_erreur(self, curseur):
-        tampon = vim.current.buffer
-        rangee, colonne = curseur
-        return (colonne == Editeur.limite
-                and len(tampon[rangee-1]) > Editeur.limite)
+    def confirmer_erreur(self, rangee, colonne):
+        if Broutille.confirmer_erreur(self, rangee, colonne):
+            tampon = vim.current.buffer
+            ligne = tampon[rangee]
+            return ((colonne == 0 or ligne[colonne-1] != ' ')
+                    and not ligne.endswith('"""\\'))
 
     def corriger(self):
-        # Redisposer l'entièreté du code Python.
-        disposer_en_mixte_remplie(vim.current.window.cursor[0])
+        self.remplacer_texte('')
+
+class Par_Blanc(Broutille):
+    # Une parenthÃ¨se ouvrante ne doit pas Ãªtre suivie d'un blanc.  MÃªme chose
+    # pour les crochets ou accolades ouvrants.
+    plainte = _("Space after opening bracket, brace or parenthesis.")
+    gabarit = r'([(\[{])  *'
+
+    def corriger(self):
+        # Enlever les blancs qui suivent.
+        self.remplacer_texte(r'\1')
+        self.repositionnement = True
+
+class Blanc_These(Broutille):
+    # Une parenthÃ¨se fermante ne doit pas Ãªtre prÃ©cÃ©dÃ©e d'un blanc.
+    # MÃªme chose pour les crochets ou accolades ouvrants.
+    plainte = _("Space before closing bracket, brace or parenthesis.")
+    gabarit = r'([^ ])  *([)\]}])'
+
+    def corriger(self):
+        # Enlever les blancs qui prÃ©cÃ¨dent.
+        self.remplacer_texte(r'\1\2')
+        self.repositionnement = True
+
+class Virgule_Noir(Broutille):
+    # Une virgule doit Ãªtre suivie d'un blanc.  MÃªme chose pour les
+    # point-virgules.
+    plainte = _("Punctuation not followed by space.")
+    gabarit = '([,;])([^ )])'
+    syntexte = 0
+
+    def corriger(self):
+        # Ajouter un blanc.
+        self.remplacer_texte(r'\1 \2')
+        self.repositionnement = True
+
+class Blanc_Virgule(Broutille):
+    # Une virgule ne doit pas Ãªtre prÃ©cÃ©dÃ©e d'un blanc.  MÃªme chose pour
+    # les deux-points et point-virgules.
+    plainte = _("Punctuation preceded by space.")
+    gabarit = '(  *)([,:;])'
+
+    def confirmer_erreur(self, rangee, colonne):
+        if Broutille.confirmer_erreur(self, rangee, colonne):
+            tampon = vim.current.buffer
+            return colonne == 0 or tampon[rangee][colonne-1] != ' '
+
+    def corriger(self):
+        # DÃ©placer la virgule avant les blancs.
+        self.remplacer_texte(r'\2\1')
+        self.repositionnement = True
+
+class Noir_Egal(Broutille):
+    # `=' ou `==' doivent gÃ©nÃ©ralement Ãªtre prÃ©cÃ©dÃ©s d'un blanc.  Par contre,
+    # pour les dÃ©finitions de paramÃ¨tres avec mot-clÃ©, il n'y a aucun blanc
+    # de part et d'autre du `='.
+    plainte = _("Assignment or comparison symbol not preceded by space.")
+    gabarit = '([^-+*/ <=>!&|])=  *'
+    syntexte = 0
+
+    def corriger(self):
+        # InsÃ©rer le blanc manquant.
+        self.remplacer_texte(r'\1 = ')
+        self.repositionnement = True
+
+class Egal_Noir(Broutille):
+    # `=' ou `==' doivent gÃ©nÃ©ralement Ãªtre suivis d'un blanc.  Par contre,
+    # pour les dÃ©finitions de paramÃ¨tres avec mot-clÃ©, il n'y a aucun blanc
+    # de part et d'autre du `='.
+    plainte = _("Assignment or comparison symbol not followed by space.")
+    gabarit = '  *=([^ =])'
+    syntexte = 0
+
+    def confirmer_erreur(self, rangee, colonne):
+        if Broutille.confirmer_erreur(self, rangee, colonne):
+            tampon = vim.current.buffer
+            return colonne == 0 or tampon[rangee][colonne-1] != ' '
+
+    def corriger(self):
+        # InsÃ©rer le blanc manquant.
+        self.remplacer_texte(r' = \1')
+        self.repositionnement = True
+
+class Enonce_Commentaire(Broutille):
+    # Un commentaire doit Ãªtre seule sur sa ligne, il ne peut terminer une
+    # ligne logique qui contient dÃ©jÃ  autre chose.
+    plainte = _("In-line comment.")
+    gabarit = '[^ ] *#'
+    syntexte = -1
+
+    def corriger(self):
+        # SÃ©parer le commentaire pour le mettre seul sur une ligne sÃ©parÃ©e.
+        # Le commentaire prÃ©cÃ©de normalement la ligne, Ã  moins que la ligne
+        # Python se termine par deux-points, dans lequel cas le commentaire
+        # suit la ligne.  Une majuscule sera forcÃ©e au dÃ©but du commentaire,
+        # et un terminateur de phrase sera ajoutÃ© au besoin.
+        tampon = vim.current.buffer
+        rangee = curseur_courant()[0]
+        ligne = tampon[rangee]
+        code_python = ligne[:self.match.start()+1]
+        commentaire = ligne[self.match.end()+1:]
+        if commentaire.startswith(' '):
+            commentaire = commentaire[1:]
+        if commentaire:
+            if commentaire[0].islower():
+                commentaire = commentaire[0].upper() + commentaire[1:]
+            if commentaire[-1] not in '.!?':
+                commentaire += '.'
+            if code_python.endswith(':'):
+                tampon[rangee:rangee+1] = [
+                    code_python,
+                    '%*s# %s' % (marge_gauche(tampon[rangee+1]), '',
+                                 commentaire)]
+            else:
+                tampon[rangee:rangee+1] = [
+                    '%*s# %s' % (marge_gauche(code_python), '', commentaire),
+                    code_python]
+        else:
+            tampon[rangee] = code_python
+        self.annuler_precedent()
+
+class Operateur_FinLigne:
+    # Un opÃ©rateur ne peut se trouver en fin de ligne.
+    plainte = _("Operator at end of line.")
+    gabarit = r'(\band|\bor|[-+*/%<=>!])$'
+    syntexte = 0
+
+    def corriger(self):
+        # Rapporter l'opÃ©rateur au dÃ©but de la ligne suivante.
+        tampon = vim.current.buffer
+        rangee = curseur_courant()[0]
+        ligne = tampon[rangee]
+        operateur = self.match.group().lstrip()
+        tampon[rangee] = ligne[:self.match.start()].rstrip()
+        ligne = tampon[rangee+1]
+        marge = marge_gauche(ligne)
+        tampon[rangee+1] = '%s%s %s' % (ligne[:marge], operateur, ligne[marge:])
+        self.annuler_precedent()
+
+class Guillemets_SansMot(Broutille):
+    # Une apostrophe devrait Ãªtre utilisÃ© plutÃ´t qu'un guillemet pour
+    # dÃ©limiter une chaÃ®ne qui ne contient que des caractÃ¨res spÃ©ciaux ou
+    # des lettres isolÃ©es.
+    plaine = _("Double-quotes with no words (consider single-quotes).")
+    gabarit = r'"(\\.|[^"])*"'
+
+    def confirmer_erreur(self, rangee, colonne):
+        if Broutille.confirmer_erreur(self, rangee, colonne):
+            tampon = vim.current.buffer
+            texte = eval(self.match.group(), {}, {})
+            if not texte:
+                return True
+            if (vim.eval("synIDattr(synID(%d, %d, 0), \"name\")"
+                         % (rangee + 1, colonne + 1))
+                  not in ('pythonRawString', 'pythonString')):
+                return False
+            return not re.search('[A-Za-z][A-Za-z]', texte)
+
+    def corriger(self):
+        texte = eval(self.match.group(), {}, {})
+        self.remplacer_texte(chaine_python(texte, '\''))
+        self.repositionnement = True
 
 class Triple_Guillemets(Broutille):
-    # Un triple-guillemets qui débute une chaîne doit débuter une ligne ou
-    # suivre une virgule ou une parenthèse ouvrante, et n'être suivi que d'un
-    # backslash.  S'il termine une chaîne, il doit être seul sur sa ligne, ou
-    # n'être suivi que d'une virgule ou d'une parenthèse fermante.
+    # Un triple-guillemets qui dÃ©bute une chaÃ®ne doit dÃ©buter une ligne ou
+    # suivre une virgule ou une parenthÃ¨se ouvrante, et n'Ãªtre suivi que
+    # d'un backslash.  S'il termine une chaÃ®ne, il doit Ãªtre seul sur sa
+    # ligne, ou n'Ãªtre suivi que d'une virgule ou d'une parenthÃ¨se fermante.
     plainte = _("Questionnable formatting of triple quotes.")
-    gabarit = r'"""'
+    gabarit = '"""'
 
-    def confirmer_erreur(self, curseur):
-        if Broutille.confirmer_erreur(self, curseur):
+    def confirmer_erreur(self, rangee, colonne):
+        if Broutille.confirmer_erreur(self, rangee, colonne):
             tampon = vim.current.buffer
-            rangee, colonne = curseur
-            ligne = tampon[rangee-1]
+            ligne = tampon[rangee]
             suffixe = ligne[colonne+3:]
             if suffixe == '\\':
                 if colonne > 0 and ligne[colonne-1] == '(':
@@ -2089,347 +2592,322 @@ class Triple_Guillemets(Broutille):
                 return colonne > 0
             return True
 
-class Enonce_Commentaire(Broutille):
-    # Un commentaire doit être seule sur sa ligne, il ne peut terminer une
-    # ligne logique qui contient déjà autre chose.
-    plainte = _("In-line comment.")
-    gabarit = '[^ ] *#'
-    syntexte = -1
-
-    def corriger(self):
-        # Séparer le commentaire pour le mettre seul sur une ligne séparée.
-        # Le commentaire précéde normalement la ligne, à moins que la ligne
-        # Python se termine par deux-points, dans lequel cas le commentaire
-        # suit la ligne.  Une majuscule sera forcée au début du commentaire,
-        # et un terminateur de phrase sera ajouté au besoin.
-        tampon = vim.current.buffer
-        rangee = vim.current.window.cursor[0]
-        ligne = tampon[rangee-1]
-        code_python = ligne[:self.match.start() + 1]
-        commentaire = ligne[self.match.end() + 1:]
-        if commentaire.startswith(' '):
-            commentaire = commentaire[1:]
-        if commentaire:
-            if commentaire[0].islower():
-                commentaire = commentaire[0].upper() + commentaire[1:]
-            if commentaire[-1] not in '.!?':
-                commentaire += '.'
-            if code_python.endswith(':'):
-                tampon[rangee-1:rangee] = [
-                    code_python,
-                    '%*s# %s' % (marge_gauche(tampon[rangee]), '', commentaire)]
-            else:
-                tampon[rangee-1:rangee] = [
-                    '%*s# %s' % (marge_gauche(code_python), '', commentaire),
-                    code_python]
-        else:
-            tampon[rangee-1] = code_python
-        self.annuler_precedent()
-
-class Par_Blanc(Broutille):
-    # Une parenthèse ouvrante ne doit pas être suivie d'un blanc.
-    # Même chose pour les crochets ou accolades ouvrants.
-    plainte = _("Space after opening symbol.")
-    gabarit = r'([(\[{])  *'
-
-    def corriger(self):
-        # Enlever les blancs qui suivent.
-        self.remplacer_texte(r'\1')
-
-class Blanc_These(Broutille):
-    # Une parenthèse fermante ne doit pas être précédée d'un blanc.
-    # Même chose pour les crochets ou accolades ouvrants.
-    plainte = _("Space before closing symbol.")
-    gabarit = r'([^ ])  *([)\]}])'
-
-    def corriger(self):
-        # Enlever les blancs qui précèdent.
-        self.remplacer_texte(r'\1\2')
-
-class Virgule_Noir(Broutille):
-    # Une virgule doit être suivie d'un blanc.
-    # Même chose pour les point-virgules.
-    plainte = _("Punctuation not followed by space.")
-    gabarit = r'([,;])([^ )])'
-    syntexte = 0
-
-    def corriger(self):
-        # Ajouter un blanc.
-        self.remplacer_texte(r'\1 \2')
-
-class Blanc_Virgule(Broutille):
-    # Une virgule ne doit pas être précédée d'un blanc.
-    # Même chose pour les deux-points et point-virgules.
-    plainte = _("Punctuation preceded by space.")
-    gabarit = r'(  *)([,:;])'
-
-    def confirmer_erreur(self, curseur):
-        if Broutille.confirmer_erreur(self, curseur):
-            tampon = vim.current.buffer
-            rangee, colonne = curseur
-            return colonne == 0 or tampon[rangee-1][colonne-1] != ' '
-
-    def corriger(self):
-        # Déplacer la virgule avant les blancs.
-        self.remplacer_texte(r'\2\1')
-
-class Noir_Egal(Broutille):
-    # `=' ou `==' doivent généralement être précédés d'un blanc.
-    # Par contre, pour les définitions de paramètres avec mot-clé, il n'y
-    # a aucun blanc de part et d'autre du `='.
-    plainte = _("Assignment or comparison symbol not preceded by space.")
-    gabarit = r'([^-+*/ <=>!&|])=  *'
-    syntexte = 0
-
-    def corriger(self):
-        # Insérer le blanc manquant.
-        self.remplacer_texte(r'\1 = ')
-
-class Egal_Noir(Broutille):
-    # `=' ou `==' doivent généralement être suivis d'un blanc.
-    # Par contre, pour les définitions de paramètres avec mot-clé, il n'y
-    # a aucun blanc de part et d'autre du `='.
-    plainte = _("Assignment or comparison symbol not followed by space.")
-    gabarit = r'  *=([^ =])'
-    syntexte = 0
-
-    def confirmer_erreur(self, curseur):
-        if Broutille.confirmer_erreur(self, curseur):
-            tampon = vim.current.buffer
-            rangee, colonne = curseur
-            return colonne == 0 or tampon[rangee-1][colonne-1] != ' '
-
-    def corriger(self):
-        # Insérer le blanc manquant.
-        self.remplacer_texte(r' = \1')
-
-class Backslash_FinLigne(Broutille):
-    # Le backslash en fin-de-ligne doit être tout simplement évité, à
-    # l'exception du cas où il suit immédiatement un triple-guillemets.
-    plainte = _("Escaped newline.")
-    gabarit = r' *\\$'
-
-    def confirmer_erreur(self, curseur):
-        if Broutille.confirmer_erreur(self, curseur):
-            tampon = vim.current.buffer
-            rangee, colonne = curseur
-            ligne = tampon[rangee-1]
-            return ((colonne == 0 or ligne[colonne-1] != ' ')
-                    and not ligne.endswith('"""\\'))
-
-    def corriger(self):
-        self.remplacer_texte('')
-
-class Operateur_FinLigne:
-    # Un opérateur ne peut se trouver en fin de ligne.
-    plainte = _("Operator at end of line.")
-    gabarit = r'(\band|\bor|[-+*/%<=>!])$'
-    syntexte = 0
-
-    def corriger(self):
-        # Rapporter l'opérateur au début de la ligne suivante.
-        tampon = vim.current.buffer
-        rangee = vim.current.window.cursor[0]
-        ligne = tampon[rangee-1]
-        operateur = self.match.group().lstrip()
-        tampon[rangee-1] = ligne[:self.match.start()].rstrip()
-        ligne = tampon[rangee]
-        marge = marge_gauche(ligne)
-        tampon[rangee] = '%s%s %s' % (ligne[:marge], operateur, ligne[marge:])
-        self.annuler_precedent()
-
-class Import_Etoile(Broutille):
-    # L'énoncé `import *' devrait généralement être évité.
-    plainte = _("Use of `import *' (detail what should be imported).")
-    gabarit = r'\bimport \*'
-
-class Print(Broutille):
-    # L'énoncé `print' devrait être réservé pour la mise-au-point.
-    plainte = _("Use of `print' statement (maybe for debugging).")
-    gabarit = r'\bprint\b'
-    syntexte = 0
-
-class Apply(Broutille):
-    # `apply(FONCTION, ARGUMENTS)' s'écrit mieux `FONCTION(*ARGUMENTS)'.
-    plainte = _("Use of `apply' function (prefer `function(*arguments)').")
-    gabarit = r'\bapply\('
-
-class Close(Broutille):
-    # `OBJET.close()' est rarement nécessaire si OBJET est un fichier.
-    plainte = _("Use of `close' method (maybe useless).")
-    gabarit = r'\.close\('
-
-class Eval(Broutille):
-    # `eval()' doit être évité autant que possible.
-    plainte = _("Use of `eval' function (rethink the algorithm).")
-    gabarit = r'\beval\('
-
-class Exec(Broutille):
-    # `exec' doit être évité autant que possible.
-    plainte = _("Use of `exec' statement (rethink the algorithm).")
-    gabarit = r'\bexec\b'
-
-class Execfile(Broutille):
-    # `execfile()' doit être évité autant que possible.
-    plainte = _("Use of `execfile' function (rethink the algorithm).")
-    gabarit = r'\bexecfile\('
-
-class Find(Broutille):
-    # `CHAÎNE.find(SOUS_CHAÎNE)' s'écrit mieux `SOUS_CHAÎNE in CHAÎNE'.
-    plainte = _("Use of `find' method (maybe use `in').")
-    gabarit = r'\.find\('
-
-class Global(Broutille):
-    # `global' doit être évité autant que possible.
-    plainte = _("Use of `global' statement (use class variables).")
-    gabarit = r'\bglobal\b'
-
-class Has_Key(Broutille):
-    # `OBJET.has_key(CLÉ)' s'écrit mieux `CLÉ in OBJET'.
-    plainte = _("Use of `has_key' method (maybe use `in').")
-    gabarit = r'\.has_key\('
-
-class Input(Broutille):
-    # `input()' doit être évité autant que possible.
-    plainte = _("Use of `input' function (rethink the algorithm).")
-    gabarit = r'\binput\('
-
-class Keys(Broutille):
-    # `OBJET.keys()' s'écrit mieux `OBJET', utilisé comme itérateur.
-    plainte = _("Use of `keys' method (maybe useless).")
-    gabarit = r'\.keys\(\)'
-
-    def corriger(self):
-        # Éliminer l'appel de `keys'.
-        self.remplacer_texte('')
-
-class Open(Broutille):
-    # `open(NOM_FICHIER)' s'écrit mieux `file(NOM_FICHIER)'.
-    plainte = _("Use of `open' method (maybe use `file').")
-    gabarit = r'\bopen\('
-
-    def corriger(self):
-        # Utiliser `file'.
-        self.remplacer_texte('file(')
-
-class Readlines(Broutille):
-    # `OBJET.readlines()' s'écrit mieux `OBJET', utilisé comme itérateur.
-    plainte = _("Use of `readlines' method (maybe useless).")
-    gabarit = r'\.readlines\(\)'
-
-    def corriger(self):
-        # Éliminer l'appel de `readlines'.
-        self.remplacer_texte('')
-
-class String(Broutille):
-    # Le module `string' doit être considéré comme à peu près désuet.
-    plainte = _("Use of `string' module (maybe string methods).")
-    gabarit = r'\bstring\.|\bimport.*\bstring\b'
-    syntexte = 0
-
-class Type(Broutille):
-    # `OBJECT is type(CONSTANTE)' se récrit `isinstance(OBJET, TYPE)'.
-    plainte = _("Use of `type' function (maybe use `isinstance').")
-    gabarit = r'(\bis |==) *type\('
-
 class Dates_Richard(Broutille):
-    # Richard Nault a sa méthode bien personnelle pour écrire les dates.
-    plainte = _("Richard Nault's style date (use ISO-8601 notation).")
+    # Richard Nault a sa mÃ©thode bien personnelle pour Ã©crire les dates.
+    plainte = _("Richard Nault's style date (consider ISO-8601 notation).")
     mois = {
-        # Écriture américaine.
+        # Ã‰criture amÃ©ricaine.
         'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
         'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12,
-        # Ajouts pour le français.
-        'Fév': 2, 'Avr': 4, 'Mai': 5, 'Aoû': 8, 'Déc': 12,
-        # Écriture française majuscule.
-        'JAN': 1, 'FÉB': 2, 'MAR': 3, 'AVR': 4, 'MAI': 5, 'JUN': 6,
-        'JUL': 7, 'AOÛ': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DÉC': 12,
-        # Écriture française minuscule.
-        'jan': 1, 'féb': 2, 'mar': 3, 'avr': 4, 'mai': 5, 'jun': 6,
-        'jul': 7, 'aoû': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'déc': 12,
-        # Erreurs orthographiques observées.
+        # Ajouts pour le franÃ§ais.
+        'FÃ©v': 2, 'Avr': 4, 'Mai': 5, 'AoÃ»': 8, 'DÃ©c': 12,
+        # Ã‰criture franÃ§aise majuscule.
+        'JAN': 1, 'FÃ‰B': 2, 'MAR': 3, 'AVR': 4, 'MAI': 5, 'JUN': 6,
+        'JUL': 7, 'AOÃ›': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DÃ‰C': 12,
+        # Ã‰criture franÃ§aise minuscule.
+        'jan': 1, 'fÃ©b': 2, 'mar': 3, 'avr': 4, 'mai': 5, 'jun': 6,
+        'jul': 7, 'aoÃ»': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dÃ©c': 12,
+        # Erreurs orthographiques observÃ©es.
         'AOU': 8, 'aou': 8,
         }
     gabarit = r'([0-3][0-9])\.(%s)\.(200[0-4])' % '|'.join(mois)
 
     def corriger(self):
         self.remplacer_texte(r'\3-%02d-\1' % self.mois[self.match.group(2)])
+
+class GrandeLigne(Broutille):
+    # Les lignes doivent tenir dans Editeur.LIMITE colonnes.
+    plainte = _("Line exceeds %d characters.")
+
+    def trouver_erreur(self, rangee, colonne):
+        tampon = vim.current.buffer
+        if colonne <= Editeur.limite and len(tampon[rangee]) > Editeur.limite:
+            self.plainte = GrandeLigne.plainte % Editeur.limite
+            return Editeur.limite, len(tampon[rangee])
+
+    def confirmer_erreur(self, rangee, colonne):
+        tampon = vim.current.buffer
+        return (colonne == Editeur.limite
+                and len(tampon[rangee]) > Editeur.limite)
+
+    def corriger(self):
+        # Redisposer l'entiÃ¨retÃ© du code Python.
+        disposer_en_retrait_remplir(curseur_courant()[0])
+
+class Apply(Broutille):
+    # `apply(FONCTION, ARGUMENTS)' s'Ã©crit mieux `FONCTION(*ARGUMENTS)'.
+    plainte = (_("Use of `apply' function -- `function(*arguments)' is"
+                 " preferred."))
+    gabarit = r'\bapply\('
+
+    def corriger(self):
+        # Redisposer l'entiÃ¨retÃ© du code Python.
+        Editeur.recriture_sans.append('apply')
+        disposer_en_retrait_remplir(curseur_courant()[0])
+        Editeur.recriture_sans.pop()
+
+class Close(Broutille):
+    # `OBJET.close()' est rarement nÃ©cessaire si OBJET est un fichier.
+    plainte = _("Use of `close' method (possibly unnecessary).")
+    gabarit = r'\.close\(\)'
+
+class Eval(Broutille):
+    # `eval()' doit Ãªtre Ã©vitÃ© autant que possible.
+    plainte = _("Use of `eval' function (rethink the algorithm).")
+    gabarit = r'\beval\('
+
+class Exec(Broutille):
+    # `exec' doit Ãªtre Ã©vitÃ© autant que possible.
+    plainte = _("Use of `exec' statement (rethink the algorithm).")
+    gabarit = r'\bexec\b'
+
+class Execfile(Broutille):
+    # `execfile()' doit Ãªtre Ã©vitÃ© autant que possible.
+    plainte = _("Use of `execfile' function (rethink the algorithm).")
+    gabarit = r'\bexecfile\('
+
+class Find(Broutille):
+    # `CHAÃŽNE.find(SOUS_CHAÃŽNE)' s'Ã©crit mieux `SOUS_CHAÃŽNE in CHAÃŽNE'.
+    plainte = _("Use of `find' method (consider using `in' instead).")
+    gabarit = r'\.find\('
+
+    def corriger(self):
+        # Redisposer l'entiÃ¨retÃ© du code Python.
+        Editeur.recriture_sans.append('find')
+        disposer_en_retrait_remplir(curseur_courant()[0])
+        Editeur.recriture_sans.pop()
+
+class Global(Broutille):
+    # `global' doit Ãªtre Ã©vitÃ© autant que possible.
+    plainte = (_("Use of `global' statement (consider using class variables"
+                 " instead)."))
+    gabarit = r'\bglobal\b'
+
+class Has_Key(Broutille):
+    # `OBJET.has_key(CLÃ‰)' s'Ã©crit mieux `CLÃ‰ in OBJET'.
+    plainte = _("Use of `has_key' method (consider using `in' instead).")
+    gabarit = r'\.has_key\('
+
+    def corriger(self):
+        # Redisposer l'entiÃ¨retÃ© du code Python.
+        Editeur.recriture_sans.append('has_key')
+        disposer_en_retrait_remplir(curseur_courant()[0])
+        Editeur.recriture_sans.pop()
+
+class Input(Broutille):
+    # `input()' doit Ãªtre Ã©vitÃ© autant que possible.
+    plainte = _("Use of `input' function (rethink the algorithm).")
+    gabarit = r'\binput\('
+
+class Import_Etoile(Broutille):
+    # L'Ã©noncÃ© `import *' devrait gÃ©nÃ©ralement Ãªtre Ã©vitÃ©.
+    plainte = _("Use of `import *' (be explicit about what to import instead).")
+    gabarit = r'\bimport \*'
+
+class Items(Broutille):
+    # `OBJET.items()' s'Ã©crit souvent mieux `OBJET.iteritems()'.
+    plainte = _("Use of `items' method (consider using `iteritems' instead).")
+    gabarit = r'\.items\(\)'
+
+    def corriger(self):
+        # Utiliser `iteritems'.
+        self.remplacer_texte('.iteritems()')
+
+class Iterkeys(Broutille):
+    # `OBJET.iterkeys()' s'Ã©crit mieux `OBJET', utilisÃ© comme itÃ©rateur.
+    plainte = _("Use of `iterkeys' method (possibly unnecessary).")
+    gabarit = r'\.iterkeys\(\)'
+
+    def corriger(self):
+        # Ã‰liminer l'appel de `iterkeys'.
+        self.remplacer_texte('')
+
+class Keys(Broutille):
+    # `OBJET.keys()' s'Ã©crit mieux `OBJET', utilisÃ© comme itÃ©rateur.
+    plainte = _("Use of `keys' method (possibly unnecessary).")
+    gabarit = r'\.keys\(\)'
+
+    def corriger(self):
+        # Ã‰liminer l'appel de `keys'.
+        self.remplacer_texte('')
+
+class Open(Broutille):
+    # `open(NOM_FICHIER)' s'Ã©crit mieux `file(NOM_FICHIER)'.
+    plainte = _("Use of `open' method (consider using `file' instead).")
+    gabarit = r'\bopen\('
+
+    def corriger(self):
+        # Utiliser `file'.
+        self.remplacer_texte('file(')
+
+class Print(Broutille):
+    # L'Ã©noncÃ© `print' devrait Ãªtre rÃ©servÃ© pour la mise-au-point.
+    plainte = _("Use of `print' statement (is it meant for debugging?).")
+    gabarit = r'\bprint\b'
+    syntexte = 0
+
+    def corriger(self):
+        # Redisposer l'entiÃ¨retÃ© du code Python.
+        Editeur.recriture_sans.append('print')
+        disposer_en_retrait_remplir(curseur_courant()[0])
+        Editeur.recriture_sans.pop()
+
+class Readlines(Broutille):
+    # `OBJET.readlines()' s'Ã©crit mieux `OBJET', utilisÃ© comme itÃ©rateur.
+    plainte = _("Use of `readlines' method (possibly unnecessary).")
+    gabarit = r'\.readlines\(\)'
+
+    def corriger(self):
+        # Ã‰liminer l'appel de `readlines'.
+        self.remplacer_texte('')
+
+class String(Broutille):
+    # Le module `string' doit Ãªtre considÃ©rÃ© comme Ã  peu prÃ¨s dÃ©suet.
+    plainte = (_("Use of `string' module (consider using string methods"
+                 " instead)."))
+    gabarit = r'\bstring\.|\bimport.*\bstring\b'
+    syntexte = 0
+
+    def corriger(self):
+        # Redisposer l'entiÃ¨retÃ© du code Python.
+        Editeur.recriture_sans.append('string')
+        disposer_en_retrait_remplir(curseur_courant()[0])
+        Editeur.recriture_sans.pop()
+
+class Type(Broutille):
+    # `OBJECT is type(CONSTANTE)' se rÃ©crit `isinstance(OBJET, TYPE)'.
+    plainte = _("Use of `type' function (consider using `isinstance' instead).")
+    gabarit = r'(\bis |==) *type\('
+
+class Values(Broutille):
+    # `OBJET.values()' s'Ã©crit souvent mieux `OBJET.itervalues()'.
+    plainte = _("Use of `values' method (consider using `itervalues' instead).")
+    gabarit = r'\.values\(\)'
+
+    def corriger(self):
+        # Utiliser `itervalues'.
+        self.remplacer_texte('.itervalues()')
+
+class Xreadlines(Broutille):
+    # `OBJET.xreadlines()' s'Ã©crit mieux `OBJET', utilisÃ© comme itÃ©rateur.
+    plainte = _("Use of `xreadlines' method (possibly unnecessary).")
+    gabarit = r'\.xreadlines\(\)'
+
+    def corriger(self):
+        # Ã‰liminer l'appel de `xreadlines'.
+        self.remplacer_texte('')
 
 ## Quelques autres actions simples.
 
 def choisir_mise_au_point(mode):
-    Editeur.mise_au_point = valeur_suivante(Editeur.mise_au_point,
-        range(len(Editeur.explications_mise_au_point)))
-    sys.stdout.write(Editeur.explications_mise_au_point[Editeur.mise_au_point])
+    Editeur.mise_au_point = not Editeur.mise_au_point
+    if Editeur.mise_au_point:
+        sys.stdout.write(_("Tracing enabled, quite verbose."))
+    else:
+        sys.stdout.write(_("Tracing disabled."))
 
 def choisir_remplisseur(mode):
+    def valeur_suivante(valeur, choix):
+        return choix[(list(choix).index(valeur) + 1) % len(choix)]
     Disposeur.remplisseur = valeur_suivante(Disposeur.remplisseur,
-                                             Disposeur.choix_remplisseurs)
+                                            Disposeur.choix_remplisseurs)
     sys.stdout.write("Les commentaires seront remplis par `%s'."
                      % Disposeur.remplisseur)
 
-def valeur_suivante(valeur, choix):
-    return choix[(list(choix).index(valeur) + 1) % len(choix)]
-
 def ajouter_parentheses(mode):
-    rangee, colonne = vim.current.window.cursor
+    rangee, colonne = curseur_courant()
     tampon = vim.current.buffer
-    ligne = tampon[rangee-1]
+    ligne = tampon[rangee]
     if ligne.endswith(':'):
-        tampon[rangee-1] = ligne[:colonne] + '(' + ligne[colonne:-1] + '):'
+        tampon[rangee] = ligne[:colonne] + '(' + ligne[colonne:-1] + '):'
     else:
-        tampon[rangee-1] = ligne[:colonne] + '(' + ligne[colonne:] + ')'
-    vim.current.window.cursor = rangee, colonne + 1
+        tampon[rangee] = ligne[:colonne] + '(' + ligne[colonne:] + ')'
+    changer_curseur_courant(rangee, colonne + 1)
 
 def eliminer_parentheses(mode):
-    rangee1, colonne1 = vim.current.window.cursor
+    rangee1, colonne1 = curseur_courant()
     vim.command('normal %')
-    rangee2, colonne2 = vim.current.window.cursor
+    rangee2, colonne2 = curseur_courant()
     vim.command('normal %')
     if (rangee1, colonne1) > (rangee2, colonne2):
         rangee1, rangee2 = rangee2, rangee1
         colonne1, colonne2 = colonne2, colonne1
     tampon = vim.current.buffer
     for rangee, colonne in (rangee2, colonne2), (rangee1, colonne1):
-        ligne = tampon[rangee-1]
-        tampon[rangee-1] = ligne[:colonne] + ligne[colonne+1:]
-    vim.current.window.cursor = rangee1, colonne1
+        ligne = tampon[rangee]
+        tampon[rangee] = ligne[:colonne] + ligne[colonne+1:]
+    changer_curseur_courant(rangee1, colonne1)
 
 def forcer_apostrophes(mode):
-    rangee, colonne = vim.current.window.cursor
-    tampon = vim.current.buffer
-    ligne = tampon[rangee-1]
-    ouvrant = ligne[colonne:].find('"')
-    if ouvrant >= 0:
-        ouvrant += colonne
-        fermant = ligne[ouvrant+1:].find('"')
-        if fermant >= 0:
-            fermant += ouvrant + 1
-            tampon[rangee-1] = (ligne[:ouvrant] + '\''
-                                + ligne[ouvrant+1:fermant].replace('\'', r'\'')
-                                + '\'' + ligne[fermant+1:])
-            vim.current.window.cursor = rangee, ouvrant + 1
+    changer_chaine('"', '\'')
 
 def forcer_guillemets(mode):
-    rangee, colonne = vim.current.window.cursor
+    changer_chaine('\'', '"')
+
+def changer_chaine(avant, apres):
+    # AVANT et APRES sont des chaÃ®nes de un caractÃ¨re: le dÃ©limiteur.
+    rangee, colonne = curseur_courant()
     tampon = vim.current.buffer
-    ligne = tampon[rangee-1]
-    ouvrant = ligne[colonne:].find('\'')
-    if ouvrant >= 0:
-        ouvrant += colonne
-        fermant = ligne[ouvrant+1:].find('\'')
-        if fermant >= 0:
-            fermant += ouvrant + 1
-            tampon[rangee-1] = (ligne[:ouvrant] + '"'
-                                + ligne[ouvrant+1:fermant].replace('"', r'\"')
-                                + '"' + ligne[fermant+1:])
-            vim.current.window.cursor = rangee, ouvrant + 1
+    ligne = tampon[rangee]
+    match = (re.compile(r'r?%s(\\.|[^%s])*%s' % (avant, avant, avant))
+             .search)(ligne, colonne)
+    if match:
+        texte = chaine_python(eval(match.group(), {}, {}), apres)
+        tampon[rangee] = ligne[:match.start()] + texte + ligne[match.end():]
+        changer_curseur_courant(rangee, match.start() + len(texte))
 
 ## Routines de service.
 
+# Doit-on compter les rangÃ©es et colonnes Ã  partir de 0 ou de 1?  Dans la ligne
+# de mode sous la fenÃªtre, Vim affiche rangÃ©e et colonne tous deux comptÃ©s
+# Ã  partir de 1.  Dans `vim.current.window.cursor', la rangÃ©e est comptÃ©e
+# Ã  partir de 1 et la colonne Ã  partir de 0.  Dans `vim.current.buffer',
+# les rangÃ©es sont indicÃ©es Ã  partir de 0, comme il se doit en Python.
+# Dans ce programme, rangÃ©es et colonnes sont indicÃ©es Ã  partir de 0.
+
+def curseur_courant():
+    row, column = vim.current.window.cursor
+    return row - 1, column
+
+def changer_curseur_courant(rangee, colonne):
+    vim.current.window.cursor = rangee + 1, colonne
+
 def est_none(noeud):
-    # Retourner True si le noeud représente la constante None.
+    # Retourner True si le noeud reprÃ©sente la constante None.
     return isinstance(noeud, compiler.ast.Const) and noeud.value is None
+
+def chaine_python(texte, delimiteur):
+    # Retourner la reprÃ©sentation de TEXTE sous la forme d'une chaÃ®ne Python
+    # delimitÃ©e par DELIMITEUR, qui est soit une apostrophe, soit un guillemet.
+    # L'attribut "raw" est dÃ©terminÃ© automatiquement.
+    if meilleure_en_raw(texte, delimiteur):
+        return 'r' + delimiteur + texte + delimiteur
+    fragments = []
+    write = fragments.append
+    substitutions = {delimiteur: '\\' + delimiteur, '\\': r'\\', '\a': r'\a',
+                     '\b': r'\b', '\f': r'\f', '\n': r'\n', '\t': r'\t',
+                     '\v': r'\v'}
+    write(delimiteur)
+    for caractere in texte:
+        if caractere in substitutions:
+            write(substitutions[caractere])
+        elif not est_imprimable(caractere):
+            write(repr(caractere)[1:-1])
+        else:
+            write(caractere)
+    write(delimiteur)
+    return ''.join(fragments)
+
+def meilleure_en_raw(texte, delimiteur):
+    # Retourner True si la chaÃ®ne se prÃ©sente mieux en format "raw".
+    if '\\' not in texte:
+        return False
+    if (len(texte) - len(texte.rstrip('\\'))) % 2 != 0:
+        return False
+    for caractere in texte:
+        if caractere == delimiteur or not est_imprimable(caractere):
+            return False
+    return True
 
 try:
     import unicodedata
@@ -2437,17 +2915,22 @@ except ImportError:
 
     def est_imprimable(caractere):
         valeur = ord(caractere)
-        # Retourner vrai si le caractère ISO 8859-1 est imprimable.
+        # Retourner vrai si le caractÃ¨re ISO 8859-1 est imprimable.
         return not (0 <= valeur < 32 or 127 <= valeur < 160)
 else:
 
     def est_imprimable(caractere):
-        # Retourner vrai si le caractère est imprimable selon Unicode.
+        # Retourner vrai si le caractÃ¨re est imprimable selon Unicode.
         return unicodedata.category(unichr(ord(caractere))) != 'Cc'
 
 def marge_gauche(texte):
-    # Retourner le nombre de blancs consécutifs préfixant le texte.
+    # Retourner le nombre de blancs consÃ©cutifs prÃ©fixant le texte.
     return len(texte) - len(texte.lstrip())
 
-installer_vim()
-vim.command('autocmd FileType python python pynits.installer_vim()')
+if vim is not None:
+    installer_vim()
+    vim.command('autocmd FileType python python pynits.installer_vim()')
+
+if __name__ == '__main__':
+    run = Main()
+    run.main(*sys.argv[1:])

@@ -1,12 +1,81 @@
-2004-06-16  Fran�ois Pinard  <pinard@iro.umontreal.ca>
+2004-07-09  François Pinard  <pinard@iro.umontreal.ca>
 
-	* pynitx.txt: Stylistic corrections.
+	* pynits.py: Many stylistic corrections to diagnostics.
+	Reported by Brian van den Broek.
+
+	* pynits.py: Add a nit for xreadlines.
+	Reported by Brian van den Broek.
+
+2004-06-28  François Pinard  <pinard@iro.umontreal.ca>
+
+	* pynits.txt: Document known nits.
+
+2004-06-27  François Pinard  <pinard@iro.umontreal.ca>
+
+	* pynits.py: Do not move cursor to the next nit, when correcting a nit
+	might induce some semantic change.
+
+	* pynits.py: Add nits for items, iterkeys and values.
+
+2004-06-26  François Pinard  <pinard@iro.umontreal.ca>
+
+	* pynits.py: Automate nit corrections for apply, find, has_key, print
+	and string.
+
+	* pynits.py: Better handle multi-line list comprehensions.
+
+2004-06-21  François Pinard  <pinard@iro.umontreal.ca>
+
+	* pynits.py: Redesign refilling.  It was too aggressive, and could
+	also be fooled by some triple-quoted strings.
+
+	* pynits.py: Avoid raw for a string if the delimiter appears in it.
+
+2004-06-20  François Pinard  <pinard@iro.umontreal.ca>
+
+	* pynits.py: Handle multiple indexing subscripts.
+
+	* pynits.py: Replace %\%= by %\, giving it an argument.
+
+	* pynits.py: Refill function argument list.
+
+2004-06-19  François Pinard  <pinard@iro.umontreal.ca>
+
+	* pynits.py: Straighten processing of \' et \", the results are not
+	approximative anymore.
+	* pynits.txt: Adjusted.
+
+	* pynits.py (Guillemets_SansMot): New nit.
+
+	* punits.py: Properly handle empty comments.
+
+	* punits.py (traiter_ligne): Get around a strange vim error when
+	formatting a line containing a floating number.
+
+2004-06-18  François Pinard  <pinard@iro.umontreal.ca>
+
+	* pynits.py: Added right slack processing.
+
+	* pynits.py: Add missing priority arguments when generating list
+	comprehensions.  This was crashing generation.
+
+	* pynits.py: Better test and limit the span when starting from the
+	closing end of a triple-quoted string.
+
+	* pynits.txt: Typos.
+	Reported by Benji Fisher.
+
+	* Makefile: Msgmerge translation files before distribution.
+
+2004-06-16  François Pinard  <pinard@iro.umontreal.ca>
+
+	* pynits.txt: Stylistic corrections.
 	Reported by Brian van den Broek.
 
 	* punits.py: Internationalised.
 	Reported by Ronald Hoellwarth.
 
-2004-06-14  Fran�ois Pinard  <pinard@iro.umontreal.ca>
+2004-06-14  François Pinard  <pinard@iro.umontreal.ca>
 
 	* pynits.py: A few miscellaneous bugs.
 	Reported by Robert Lachance.

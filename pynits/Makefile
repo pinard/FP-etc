@@ -4,8 +4,8 @@ INSTALL_DIR = $(INSTALL) -d -m 755
 # Use `cp' if you do not have `install'.
 INSTALL_DATA = $(INSTALL) -m 644
 
-LANGUAGES = fr
-BUILT = $(addsuffix .mo, $(LANGUAGES))
+LANGUAGES = fr es
+BUILT = pynits.pot $(addsuffix .mo, $(LANGUAGES))
 
 all:
 	@echo "See the README file."
@@ -53,8 +53,8 @@ ARCHIVES = $(HOME)/fp-etc/archives
 dist-tar: $(BUILT)
 	rm -rf $(PACKAGE)-$(VERSION)
 	mkdir $(PACKAGE)-$(VERSION)
-	ln ChangeLog Makefile README THANKS TODO pynits.py pynits.txt \
-	  $(PACKAGE)-$(VERSION)
+	ln ChangeLog Makefile README THANKS TODO \
+	    pynits.pot pynits.py pynits.txt $(PACKAGE)-$(VERSION)
 	for lang in $(LANGUAGES); do \
 	  ln $$lang.po $$lang.mo $(PACKAGE)-$(VERSION); \
 	done
@@ -82,10 +82,13 @@ dist-zip: $(BUILT)
 
 i18ndir = /usr/share/doc/packages/python/Tools/i18n
 
-pynits.pot: pynits.py
-	$(PYTHON) $(i18ndir)/pygettext.py --output=$@ pynits.py
-
 .SUFFIXES: .po .mo
 
-.po.mo:
+%.mo: %.po
 	$(PYTHON) $(i18ndir)/msgfmt.py $^
+
+%.po: pynits.pot
+	msgmerge $@ $^ > $@-tmp && mv $@-tmp $@
+
+pynits.pot: pynits.py
+	$(PYTHON) $(i18ndir)/pygettext.py --docstrings --output=$@ pynits.py
