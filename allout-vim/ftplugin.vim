@@ -27,7 +27,7 @@ function AlloutFoldExpr(line)
 endfunction
 
 function AlloutFoldText()
-  return v:folddashes . ' ' . (v:foldend-v:foldstart) . ' lines '
+  return v:folddashes . ' ' . (v:foldend - v:foldstart + 1) . ' lines '
 endfunction
 
 if !has('python')
