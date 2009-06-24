@@ -1,4 +1,4 @@
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 
 ### Adapté à partir de codespeak/log/producer.py
 ### ============================================
