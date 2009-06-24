@@ -4,12 +4,15 @@
   with Vim, for tidying up individual sources lines.  It is particularily
   helpful when formatting lines holding long or complex expressions.
 
-  The documentation is kept in file "doc.txt", which you may browse or
+  The documentation is kept in file "pynits.txt", which you may browse or
   print, yet it is meant for the Vim help system.  Once the installation
   is completed as per the steps described below, and from within Vim,
   you may quickly get back to the documentation through the command:
 
       :help pynits
+
+  Pynits messages are also available in French, given the `LANG' environment
+  variable is `fr' or a variant of `fr', before you call Vim.
 
 .. On Windows or other non-Unix systems
 

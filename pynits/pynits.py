@@ -8,7 +8,15 @@ Détails supplémentaires pour le support de Python.
 """
 
 __metaclass__ = type
-import re, sys, vim
+import gettext, os, re, sys, vim
+
+try:
+     _ = (gettext.translation('pynits',
+             os.path.join(os.path.dirname(os.path.dirname(__file__)), 'locale'))
+         .gettext)
+except IOError:
+    def _(texte):
+        return texte
 
 def installer_vim():
     leader = '\\'
@@ -16,30 +24,27 @@ def installer_vim():
         leader = vim.eval('maplocalleader')
     # REVOIR: Je ne réussis pas à utiliser ni `,s' ni `,t': bizarre!
     # REVOIR: Délai inexpliqué pour les commandes `,c' et `,m'.
-    register_keys('pynits',
-                  ((leader, 'n', 'trouver_broutille'),
-                   ('"', 'n', 'forcer_guillemets'),
-                   ('\'', 'n', 'forcer_apostrophes'),
-                   ('(', 'n', 'ajouter_parentheses'),
-                   (')', 'n', 'eliminer_parentheses'),
-                   ('.', 'n', 'corriger_broutille'),
-                   ('c', 'n', 'disposer_en_colonne'),
-                   ('l', 'n', 'disposer_en_ligne'),
-                   ('m', 'n', 'disposer_en_mixte'),
-                   ('od', 'n', 'choisir_mise_au_point'),
-                   ('om', 'n', 'montrer_syntaxe'),
-                   ('or', 'n', 'choisir_remplisseur'),
-                   ('q', 'n', 'disposer_en_mixte_remplie'),
-                   ('r', 'n', 'disposer_en_colonne_remplie')))
+    register_local_keys('pynits',
+                        ((leader, 'n', 'trouver_broutille'),
+                         ('"', 'n', 'forcer_guillemets'),
+                         ('\'', 'n', 'forcer_apostrophes'),
+                         ('(', 'n', 'ajouter_parentheses'),
+                         (')', 'n', 'eliminer_parentheses'),
+                         ('.', 'n', 'corriger_broutille'),
+                         ('c', 'n', 'disposer_en_colonne'),
+                         ('l', 'n', 'disposer_en_ligne'),
+                         ('m', 'n', 'disposer_en_mixte'),
+                         ('od', 'n', 'choisir_mise_au_point'),
+                         ('om', 'n', 'montrer_syntaxe'),
+                         ('or', 'n', 'choisir_remplisseur'),
+                         ('q', 'n', 'disposer_en_mixte_remplie'),
+                         ('r', 'n', 'disposer_en_colonne_remplie')))
+    Editeur.limite = int(vim.eval('&textwidth')) or 80
     Disposeur.indentation = int(vim.eval('&shiftwidth'))
 
-def register_keys(plugin, triplets):
-    import os
-    local = True
-    map = 'map <buffer>'
-    variable = ('mapleader', 'maplocalleader')[local]
-    if int(vim.eval('exists("%s")' % variable)):
-        normal_leader = vim.eval(variable)
+def register_local_keys(plugin, triplets):
+    if int(vim.eval('exists("maplocalleader")')):
+        normal_leader = vim.eval('maplocalleader')
     else:
         normal_leader = '\\'
     insert_leader = ord('\x02')
@@ -51,18 +56,18 @@ def register_keys(plugin, triplets):
             mapped = int(vim.eval('hasmapto(\'%s\')' % plug_name))
             if mode == 'i':
                 if not mapped:
-                    vim.command('%s%s <unique> %s%s %s'
-                                % (mode, map, insert_leader, key, plug_name))
-                vim.command('%snore%s <silent> %s <C-O>%s<CR>'
-                            % (mode, map, sid_name, python_command))
+                    vim.command('%smap <buffer> <unique> %s%s %s'
+                                % (mode, insert_leader, key, plug_name))
+                vim.command('%snoremap <buffer> <silent> %s <C-O>%s<CR>'
+                            % (mode, sid_name, python_command))
             else:
                 if not mapped:
-                    vim.command('%s%s <unique> %s%s %s'
-                                % (mode, map, normal_leader, key, plug_name))
-                vim.command('%snore%s <silent> %s %s<CR>'
-                            % (mode, map, sid_name, python_command))
-            vim.command('%snore%s <unique> <script> %s %s'
-                         % (mode, map, plug_name, sid_name))
+                    vim.command('%smap <buffer> <unique> %s%s %s'
+                                % (mode, normal_leader, key, plug_name))
+                vim.command('%snoremap <buffer> <silent> %s %s<CR>'
+                            % (mode, sid_name, python_command))
+            vim.command('%snoremap <buffer> <unique> <script> %s %s'
+                        % (mode, plug_name, sid_name))
 
 # Doit-on compter les rangées et colonnes à partir de 0 ou de 1?  Dans la
 # ligne de mode sous la fenêtre, Vim affiche rangée et colonne tous deux
@@ -71,665 +76,8 @@ def register_keys(plugin, triplets):
 # les rangées sont indicées à partir de 0, comme il se doit en Python.
 # Ce programme se colle à la convention de `vim.current.cursor'; il faut
 # donc systématiquement soustraire 1 à la rangée pour manipuler le tampon.
-
-## Quelques actions simples.
 
 PIED_DE_MOUCHE = '¶'
-
-def choisir_mise_au_point(mode):
-    Editeur.mise_au_point = valeur_suivante(Editeur.mise_au_point,
-        range(len(Editeur.explications_mise_au_point)))
-    sys.stdout.write(Editeur.explications_mise_au_point[Editeur.mise_au_point])
-
-def choisir_remplisseur(mode):
-    Disposeur.remplisseur = valeur_suivante(Disposeur.remplisseur,
-                                             Disposeur.choix_remplisseurs)
-    sys.stdout.write("Les commentaires seront remplis par `%s'."
-                     % Disposeur.remplisseur)
-
-def valeur_suivante(valeur, choix):
-    return choix[(list(choix).index(valeur) + 1) % len(choix)]
-
-def ajouter_parentheses(mode):
-    rangee, colonne = vim.current.window.cursor
-    tampon = vim.current.buffer
-    ligne = tampon[rangee-1]
-    if ligne.endswith(':'):
-        tampon[rangee-1] = ligne[:colonne] + '(' + ligne[colonne:-1] + '):'
-    else:
-        tampon[rangee-1] = ligne[:colonne] + '(' + ligne[colonne:] + ')'
-    vim.current.window.cursor = rangee, colonne + 1
-
-def eliminer_parentheses(mode):
-    rangee1, colonne1 = vim.current.window.cursor
-    vim.command('normal %')
-    rangee2, colonne2 = vim.current.window.cursor
-    vim.command('normal %')
-    if (rangee1, colonne1) > (rangee2, colonne2):
-        rangee1, rangee2 = rangee2, rangee1
-        colonne1, colonne2 = colonne2, colonne1
-    tampon = vim.current.buffer
-    for rangee, colonne in (rangee2, colonne2), (rangee1, colonne1):
-        ligne = tampon[rangee-1]
-        tampon[rangee-1] = ligne[:colonne] + ligne[colonne+1:]
-    vim.current.window.cursor = rangee1, colonne1
-
-def forcer_apostrophes(mode):
-    rangee, colonne = vim.current.window.cursor
-    tampon = vim.current.buffer
-    ligne = tampon[rangee-1]
-    ouvrant = ligne[colonne:].find('"')
-    if ouvrant >= 0:
-        ouvrant += colonne
-        fermant = ligne[ouvrant+1:].find('"')
-        if fermant >= 0:
-            fermant += ouvrant + 1
-            tampon[rangee-1] = (ligne[:ouvrant] + '\''
-                                + ligne[ouvrant+1:fermant].replace('\'', r'\'')
-                                + '\'' + ligne[fermant+1:])
-            vim.current.window.cursor = rangee, ouvrant + 1
-
-def forcer_guillemets(mode):
-    rangee, colonne = vim.current.window.cursor
-    tampon = vim.current.buffer
-    ligne = tampon[rangee-1]
-    ouvrant = ligne[colonne:].find('\'')
-    if ouvrant >= 0:
-        ouvrant += colonne
-        fermant = ligne[ouvrant+1:].find('\'')
-        if fermant >= 0:
-            fermant += ouvrant + 1
-            tampon[rangee-1] = (ligne[:ouvrant] + '"'
-                                + ligne[ouvrant+1:fermant].replace('"', r'\"')
-                                + '"' + ligne[fermant+1:])
-            vim.current.window.cursor = rangee, ouvrant + 1
-
-## Broutilles stylistiques.
-
-vim.command('highlight Broutille'
-            ' term=reverse cterm=bold ctermbg=1'
-            ' gui=bold guibg=Cyan')
-
-def corriger_broutille(mode):
-    # Corriger la broutille directement sous le curseur s'il s'en trouve,
-    # puis passer à la broutille suivante.
-    for broutille in MetaBroutille.registre:
-        if broutille.confirmer_erreur(vim.current.window.cursor):
-            broutille.corriger()
-            broutille.repositionner()
-            return
-    trouver_broutille(mode)
-
-def trouver_broutille(mode):
-    # Trouver la prochaine broutille stylistique.
-    # REVOIR: `,,' répété sur une série de lignes vides n'avance pas le curseur.
-    tampon = vim.current.buffer
-    rangee, colonne = vim.current.window.cursor
-    ligne = tampon[rangee-1]
-    # Si rien n'a changé depuis la fois précédente, avancer le curseur.
-    # Sinon, ré-analyser la ligne courante à partir du début.
-    if (rangee == Broutille.rangee_precedente
-            and colonne == Broutille.colonne_precedente
-            and ligne[colonne:].startswith(Broutille.fragment_precedent)):
-        colonne += 1
-        if colonne == len(ligne):
-            rangee += 1
-            colonne = 0
-            if rangee <= len(tampon):
-                ligne = tampon[rangee-1]
-    else:
-        colonne = 0
-    # Fouiller à partir du curseur pour trouver une broutille.
-    while rangee <= len(tampon):
-        # Retenir l'appariement le plus à gauche, et parmi eux, le plus long.
-        debut = None
-        for broutille in MetaBroutille.registre:
-            paire = broutille.trouver_erreur((rangee, colonne))
-            if (paire is not None
-                    and (debut is None
-                         or paire[0] < debut
-                         or paire[0] == debut and paire[1] > fin)):
-                debut, fin = paire
-                plainte = broutille.plainte
-        if debut is not None:
-            # Enluminer la broutille et repositionner le curseur.
-            vim.current.window.cursor = rangee, debut
-            fragment = ligne[debut:fin]
-            if fragment:
-                argument = (fragment.replace('\\', '\\\\')
-                            .replace('/', '\\/').replace('[', '\\[')
-                            .replace('*', '\\*'))
-                vim.command('match Broutille /%s/' % argument)
-            else:
-                vim.command('match')
-            sys.stderr.write(plainte)
-            Broutille.rangee_precedente = rangee
-            Broutille.colonne_precedente = debut
-            Broutille.fragment_precedent = fragment
-            return
-        # Aller au début de la ligne suivante.
-        rangee += 1
-        colonne = 0
-        if rangee <= len(tampon):
-            ligne = tampon[rangee-1]
-    sys.stderr.write("Le reste du fichier me semble beau...\n")
-
-class MetaBroutille(type):
-    # Tenir un registre d'une instance par classe de broutille stylistique.
-    # Pré-compiler le gabarit de la classe, s'il s'en trouve.
-    registre = []
-
-    def __init__(self, nom, bases, dict):
-        type.__init__(self, nom, bases, dict)
-        if nom != 'Broutille':
-            MetaBroutille.registre.append(self())
-        if hasattr(self, 'gabarit'):
-            import re
-            self.gabarit = re.compile(self.gabarit)
-
-class Broutille:
-    __metaclass__ = MetaBroutille
-    # PLAINTE contient une courte explication pour l'utilisateur.
-    plainte = "Broutille syntaxique."
-    # Si SYNTEXTE est None, le gabarit fourni peut s'apparier dans les chaìnes
-    # de caractères ou les commentaires.  Autrement, SYNTEXTE est un nombre,
-    # souvent 0, qui est un déplacement par rapport au début du texte apparié
-    # (ou de sa fin s'il est négatif).  Le caractère à ce déplacement ne doit
-    # alors faire partie ni d'une chaîne de caractères, ni d'un commentaire.
-    syntexte = None
-    # Après une correction automatique, le curseur se repositionne normalement
-    # sur la broutille suivante, c'est l'action par défaut.  Mais si une
-    # broutille ne fournit pas sa propre méthode CORRIGER, la méthode CORRIGER
-    # par défaut intervient pour indiquer qu'une intervention humaine est
-    # requise et change REPOSITIONNEMENT à True, dans l'instance seulement.
-    repositionnement = True
-    # Les trois variables suivantes sont `globales' à toutes les broutilles,
-    # elles servent à détecter que rien n'a changé depuis que la dernière
-    # broutille a été trouvée, et donc que l'utilisateur a choisi de l'ignorer.
-    # Dans ce cas, il faut s'acheminer inconditionnellement à la broutille
-    # suivante.  Si une correction a eu lieu, la ligne est réanalysée à partir
-    # du début, au cas où la correction engendre elle-même une autre broutille.
-    rangee_precedente = None
-    colonne_precedente = None
-    fragment_precedent = ''
-
-    def trouver_erreur(self, curseur):
-        tampon = vim.current.buffer
-        rangee, colonne = curseur
-        ligne = tampon[rangee-1]
-        if hasattr(self, 'gabarit'):
-            match = self.gabarit.search(ligne, colonne)
-            while match:
-                if self.confirmer_erreur((rangee, match.start())):
-                    return match.start(), match.end()
-                match = self.gabarit.search(ligne, match.start()+1)
-        else:
-            while True:
-                if self.confirmer_erreur((rangee, colonne)):
-                    return colonne, len(ligne)
-                if colonne == len(ligne):
-                    break
-                colonne += 1
-
-    def confirmer_erreur(self, curseur):
-        assert hasattr(self, 'gabarit'), self
-        tampon = vim.current.buffer
-        rangee, colonne = curseur
-        match = self.gabarit.match(tampon[rangee-1], colonne)
-        if match is None:
-            return
-        syntexte = self.syntexte
-        if syntexte is None:
-            self.match = match
-            return match
-        if syntexte < 0:
-            syntexte += match.end() - match.start()
-        if (vim.eval('synIDattr(synID(%d, %d, 0), "name")'
-                     % (rangee, colonne + 1 + syntexte))
-              in ('pythonComment', 'pythonRawString', 'pythonString')):
-            return
-        self.match = match
-        return match
-
-    def corriger(self):
-        # Par défaut, le programmeur choisit et édite une correction.
-        sys.stderr.write("Ici, il me faut l'aide d'un humain!\n")
-        self.repositionnement = False
-        self.annuler_precedent()
-
-    def repositionner(self):
-        if self.repositionnement:
-            trouver_broutille('n')
-
-    def remplacer_texte(self, nouveau):
-        assert hasattr(self, 'gabarit'), self
-        tampon = vim.current.buffer
-        rangee = vim.current.window.cursor[0]
-        ligne = tampon[rangee-1]
-        tampon[rangee-1] = (ligne[:self.match.start()]
-            + self.match.expand(nouveau) + ligne[self.match.end():])
-        self.annuler_precedent()
-
-    def annuler_precedent(self):
-        Broutille.rangee_precedente = None
-        Broutille.colonne_precedente = None
-        Broutille.fragment_precedent = ''
-
-class Fichier_Vide(Broutille):
-    # Un module Python ne doit pas être vide.
-    plainte = "Module vide."
-
-    def trouver_erreur(self, curseur):
-        if self.confirmer_erreur(curseur):
-            return 0, 0
-
-    def confirmer_erreur(self, curseur):
-        tampon = vim.current.buffer
-        return len(tampon) == 0 or len(tampon) == 1 and not tampon[0]
-
-    def corriger(self):
-        # Insérer un squelette de programme Python.
-        vim.current.buffer[:] = [
-            '#!/usr/bin/env python',
-            '# -*- coding: Latin-1',
-            '# Copyright © 2004 Progiciels Bourbeau-Pinard inc.',
-            '# François Pinard <pinard@iro.umontreal.ca>, 2004.',
-            '',
-            '"""\\',
-            '',
-            '"""',
-            '',
-            '__metaclass__ = type',
-            '',
-            'class Main:',
-            '    def __init__(self):',
-            '        pass',
-            '',
-            '    def main(self, *arguments):',
-            '        import getopt',
-            '        options, arguments = getopt.getopt(arguments, \'\')',
-            '        for option, valeur in options:',
-            '            pass',
-            '',
-            'run = Main()',
-            'main = run.main',
-            '',
-            'if __name__ == \'__main__\':',
-            '    import sys',
-            '    main(*sys.argv[1:])',
-            ]
-        self.annuler_precedent()
-
-    def repositionner(self):
-        # Déclencher une insertion à l'intérieur du doc-string.
-        vim.current.window.cursor = 7, 0
-        vim.command('startinsert')
-
-class Double_LigneVide(Broutille):
-    # Il n'est pas utile d'avoir plusieurs lignes vides d'affilée.
-    plainte = "Plusieurs lignes vides d'affilée."
-
-    def trouver_erreur(self, curseur):
-        if self.confirmer_erreur(curseur):
-            return 0, 0
-
-    def confirmer_erreur(self, curseur):
-        tampon = vim.current.buffer
-        rangee, colonne = curseur
-        if len(tampon[rangee-1]) == 0:
-            return rangee < len(tampon) and len(tampon[rangee]) == 0
-
-    def corriger(self):
-        # Éliminer les lignes superflues.
-        disposer_en_mixte_remplie(vim.current.window.cursor[0])
-
-class Tab(Broutille):
-    # Il ne doit pas avoir de HT dans un fichier.
-    plainte = "Tabulation dans le source."
-    gabarit = r'\t\t*'
-
-    def corriger(self):
-        # Dans la marge gauche, remplacer chaque HT par huit blancs.
-        # Plus loin dans la ligne, utiliser plutôt l'écriture `\t'.
-        if self.match.start() == 0:
-            self.remplacer_texte(' ' * 8 * len(self.match.group()))
-        else:
-            self.remplacer_texte(r'\t' * len(self.match.group()))
-
-class Blancs(Broutille):
-    # Les jetons ne doivent pas être séparés par plus d'un blanc.
-    plainte = "Plusieurs blancs d'affilée."
-    gabarit = '([^ ])   *([^ #])'
-    syntexte = 1
-
-    def corriger(self):
-        # Éliminer les blancs superflus.
-        avant, apres = self.match.group(1, 2)
-        if avant in '([{' or apres in ',;.:)]}':
-            self.remplacer_texte(avant + apres)
-        else:
-            self.remplacer_texte(avant + ' ' + apres)
-
-class Blanc_FinLigne(Broutille):
-    # Une ligne ne peut avoir de blancs suffixes.
-    plainte = "Blancs suffixes."
-    gabarit = r'[ \t][ \t]*$'
-
-    def corriger(self):
-        # Éliminer les blancs suffixes.
-        self.remplacer_texte('')
-
-class GrandeLigne(Broutille):
-    # Les lignes doivent tenir dans 80 colonnes.
-    plainte = "Ligne trop longue."
-
-    def trouver_erreur(self, curseur):
-        tampon = vim.current.buffer
-        rangee, colonne = curseur
-        if colonne <= Editeur.limite and len(tampon[rangee-1]) > Editeur.limite:
-            return Editeur.limite, len(tampon[rangee-1])
-
-    def confirmer_erreur(self, curseur):
-        tampon = vim.current.buffer
-        rangee, colonne = curseur
-        return (colonne == Editeur.limite
-                and len(tampon[rangee-1]) > Editeur.limite)
-
-    def corriger(self):
-        # Redisposer l'entièreté du code Python.
-        disposer_en_mixte_remplie(vim.current.window.cursor[0])
-
-class Triple_Guillemets(Broutille):
-    # Un triple-guillemets qui débute une chaîne doit débuter une ligne ou
-    # suivre une virgule ou une parenthèse ouvrante, et n'être suivi que d'un
-    # backslash.  S'il termine une chaîne, il doit être seul sur sa ligne, ou
-    # n'être suivi que d'une virgule ou d'une parenthèse fermante.
-    plainte = "Triple guillemets mal disposé."
-    gabarit = r'"""'
-
-    def confirmer_erreur(self, curseur):
-        if Broutille.confirmer_erreur(self, curseur):
-            tampon = vim.current.buffer
-            rangee, colonne = curseur
-            ligne = tampon[rangee-1]
-            suffixe = ligne[colonne+3:]
-            if suffixe == '\\':
-                if colonne > 0 and ligne[colonne-1] == '(':
-                    return False
-                if colonne > 1 and ligne[colonne-2:colonne] == ', ':
-                    return False
-                if not ligne[:colonne].lstrip():
-                    return False
-                return True
-            if suffixe in ('', ',', ')'):
-                return colonne > 0
-            return True
-
-class Enonce_Commentaire(Broutille):
-    # Un commentaire doit être seule sur sa ligne, il ne peut terminer une
-    # ligne logique qui contient déjà autre chose.
-    plainte = "Commentaire `en ligne'."
-    gabarit = '[^ ] *#'
-    syntexte = -1
-
-    def corriger(self):
-        # Séparer le commentaire pour le mettre seul sur une ligne séparée.
-        # Le commentaire précéde normalement la ligne, à moins que la ligne
-        # Python se termine par deux-points, dans lequel cas le commentaire
-        # suit la ligne.  Une majuscule sera forcée au début du commentaire,
-        # et un terminateur de phrase sera ajouté au besoin.
-        tampon = vim.current.buffer
-        rangee = vim.current.window.cursor[0]
-        ligne = tampon[rangee-1]
-        code_python = ligne[:self.match.start() + 1]
-        commentaire = ligne[self.match.end() + 1:]
-        if commentaire.startswith(' '):
-            commentaire = commentaire[1:]
-        if commentaire:
-            if commentaire[0].islower():
-                commentaire = commentaire[0].upper() + commentaire[1:]
-            if commentaire[-1] not in '.!?':
-                commentaire += '.'
-            if code_python.endswith(':'):
-                tampon[rangee-1:rangee] = [
-                    code_python,
-                    '%*s# %s' % (marge_gauche(tampon[rangee]), '', commentaire)]
-            else:
-                tampon[rangee-1:rangee] = [
-                    '%*s# %s' % (marge_gauche(code_python), '', commentaire),
-                    code_python]
-        else:
-            tampon[rangee-1] = code_python
-        self.annuler_precedent()
-
-class Par_Blanc(Broutille):
-    # Une parenthèse ouvrante ne doit pas être suivie d'un blanc.
-    # Même chose pour les crochets ou accolades ouvrants.
-    plainte = "Blanc après symbole ouvrant."
-    gabarit = r'([(\[{])  *'
-
-    def corriger(self):
-        # Enlever les blancs qui suivent.
-        self.remplacer_texte(r'\1')
-
-class Blanc_These(Broutille):
-    # Une parenthèse fermante ne doit pas être précédée d'un blanc.
-    # Même chose pour les crochets ou accolades ouvrants.
-    plainte = "Blanc avant symbole fermant."
-    gabarit = r'([^ ])  *([)\]}])'
-
-    def corriger(self):
-        # Enlever les blancs qui précèdent.
-        self.remplacer_texte(r'\1\2')
-
-class Virgule_Noir(Broutille):
-    # Une virgule doit être suivie d'un blanc.
-    # Même chose pour les point-virgules.
-    plainte = "Ponctuation non-suivie d'un blanc."
-    gabarit = r'([,;])([^ )])'
-    syntexte = 0
-
-    def corriger(self):
-        # Ajouter un blanc.
-        self.remplacer_texte(r'\1 \2')
-
-class Blanc_Virgule(Broutille):
-    # Une virgule ne doit pas être précédée d'un blanc.
-    # Même chose pour les deux-points et point-virgules.
-    plainte = "Ponctuation précédée d'un blanc."
-    gabarit = r'(  *)([,:;])'
-
-    def confirmer_erreur(self, curseur):
-        if Broutille.confirmer_erreur(self, curseur):
-            tampon = vim.current.buffer
-            rangee, colonne = curseur
-            return colonne == 0 or tampon[rangee-1][colonne-1] != ' '
-
-    def corriger(self):
-        # Déplacer la virgule avant les blancs.
-        self.remplacer_texte(r'\2\1')
-
-class Noir_Egal(Broutille):
-    # `=' ou `==' doivent généralement être précédés d'un blanc.
-    # Par contre, pour les définitions de paramètres avec mot-clé, il n'y
-    # a aucun blanc de part et d'autre du `='.
-    plainte = "Symbole d'affectation ou de comparaison non précédé d'un blanc."
-    gabarit = r'([^-+*/ <=>!&|])=  *'
-    syntexte = 0
-
-    def corriger(self):
-        # Insérer le blanc manquant.
-        self.remplacer_texte(r'\1 = ')
-
-class Egal_Noir(Broutille):
-    # `=' ou `==' doivent généralement être suivis d'un blanc.
-    # Par contre, pour les définitions de paramètres avec mot-clé, il n'y
-    # a aucun blanc de part et d'autre du `='.
-    plainte = "Symbole d'affectation ou de comparaison non suivi d'un blanc."
-    gabarit = r'  *=([^ =])'
-    syntexte = 0
-
-    def confirmer_erreur(self, curseur):
-        if Broutille.confirmer_erreur(self, curseur):
-            tampon = vim.current.buffer
-            rangee, colonne = curseur
-            return colonne == 0 or tampon[rangee-1][colonne-1] != ' '
-
-    def corriger(self):
-        # Insérer le blanc manquant.
-        self.remplacer_texte(r' = \1')
-
-class Backslash_FinLigne(Broutille):
-    # Le backslash en fin-de-ligne doit être tout simplement évité, à
-    # l'exception du cas où il suit immédiatement un triple-guillemets.
-    plainte = "Fin de ligne échappée."
-    gabarit = r' *\\$'
-
-    def confirmer_erreur(self, curseur):
-        if Broutille.confirmer_erreur(self, curseur):
-            tampon = vim.current.buffer
-            rangee, colonne = curseur
-            ligne = tampon[rangee-1]
-            return ((colonne == 0 or ligne[colonne-1] != ' ')
-                    and not ligne.endswith('"""\\'))
-
-    def corriger(self):
-        self.remplacer_texte('')
-
-class Operateur_FinLigne:
-    # Un opérateur ne peut se trouver en fin de ligne.
-    plainte = "Opérateur en fin de ligne."
-    gabarit = r'(\band|\bor|[-+*/%<=>!])$'
-    syntexte = 0
-
-    def corriger(self):
-        # Rapporter l'opérateur au début de la ligne suivante.
-        tampon = vim.current.buffer
-        rangee = vim.current.window.cursor[0]
-        ligne = tampon[rangee-1]
-        operateur = self.match.group().lstrip()
-        tampon[rangee-1] = ligne[:self.match.start()].rstrip()
-        ligne = tampon[rangee]
-        marge = marge_gauche(ligne)
-        tampon[rangee] = '%s%s %s' % (ligne[:marge], operateur, ligne[marge:])
-        self.annuler_precedent()
-
-class Import_Etoile(Broutille):
-    # L'énoncé `import *' devrait généralement être évité.
-    plainte = "Usage de l'énoncé `import *' (énumérer ce qu'il faut importer)."
-    gabarit = r'\bimport \*'
-
-class Print(Broutille):
-    # L'énoncé `print' devrait être réservé pour la mise-au-point.
-    plainte = "Usage de l'énoncé `print' (peut-être pour mise-au-point)."
-    gabarit = r'\bprint\b'
-    syntexte = 0
-
-class Apply(Broutille):
-    # `apply(FONCTION, ARGUMENTS)' s'écrit mieux `FONCTION(*ARGUMENTS)'.
-    plainte = "Usage de la fonction `apply' (utiliser `fonction(*arguments)')."
-    gabarit = r'\bapply\('
-
-class Close(Broutille):
-    # `OBJET.close()' est rarement nécessaire si OBJET est un fichier.
-    plainte = "Usage de la méthode `close' (peut-être inutile)."
-    gabarit = r'\.close\('
-
-class Eval(Broutille):
-    # `eval()' doit être évité autant que possible.
-    plainte = "Usage de la fonction `eval' (repenser l'algorithme)."
-    gabarit = r'\beval\('
-
-class Exec(Broutille):
-    # `exec' doit être évité autant que possible.
-    plainte = "Usage de l'énoncé `exec' (repenser l'algorithme)."
-    gabarit = r'\bexec\b'
-
-class Execfile(Broutille):
-    # `execfile()' doit être évité autant que possible.
-    plainte = "Usage de la fonction `execfile' (repenser l'algorithme)."
-    gabarit = r'\bexecfile\('
-
-class Find(Broutille):
-    # `CHAÎNE.find(SOUS_CHAÎNE)' s'écrit mieux `SOUS_CHAÎNE in CHAÎNE'.
-    plainte = "Usage de la méthode `find' (peut-être utiliser `in')."
-    gabarit = r'\.find\('
-
-class Global(Broutille):
-    # `global' doit être évité autant que possible.
-    plainte = "Usage de l'énoncé `global' (utiliser des variables de classe)."
-    gabarit = r'\bglobal\b'
-
-class Has_Key(Broutille):
-    # `OBJET.has_key(CLÉ)' s'écrit mieux `CLÉ in OBJET'.
-    plainte = "Usage de la méthode `has_key' (peut-être utiliser `in')."
-    gabarit = r'\.has_key\('
-
-class Input(Broutille):
-    # `input()' doit être évité autant que possible.
-    plainte = "Usage de la fonction `input' (repenser l'algorithme)."
-    gabarit = r'\binput\('
-
-class Keys(Broutille):
-    # `OBJET.keys()' s'écrit mieux `OBJET', utilisé comme itérateur.
-    plainte = "Usage de la méthode `keys' (peut-être inutile)."
-    gabarit = r'\.keys\(\)'
-
-    def corriger(self):
-        # Éliminer l'appel de `keys'.
-        self.remplacer_texte('')
-
-class Open(Broutille):
-    # `open(NOM_FICHIER)' s'écrit mieux `file(NOM_FICHIER)'.
-    plainte = "Usage de la méthode `open' (peut-être utiliser `file')."
-    gabarit = r'\bopen\('
-
-    def corriger(self):
-        # Utiliser `file'.
-        self.remplacer_texte('file(')
-
-class Readlines(Broutille):
-    # `OBJET.readlines()' s'écrit mieux `OBJET', utilisé comme itérateur.
-    plainte = "Usage de la méthode `readlines' (peut-être inutile)."
-    gabarit = r'\.readlines\(\)'
-
-    def corriger(self):
-        # Éliminer l'appel de `readlines'.
-        self.remplacer_texte('')
-
-class String(Broutille):
-    # Le module `string' doit être considéré comme à peu près désuet.
-    plainte = "Usage de la méthode `string' (peut-être méthodes chaînes)."
-    gabarit = r'\bstring\.|\bimport.*\bstring\b'
-    syntexte = 0
-
-class Type(Broutille):
-    # `OBJECT is type(CONSTANTE)' se récrit `isinstance(OBJET, TYPE)'.
-    plainte = "Usage de la fonction `type' (peut-être utiliser `isinstance')."
-    gabarit = r'(\bis |==) *type\('
-
-class Dates_Richard(Broutille):
-    # Richard Nault a sa méthode bien personnelle pour écrire les dates.
-    plainte = "Date à la Richard Nault (utiliser la notation ISO-8601)."
-    mois = {
-        # Écriture américaine.
-        'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
-        'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12,
-        # Ajouts pour le français.
-        'Fév': 2, 'Avr': 4, 'Mai': 5, 'Aoû': 8, 'Déc': 12,
-        # Écriture française majuscule.
-        'JAN': 1, 'FÉB': 2, 'MAR': 3, 'AVR': 4, 'MAI': 5, 'JUN': 6,
-        'JUL': 7, 'AOÛ': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DÉC': 12,
-        # Écriture française minuscule.
-        'jan': 1, 'féb': 2, 'mar': 3, 'avr': 4, 'mai': 5, 'jun': 6,
-        'jul': 7, 'aoû': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'déc': 12,
-        # Erreurs orthographiques observées.
-        'AOU': 8, 'aou': 8,
-        }
-    gabarit = r'([0-3][0-9])\.(%s)\.(200[0-4])' % '|'.join(mois)
-
-    def corriger(self):
-        self.remplacer_texte(r'\3-%02d-\1' % self.mois[self.match.group(2)])
 
 ## Redisposition contrôlé par la syntaxe.
 
@@ -877,7 +225,7 @@ class Disposeur:
                              % (str(diagnostic), editeur.statistiques()))
             return rangee
         else:
-            sys.stdout.write('OK!  (%s)' % editeur.statistiques())
+            sys.stdout.write(_("OK!  (%s)") % editeur.statistiques())
         resultat = str(editeur)
         if resultat.endswith(':\n'):
             resultat += self.recommenter(marge + self.indentation, commentaires)
@@ -901,7 +249,7 @@ class Disposeur:
                 # de départ, il faut probablement reculer davantage.
                 if fin <= rangee:
                     raise SyntaxError(
-                        "Erreur de syntaxe, peut-être recul insuffisant.")
+                        _("Syntax error, maybe did not back up enough."))
                 if texte.endswith(':\n'):
                     for prefixe in 'class ', 'def ', 'if ', 'for ', 'while ':
                         if texte.startswith(prefixe):
@@ -996,10 +344,10 @@ class Disposeur:
                 if ligne[0] in ')]}':
                     quelque_chose = True
                     if not pile:
-                        raise SyntaxError("`%s' intempestif." % ligne[0])
+                        raise SyntaxError(_("Spurious `%s'.") % ligne[0])
                     attendu = pile.pop()
                     if ligne[0] != attendu:
-                        raise SyntaxError("`%s' vu, `%s' attendu!"
+                        raise SyntaxError(_("`%s' seen, `%s' expected!")
                                           % (ligne[0], attendu))
                     ligne = ligne[1:].lstrip()
                     continue
@@ -1046,9 +394,9 @@ class Disposeur:
                 break
             if len(lignes) == self.limite_avant or rangee >= len(tampon):
                 if pile:
-                    raise SyntaxError("`%s' attendu!"
+                    raise SyntaxError(_("`%s' expected!")
                                       % '\', `'.join(pile[::-1]))
-                raise SyntaxError("Pas de code Python!")
+                raise SyntaxError(_("No Python code!"))
             rangee += 1
             ligne = tampon[rangee-1].strip()
         return (debut + len(lignes), marge, commentaires,
@@ -1149,22 +497,19 @@ PRIORITE_RUSTINE = 6
 # le choix d'attributs.  Ces phénomènes sont associatifs à gauche entre eux,
 # et les parenthèses sont supprimées directement dans la fonction EDITER.
 PRIORITE_APPEL = 14
-## Une priorité qui, étant plus grand que toutes les autres, a pour effet de
-## forcer la production de parenthèses sur tout texte inclus.
-#PRIORITE_FORCE = 16
 
 class Editeur(list):
 
     # Trois niveaux de mise-au-point sont définis.
-    explications_mise_au_point = ("Trace inactive.",
-                                  "Stratégies par région de texte.",
-                                  "Trace des choix entre solutions.",
-                                  "Trace détaillée, très verbeuse.")
+    explications_mise_au_point = (_("Tracing disabled."),
+                                  _("Strategy per text region."),
+                                  _("Tracing choices between solutions."),
+                                  _("Detailed trace, very verbose."))
     mise_au_point = 0
 
     # Énumération des diverses stratégies de disposition.  Garder cet ordre.
     LIGNE, COLONNE, MIXTE = range(3)
-    noms_strategies = 'Ligne', 'Colonne', 'Mixte'
+    noms_strategies = _("Line"), _("Column"), _("Mixed")
 
     # Les lignes doivent idéalement tenir dans 80 colonnes par défaut.
     limite = 80
@@ -1224,25 +569,25 @@ class Editeur(list):
         write = fragments.append
         write(self.noms_strategies[self.strategie])
         if self.remplir:
-            write(" remplie")
+            write(_(" filled"))
         write(': ')
         if self.compteur_essais:
             if self.compteur_essais > 1:
-                write("%d essais" % self.compteur_essais)
+                write(_("%d tries") % self.compteur_essais)
             else:
-                write("un essai")
+                write(_("one try"))
         else:
-            write("aucun essai")
+            write(_("no try"))
         if self.compteur_choix:
             if self.compteur_choix > 1:
-                write(", %d choix" % self.compteur_choix)
+                write(_(", %d choices") % self.compteur_choix)
             else:
-                write(", un choix")
+                write(_(", one choice"))
         if self.compteur_impasses:
             if self.compteur_impasses > 1:
-                write(", %d impasses" % self.compteur_impasses)
+                write(_(", %d dead-ends") % self.compteur_impasses)
             else:
-                write(", une impasse")
+                write(_(", one dead-end"))
         return ''.join(fragments)
 
     def debug(self, indice, texte=None):
@@ -1259,7 +604,7 @@ class Editeur(list):
 
     def debug_texte(self, indice):
         if Editeur.mise_au_point > 2:
-            self.debug('Texte ' + indice)
+            self.debug(_("Text ") + indice)
             sys.stdout.write(''.join(self) + PIED_DE_MOUCHE + '\n')
 
     ## Énoncés.
@@ -1966,7 +1311,8 @@ class Editeur(list):
                             if (remplir is not None
                                     and colonne+len(mot) > Editeur.limite-2):
                                 if self.strategie == self.LIGNE:
-                                    raise Editeur.Impasse("Chaîne trop longue")
+                                    raise Editeur.Impasse(
+                                        _("String too long"))
                                 format += format_fin
                                 arguments.append(''.join(fragments_ligne))
                                 del fragments_ligne[:]
@@ -1994,7 +1340,7 @@ class Editeur(list):
                         if (remplir is not None
                                 and colonne+len(mot) > Editeur.limite-2):
                             if self.strategie == self.LIGNE:
-                                raise Editeur.Impasse("Chaîne trop longue")
+                                raise Editeur.Impasse(_("String too long"))
                             format += format_fin
                             arguments.append(''.join(fragments_ligne))
                             del fragments_ligne[:]
@@ -2011,7 +1357,7 @@ class Editeur(list):
                 # Pour le `-2', voir le commentaire plus haut.
                 if remplir is not None and colonne+len(mot) > Editeur.limite-2:
                     if self.strategie == self.LIGNE:
-                        raise Editeur.Impasse("Chaîne trop longue")
+                        raise Editeur.Impasse(_("String too long"))
                     format += format_fin
                     arguments.append(''.join(fragments_ligne))
                     del fragments_ligne[:]
@@ -2069,9 +1415,9 @@ class Editeur(list):
     def disposer_constante(self, valeur):
         # Formatter la constante VALEUR, qui ne peut être une chaîne.
         if isinstance(valeur, float):
-            sys.stderr.write(
-                "ATTENTION: les valeurs flottantes ne sont pas fiables.\n"
-                "(Il s'agit d'un bug dans `import compiler'.  Misère!)\n")
+            sys.stderr.write(_("""\
+WARNING: floating values are not dependable.
+(There is a bug in `import compiler'.  Sigh!)"""))
         self.write(repr(valeur))
 
     def disposer(self, format, *arguments):
@@ -2104,14 +1450,14 @@ class Editeur(list):
             if fonction is not None and strategie <= self.strategie:
                 essais_retenus.append((fonction, strategie))
         if len(essais_retenus) == 0:
-            raise self.Impasse("Comment faire?!")
+            raise self.Impasse(_("But how?!"))
         # Tenter tous les essais admissibles de la liste.
         strategie = self.strategie
         try:
             if len(essais_retenus) == 1:
                 # Exécuter l'essai sans prévoir de reprises.
                 fonction, self.strategie = essais_retenus[0]
-                self.debug('Essai', '1/1')
+                self.debug(_("Try"), '1/1')
                 fonction()
             else:
                 # Il faudra choisir.  Accumuler un point de reprise par succès.
@@ -2122,7 +1468,7 @@ class Editeur(list):
                 for compteur, (fonction, self.strategie) in (
                         enumerate(essais_retenus)):
                     point.reprise()
-                    self.debug('Essai',
+                    self.debug(_("Try"),
                                '%d/%d' % (compteur + 1, len(essais_retenus)))
                     try:
                         fonction()
@@ -2130,7 +1476,7 @@ class Editeur(list):
                         self.compteur_impasses += 1
                     else:
                         points.append(Point_reprise(self))
-                        self.debug('Sauve-%d' % len(points),
+                        self.debug(_("Save-%d") % len(points),
                             '%d/%d' % (compteur + 1, len(essais_retenus)))
                         if self.strategie == self.LIGNE:
                             # On ne peut théoriquement pas améliorer une
@@ -2138,7 +1484,7 @@ class Editeur(list):
                             break
                 # Conserver la meilleure stratégie.
                 if not points:
-                    raise self.Impasse("Comment faire?!")
+                    raise self.Impasse(_("But how?!"))
                 meilleur = min(points)
                 if len(points) > 1:
                     for compteur, point in enumerate(points):
@@ -2195,7 +1541,7 @@ class Editeur(list):
         # de RUSTINE_PARENTHESES est désamorcé dès une écriture.
 
         self.niveau += 1
-        self.debug('Format', format)
+        self.debug(_("Format"), format)
         strategie = self.strategie
         pile_delimiteurs = []
         # Les piles suivantes sont traitées à la fin du `try:/finally:'.
@@ -2230,7 +1576,7 @@ class Editeur(list):
                 elif specification == '^':
                     argument = arguments[index]
                     index += 1
-                    self.debug('Visit', argument)
+                    self.debug(_("Visit"), argument)
                     self.visit(argument)
                 elif specification == '(':
                     argument = arguments[index]
@@ -2316,7 +1662,7 @@ class Editeur(list):
                     self.rustine_parentheses = True
                 else:
                     assert False, specification
-                self.debug("Après %" + specification, argument)
+                self.debug(_("After %") + specification, argument)
                 format = format[position+2:]
                 position = format.find('%')
             assert index == len(arguments), (index, arguments)
@@ -2360,7 +1706,7 @@ class Editeur(list):
             self.colonne += len(texte)
         if self.remplir is not None and self.colonne > Editeur.limite:
             self.debug_texte('I')
-            raise self.Impasse("Débordement de ligne")
+            raise self.Impasse(_("Line overflow"))
         self.debug_texte('w')
         self.rustine_parentheses = False
 
@@ -2405,7 +1751,7 @@ class Point_reprise:
     def debug(self, meilleur, ordinal, total):
         if Editeur.mise_au_point > 1:
             Editeur.mise_au_point += 1
-            self.editeur.debug("Point " + '·+'[meilleur],
+            self.editeur.debug(_("Point ") + '·+'[meilleur],
                                ('%d/%d L%d N%d %s'
                                 % (ordinal, total, self.ligne,
                                    self.longueur_noire(),
@@ -2421,6 +1767,665 @@ class Point_reprise:
     def longueur_noire(self):
         # Retourner le nombre de caractères non-blancs du texte.
         return len(self.texte.replace(' ', '').replace('\n', ''))
+
+## Broutilles stylistiques.
+
+vim.command('highlight Broutille'
+            ' term=reverse cterm=bold ctermbg=1'
+            ' gui=bold guibg=Cyan')
+
+def corriger_broutille(mode):
+    # Corriger la broutille directement sous le curseur s'il s'en trouve,
+    # puis passer à la broutille suivante.
+    for broutille in MetaBroutille.registre:
+        if broutille.confirmer_erreur(vim.current.window.cursor):
+            broutille.corriger()
+            broutille.repositionner()
+            return
+    trouver_broutille(mode)
+
+def trouver_broutille(mode):
+    # Trouver la prochaine broutille stylistique.
+    # REVOIR: `,,' répété sur une série de lignes vides n'avance pas le curseur.
+    tampon = vim.current.buffer
+    rangee, colonne = vim.current.window.cursor
+    ligne = tampon[rangee-1]
+    # Si rien n'a changé depuis la fois précédente, avancer le curseur.
+    # Sinon, ré-analyser la ligne courante à partir du début.
+    if (rangee == Broutille.rangee_precedente
+            and colonne == Broutille.colonne_precedente
+            and ligne[colonne:].startswith(Broutille.fragment_precedent)):
+        colonne += 1
+        if colonne == len(ligne):
+            rangee += 1
+            colonne = 0
+            if rangee <= len(tampon):
+                ligne = tampon[rangee-1]
+    else:
+        colonne = 0
+    # Fouiller à partir du curseur pour trouver une broutille.
+    while rangee <= len(tampon):
+        # Retenir l'appariement le plus à gauche, et parmi eux, le plus long.
+        debut = None
+        for broutille in MetaBroutille.registre:
+            paire = broutille.trouver_erreur((rangee, colonne))
+            if (paire is not None
+                    and (debut is None
+                         or paire[0] < debut
+                         or paire[0] == debut and paire[1] > fin)):
+                debut, fin = paire
+                plainte = broutille.plainte
+        if debut is not None:
+            # Enluminer la broutille et repositionner le curseur.
+            vim.current.window.cursor = rangee, debut
+            fragment = ligne[debut:fin]
+            if fragment:
+                argument = (fragment.replace('\\', '\\\\')
+                            .replace('/', '\\/').replace('[', '\\[')
+                            .replace('*', '\\*'))
+                vim.command('match Broutille /%s/' % argument)
+            else:
+                vim.command('match')
+            sys.stderr.write(plainte)
+            Broutille.rangee_precedente = rangee
+            Broutille.colonne_precedente = debut
+            Broutille.fragment_precedent = fragment
+            return
+        # Aller au début de la ligne suivante.
+        rangee += 1
+        colonne = 0
+        if rangee <= len(tampon):
+            ligne = tampon[rangee-1]
+    sys.stderr.write("Le reste du fichier me semble beau...\n")
+
+class MetaBroutille(type):
+    # Tenir un registre d'une instance par classe de broutille stylistique.
+    # Pré-compiler le gabarit de la classe, s'il s'en trouve.
+    registre = []
+
+    def __init__(self, nom, bases, dict):
+        type.__init__(self, nom, bases, dict)
+        if nom != 'Broutille':
+            MetaBroutille.registre.append(self())
+        if hasattr(self, 'gabarit'):
+            import re
+            self.gabarit = re.compile(self.gabarit)
+
+class Broutille:
+    __metaclass__ = MetaBroutille
+    # PLAINTE contient une courte explication pour l'utilisateur.
+    plainte = "Broutille syntaxique."
+    # Si SYNTEXTE est None, le gabarit fourni peut s'apparier dans les chaìnes
+    # de caractères ou les commentaires.  Autrement, SYNTEXTE est un nombre,
+    # souvent 0, qui est un déplacement par rapport au début du texte apparié
+    # (ou de sa fin s'il est négatif).  Le caractère à ce déplacement ne doit
+    # alors faire partie ni d'une chaîne de caractères, ni d'un commentaire.
+    syntexte = None
+    # Après une correction automatique, le curseur se repositionne normalement
+    # sur la broutille suivante, c'est l'action par défaut.  Mais si une
+    # broutille ne fournit pas sa propre méthode CORRIGER, la méthode CORRIGER
+    # par défaut intervient pour indiquer qu'une intervention humaine est
+    # requise et change REPOSITIONNEMENT à True, dans l'instance seulement.
+    repositionnement = True
+    # Les trois variables suivantes sont `globales' à toutes les broutilles,
+    # elles servent à détecter que rien n'a changé depuis que la dernière
+    # broutille a été trouvée, et donc que l'utilisateur a choisi de l'ignorer.
+    # Dans ce cas, il faut s'acheminer inconditionnellement à la broutille
+    # suivante.  Si une correction a eu lieu, la ligne est réanalysée à partir
+    # du début, au cas où la correction engendre elle-même une autre broutille.
+    rangee_precedente = None
+    colonne_precedente = None
+    fragment_precedent = ''
+
+    def trouver_erreur(self, curseur):
+        tampon = vim.current.buffer
+        rangee, colonne = curseur
+        ligne = tampon[rangee-1]
+        if hasattr(self, 'gabarit'):
+            match = self.gabarit.search(ligne, colonne)
+            while match:
+                if self.confirmer_erreur((rangee, match.start())):
+                    return match.start(), match.end()
+                match = self.gabarit.search(ligne, match.start()+1)
+        else:
+            while True:
+                if self.confirmer_erreur((rangee, colonne)):
+                    return colonne, len(ligne)
+                if colonne == len(ligne):
+                    break
+                colonne += 1
+
+    def confirmer_erreur(self, curseur):
+        assert hasattr(self, 'gabarit'), self
+        tampon = vim.current.buffer
+        rangee, colonne = curseur
+        match = self.gabarit.match(tampon[rangee-1], colonne)
+        if match is None:
+            return
+        syntexte = self.syntexte
+        if syntexte is None:
+            self.match = match
+            return match
+        if syntexte < 0:
+            syntexte += match.end() - match.start()
+        if (vim.eval('synIDattr(synID(%d, %d, 0), "name")'
+                     % (rangee, colonne + 1 + syntexte))
+              in ('pythonComment', 'pythonRawString', 'pythonString')):
+            return
+        self.match = match
+        return match
+
+    def corriger(self):
+        # Par défaut, le programmeur choisit et édite une correction.
+        sys.stderr.write("Ici, il me faut l'aide d'un humain!\n")
+        self.repositionnement = False
+        self.annuler_precedent()
+
+    def repositionner(self):
+        if self.repositionnement:
+            trouver_broutille('n')
+
+    def remplacer_texte(self, nouveau):
+        assert hasattr(self, 'gabarit'), self
+        tampon = vim.current.buffer
+        rangee = vim.current.window.cursor[0]
+        ligne = tampon[rangee-1]
+        tampon[rangee-1] = (ligne[:self.match.start()]
+            + self.match.expand(nouveau) + ligne[self.match.end():])
+        self.annuler_precedent()
+
+    def annuler_precedent(self):
+        Broutille.rangee_precedente = None
+        Broutille.colonne_precedente = None
+        Broutille.fragment_precedent = ''
+
+class Fichier_Vide(Broutille):
+    # Un module Python ne doit pas être vide.
+    plainte = "Module vide."
+
+    def trouver_erreur(self, curseur):
+        if self.confirmer_erreur(curseur):
+            return 0, 0
+
+    def confirmer_erreur(self, curseur):
+        tampon = vim.current.buffer
+        return len(tampon) == 0 or len(tampon) == 1 and not tampon[0]
+
+    def corriger(self):
+        # Insérer un squelette de programme Python.
+        vim.current.buffer[:] = [
+            '#!/usr/bin/env python',
+            '# -*- coding: Latin-1',
+            '# Copyright © 2004 Progiciels Bourbeau-Pinard inc.',
+            '# François Pinard <pinard@iro.umontreal.ca>, 2004.',
+            '',
+            '"""\\',
+            '',
+            '"""',
+            '',
+            '__metaclass__ = type',
+            '',
+            'class Main:',
+            '    def __init__(self):',
+            '        pass',
+            '',
+            '    def main(self, *arguments):',
+            '        import getopt',
+            '        options, arguments = getopt.getopt(arguments, \'\')',
+            '        for option, valeur in options:',
+            '            pass',
+            '',
+            'run = Main()',
+            'main = run.main',
+            '',
+            'if __name__ == \'__main__\':',
+            '    import sys',
+            '    main(*sys.argv[1:])',
+            ]
+        self.annuler_precedent()
+
+    def repositionner(self):
+        # Déclencher une insertion à l'intérieur du doc-string.
+        vim.current.window.cursor = 7, 0
+        vim.command('startinsert')
+
+class Double_LigneVide(Broutille):
+    # Il n'est pas utile d'avoir plusieurs lignes vides d'affilée.
+    plainte = _("Many empty lines in a row.")
+
+    def trouver_erreur(self, curseur):
+        if self.confirmer_erreur(curseur):
+            return 0, 0
+
+    def confirmer_erreur(self, curseur):
+        tampon = vim.current.buffer
+        rangee, colonne = curseur
+        if len(tampon[rangee-1]) == 0:
+            return rangee < len(tampon) and len(tampon[rangee]) == 0
+
+    def corriger(self):
+        # Éliminer les lignes superflues.
+        disposer_en_mixte_remplie(vim.current.window.cursor[0])
+
+class Tab(Broutille):
+    # Il ne doit pas avoir de HT dans un fichier.
+    plainte = _("TAB within source.")
+    gabarit = r'\t\t*'
+
+    def corriger(self):
+        # Dans la marge gauche, remplacer chaque HT par huit blancs.
+        # Plus loin dans la ligne, utiliser plutôt l'écriture `\t'.
+        if self.match.start() == 0:
+            self.remplacer_texte(' ' * 8 * len(self.match.group()))
+        else:
+            self.remplacer_texte(r'\t' * len(self.match.group()))
+
+class Blancs(Broutille):
+    # Les jetons ne doivent pas être séparés par plus d'un blanc.
+    plainte = _("Many spaces in a row.")
+    gabarit = '([^ ])   *([^ #])'
+    syntexte = 1
+
+    def corriger(self):
+        # Éliminer les blancs superflus.
+        avant, apres = self.match.group(1, 2)
+        if avant in '([{' or apres in ',;.:)]}':
+            self.remplacer_texte(avant + apres)
+        else:
+            self.remplacer_texte(avant + ' ' + apres)
+
+class Blanc_FinLigne(Broutille):
+    # Une ligne ne peut avoir de blancs suffixes.
+    plainte = _("Trailing spaces.")
+    gabarit = r'[ \t][ \t]*$'
+
+    def corriger(self):
+        # Éliminer les blancs suffixes.
+        self.remplacer_texte('')
+
+class GrandeLigne(Broutille):
+    # Les lignes doivent tenir dans Editeur.LIMITE colonnes.
+    plainte = _("Line is too long.")
+
+    def trouver_erreur(self, curseur):
+        tampon = vim.current.buffer
+        rangee, colonne = curseur
+        if colonne <= Editeur.limite and len(tampon[rangee-1]) > Editeur.limite:
+            return Editeur.limite, len(tampon[rangee-1])
+
+    def confirmer_erreur(self, curseur):
+        tampon = vim.current.buffer
+        rangee, colonne = curseur
+        return (colonne == Editeur.limite
+                and len(tampon[rangee-1]) > Editeur.limite)
+
+    def corriger(self):
+        # Redisposer l'entièreté du code Python.
+        disposer_en_mixte_remplie(vim.current.window.cursor[0])
+
+class Triple_Guillemets(Broutille):
+    # Un triple-guillemets qui débute une chaîne doit débuter une ligne ou
+    # suivre une virgule ou une parenthèse ouvrante, et n'être suivi que d'un
+    # backslash.  S'il termine une chaîne, il doit être seul sur sa ligne, ou
+    # n'être suivi que d'une virgule ou d'une parenthèse fermante.
+    plainte = _("Questionnable formatting of triple quotes.")
+    gabarit = r'"""'
+
+    def confirmer_erreur(self, curseur):
+        if Broutille.confirmer_erreur(self, curseur):
+            tampon = vim.current.buffer
+            rangee, colonne = curseur
+            ligne = tampon[rangee-1]
+            suffixe = ligne[colonne+3:]
+            if suffixe == '\\':
+                if colonne > 0 and ligne[colonne-1] == '(':
+                    return False
+                if colonne > 1 and ligne[colonne-2:colonne] == ', ':
+                    return False
+                if not ligne[:colonne].lstrip():
+                    return False
+                return True
+            if suffixe in ('', ',', ')'):
+                return colonne > 0
+            return True
+
+class Enonce_Commentaire(Broutille):
+    # Un commentaire doit être seule sur sa ligne, il ne peut terminer une
+    # ligne logique qui contient déjà autre chose.
+    plainte = _("In-line comment.")
+    gabarit = '[^ ] *#'
+    syntexte = -1
+
+    def corriger(self):
+        # Séparer le commentaire pour le mettre seul sur une ligne séparée.
+        # Le commentaire précéde normalement la ligne, à moins que la ligne
+        # Python se termine par deux-points, dans lequel cas le commentaire
+        # suit la ligne.  Une majuscule sera forcée au début du commentaire,
+        # et un terminateur de phrase sera ajouté au besoin.
+        tampon = vim.current.buffer
+        rangee = vim.current.window.cursor[0]
+        ligne = tampon[rangee-1]
+        code_python = ligne[:self.match.start() + 1]
+        commentaire = ligne[self.match.end() + 1:]
+        if commentaire.startswith(' '):
+            commentaire = commentaire[1:]
+        if commentaire:
+            if commentaire[0].islower():
+                commentaire = commentaire[0].upper() + commentaire[1:]
+            if commentaire[-1] not in '.!?':
+                commentaire += '.'
+            if code_python.endswith(':'):
+                tampon[rangee-1:rangee] = [
+                    code_python,
+                    '%*s# %s' % (marge_gauche(tampon[rangee]), '', commentaire)]
+            else:
+                tampon[rangee-1:rangee] = [
+                    '%*s# %s' % (marge_gauche(code_python), '', commentaire),
+                    code_python]
+        else:
+            tampon[rangee-1] = code_python
+        self.annuler_precedent()
+
+class Par_Blanc(Broutille):
+    # Une parenthèse ouvrante ne doit pas être suivie d'un blanc.
+    # Même chose pour les crochets ou accolades ouvrants.
+    plainte = _("Space after opening symbol.")
+    gabarit = r'([(\[{])  *'
+
+    def corriger(self):
+        # Enlever les blancs qui suivent.
+        self.remplacer_texte(r'\1')
+
+class Blanc_These(Broutille):
+    # Une parenthèse fermante ne doit pas être précédée d'un blanc.
+    # Même chose pour les crochets ou accolades ouvrants.
+    plainte = _("Space before closing symbol.")
+    gabarit = r'([^ ])  *([)\]}])'
+
+    def corriger(self):
+        # Enlever les blancs qui précèdent.
+        self.remplacer_texte(r'\1\2')
+
+class Virgule_Noir(Broutille):
+    # Une virgule doit être suivie d'un blanc.
+    # Même chose pour les point-virgules.
+    plainte = _("Punctuation not followed by space.")
+    gabarit = r'([,;])([^ )])'
+    syntexte = 0
+
+    def corriger(self):
+        # Ajouter un blanc.
+        self.remplacer_texte(r'\1 \2')
+
+class Blanc_Virgule(Broutille):
+    # Une virgule ne doit pas être précédée d'un blanc.
+    # Même chose pour les deux-points et point-virgules.
+    plainte = _("Punctuation preceded by space.")
+    gabarit = r'(  *)([,:;])'
+
+    def confirmer_erreur(self, curseur):
+        if Broutille.confirmer_erreur(self, curseur):
+            tampon = vim.current.buffer
+            rangee, colonne = curseur
+            return colonne == 0 or tampon[rangee-1][colonne-1] != ' '
+
+    def corriger(self):
+        # Déplacer la virgule avant les blancs.
+        self.remplacer_texte(r'\2\1')
+
+class Noir_Egal(Broutille):
+    # `=' ou `==' doivent généralement être précédés d'un blanc.
+    # Par contre, pour les définitions de paramètres avec mot-clé, il n'y
+    # a aucun blanc de part et d'autre du `='.
+    plainte = _("Assignment or comparison symbol not preceded by space.")
+    gabarit = r'([^-+*/ <=>!&|])=  *'
+    syntexte = 0
+
+    def corriger(self):
+        # Insérer le blanc manquant.
+        self.remplacer_texte(r'\1 = ')
+
+class Egal_Noir(Broutille):
+    # `=' ou `==' doivent généralement être suivis d'un blanc.
+    # Par contre, pour les définitions de paramètres avec mot-clé, il n'y
+    # a aucun blanc de part et d'autre du `='.
+    plainte = _("Assignment or comparison symbol not followed by space.")
+    gabarit = r'  *=([^ =])'
+    syntexte = 0
+
+    def confirmer_erreur(self, curseur):
+        if Broutille.confirmer_erreur(self, curseur):
+            tampon = vim.current.buffer
+            rangee, colonne = curseur
+            return colonne == 0 or tampon[rangee-1][colonne-1] != ' '
+
+    def corriger(self):
+        # Insérer le blanc manquant.
+        self.remplacer_texte(r' = \1')
+
+class Backslash_FinLigne(Broutille):
+    # Le backslash en fin-de-ligne doit être tout simplement évité, à
+    # l'exception du cas où il suit immédiatement un triple-guillemets.
+    plainte = _("Escaped newline.")
+    gabarit = r' *\\$'
+
+    def confirmer_erreur(self, curseur):
+        if Broutille.confirmer_erreur(self, curseur):
+            tampon = vim.current.buffer
+            rangee, colonne = curseur
+            ligne = tampon[rangee-1]
+            return ((colonne == 0 or ligne[colonne-1] != ' ')
+                    and not ligne.endswith('"""\\'))
+
+    def corriger(self):
+        self.remplacer_texte('')
+
+class Operateur_FinLigne:
+    # Un opérateur ne peut se trouver en fin de ligne.
+    plainte = _("Operator at end of line.")
+    gabarit = r'(\band|\bor|[-+*/%<=>!])$'
+    syntexte = 0
+
+    def corriger(self):
+        # Rapporter l'opérateur au début de la ligne suivante.
+        tampon = vim.current.buffer
+        rangee = vim.current.window.cursor[0]
+        ligne = tampon[rangee-1]
+        operateur = self.match.group().lstrip()
+        tampon[rangee-1] = ligne[:self.match.start()].rstrip()
+        ligne = tampon[rangee]
+        marge = marge_gauche(ligne)
+        tampon[rangee] = '%s%s %s' % (ligne[:marge], operateur, ligne[marge:])
+        self.annuler_precedent()
+
+class Import_Etoile(Broutille):
+    # L'énoncé `import *' devrait généralement être évité.
+    plainte = _("Use of `import *' (detail what should be imported).")
+    gabarit = r'\bimport \*'
+
+class Print(Broutille):
+    # L'énoncé `print' devrait être réservé pour la mise-au-point.
+    plainte = _("Use of `print' statement (maybe for debugging).")
+    gabarit = r'\bprint\b'
+    syntexte = 0
+
+class Apply(Broutille):
+    # `apply(FONCTION, ARGUMENTS)' s'écrit mieux `FONCTION(*ARGUMENTS)'.
+    plainte = _("Use of `apply' function (prefer `function(*arguments)').")
+    gabarit = r'\bapply\('
+
+class Close(Broutille):
+    # `OBJET.close()' est rarement nécessaire si OBJET est un fichier.
+    plainte = _("Use of `close' method (maybe useless).")
+    gabarit = r'\.close\('
+
+class Eval(Broutille):
+    # `eval()' doit être évité autant que possible.
+    plainte = _("Use of `eval' function (rethink the algorithm).")
+    gabarit = r'\beval\('
+
+class Exec(Broutille):
+    # `exec' doit être évité autant que possible.
+    plainte = _("Use of `exec' statement (rethink the algorithm).")
+    gabarit = r'\bexec\b'
+
+class Execfile(Broutille):
+    # `execfile()' doit être évité autant que possible.
+    plainte = _("Use of `execfile' function (rethink the algorithm).")
+    gabarit = r'\bexecfile\('
+
+class Find(Broutille):
+    # `CHAÎNE.find(SOUS_CHAÎNE)' s'écrit mieux `SOUS_CHAÎNE in CHAÎNE'.
+    plainte = _("Use of `find' method (maybe use `in').")
+    gabarit = r'\.find\('
+
+class Global(Broutille):
+    # `global' doit être évité autant que possible.
+    plainte = _("Use of `global' statement (use class variables).")
+    gabarit = r'\bglobal\b'
+
+class Has_Key(Broutille):
+    # `OBJET.has_key(CLÉ)' s'écrit mieux `CLÉ in OBJET'.
+    plainte = _("Use of `has_key' method (maybe use `in').")
+    gabarit = r'\.has_key\('
+
+class Input(Broutille):
+    # `input()' doit être évité autant que possible.
+    plainte = _("Use of `input' function (rethink the algorithm).")
+    gabarit = r'\binput\('
+
+class Keys(Broutille):
+    # `OBJET.keys()' s'écrit mieux `OBJET', utilisé comme itérateur.
+    plainte = _("Use of `keys' method (maybe useless).")
+    gabarit = r'\.keys\(\)'
+
+    def corriger(self):
+        # Éliminer l'appel de `keys'.
+        self.remplacer_texte('')
+
+class Open(Broutille):
+    # `open(NOM_FICHIER)' s'écrit mieux `file(NOM_FICHIER)'.
+    plainte = _("Use of `open' method (maybe use `file').")
+    gabarit = r'\bopen\('
+
+    def corriger(self):
+        # Utiliser `file'.
+        self.remplacer_texte('file(')
+
+class Readlines(Broutille):
+    # `OBJET.readlines()' s'écrit mieux `OBJET', utilisé comme itérateur.
+    plainte = _("Use of `readlines' method (maybe useless).")
+    gabarit = r'\.readlines\(\)'
+
+    def corriger(self):
+        # Éliminer l'appel de `readlines'.
+        self.remplacer_texte('')
+
+class String(Broutille):
+    # Le module `string' doit être considéré comme à peu près désuet.
+    plainte = _("Use of `string' module (maybe string methods).")
+    gabarit = r'\bstring\.|\bimport.*\bstring\b'
+    syntexte = 0
+
+class Type(Broutille):
+    # `OBJECT is type(CONSTANTE)' se récrit `isinstance(OBJET, TYPE)'.
+    plainte = _("Use of `type' function (maybe use `isinstance').")
+    gabarit = r'(\bis |==) *type\('
+
+class Dates_Richard(Broutille):
+    # Richard Nault a sa méthode bien personnelle pour écrire les dates.
+    plainte = _("Richard Nault's style date (use ISO-8601 notation).")
+    mois = {
+        # Écriture américaine.
+        'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
+        'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12,
+        # Ajouts pour le français.
+        'Fév': 2, 'Avr': 4, 'Mai': 5, 'Aoû': 8, 'Déc': 12,
+        # Écriture française majuscule.
+        'JAN': 1, 'FÉB': 2, 'MAR': 3, 'AVR': 4, 'MAI': 5, 'JUN': 6,
+        'JUL': 7, 'AOÛ': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DÉC': 12,
+        # Écriture française minuscule.
+        'jan': 1, 'féb': 2, 'mar': 3, 'avr': 4, 'mai': 5, 'jun': 6,
+        'jul': 7, 'aoû': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'déc': 12,
+        # Erreurs orthographiques observées.
+        'AOU': 8, 'aou': 8,
+        }
+    gabarit = r'([0-3][0-9])\.(%s)\.(200[0-4])' % '|'.join(mois)
+
+    def corriger(self):
+        self.remplacer_texte(r'\3-%02d-\1' % self.mois[self.match.group(2)])
+
+## Quelques autres actions simples.
+
+def choisir_mise_au_point(mode):
+    Editeur.mise_au_point = valeur_suivante(Editeur.mise_au_point,
+        range(len(Editeur.explications_mise_au_point)))
+    sys.stdout.write(Editeur.explications_mise_au_point[Editeur.mise_au_point])
+
+def choisir_remplisseur(mode):
+    Disposeur.remplisseur = valeur_suivante(Disposeur.remplisseur,
+                                             Disposeur.choix_remplisseurs)
+    sys.stdout.write("Les commentaires seront remplis par `%s'."
+                     % Disposeur.remplisseur)
+
+def valeur_suivante(valeur, choix):
+    return choix[(list(choix).index(valeur) + 1) % len(choix)]
+
+def ajouter_parentheses(mode):
+    rangee, colonne = vim.current.window.cursor
+    tampon = vim.current.buffer
+    ligne = tampon[rangee-1]
+    if ligne.endswith(':'):
+        tampon[rangee-1] = ligne[:colonne] + '(' + ligne[colonne:-1] + '):'
+    else:
+        tampon[rangee-1] = ligne[:colonne] + '(' + ligne[colonne:] + ')'
+    vim.current.window.cursor = rangee, colonne + 1
+
+def eliminer_parentheses(mode):
+    rangee1, colonne1 = vim.current.window.cursor
+    vim.command('normal %')
+    rangee2, colonne2 = vim.current.window.cursor
+    vim.command('normal %')
+    if (rangee1, colonne1) > (rangee2, colonne2):
+        rangee1, rangee2 = rangee2, rangee1
+        colonne1, colonne2 = colonne2, colonne1
+    tampon = vim.current.buffer
+    for rangee, colonne in (rangee2, colonne2), (rangee1, colonne1):
+        ligne = tampon[rangee-1]
+        tampon[rangee-1] = ligne[:colonne] + ligne[colonne+1:]
+    vim.current.window.cursor = rangee1, colonne1
+
+def forcer_apostrophes(mode):
+    rangee, colonne = vim.current.window.cursor
+    tampon = vim.current.buffer
+    ligne = tampon[rangee-1]
+    ouvrant = ligne[colonne:].find('"')
+    if ouvrant >= 0:
+        ouvrant += colonne
+        fermant = ligne[ouvrant+1:].find('"')
+        if fermant >= 0:
+            fermant += ouvrant + 1
+            tampon[rangee-1] = (ligne[:ouvrant] + '\''
+                                + ligne[ouvrant+1:fermant].replace('\'', r'\'')
+                                + '\'' + ligne[fermant+1:])
+            vim.current.window.cursor = rangee, ouvrant + 1
+
+def forcer_guillemets(mode):
+    rangee, colonne = vim.current.window.cursor
+    tampon = vim.current.buffer
+    ligne = tampon[rangee-1]
+    ouvrant = ligne[colonne:].find('\'')
+    if ouvrant >= 0:
+        ouvrant += colonne
+        fermant = ligne[ouvrant+1:].find('\'')
+        if fermant >= 0:
+            fermant += ouvrant + 1
+            tampon[rangee-1] = (ligne[:ouvrant] + '"'
+                                + ligne[ouvrant+1:fermant].replace('"', r'\"')
+                                + '"' + ligne[fermant+1:])
+            vim.current.window.cursor = rangee, ouvrant + 1
+
+## Routines de service.
 
 def est_none(noeud):
     # Retourner True si le noeud représente la constante None.

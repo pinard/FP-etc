@@ -5,19 +5,21 @@
                                François Pinard
                            pinard@iro.umontreal.ca
 
-Pynits is a tool which I find useful while editing Python source code
-with Vim, for tidying up individual sources lines, and some auxiliary
-tasks.  It is particularly helpful when formatting lines holding long
-or complex expressions.  This tool requires a Python-enabled Vim.
+Pynits is a useful tool while editing Python source code from within
+Vim, for tidying up individual sources lines, and doing some auxiliary
+tasks.  I find it particularly helpful when formatting lines containing
+long or complex expressions.  This tool requires a Python-enabled Vim.
 
 1. Introduction                         |pynits-introduction|
-2. Finding nits                         |pynits-finding-nits|
-3. Reformatting lines                   |pynits-reformatting|
-4. Other commands                       |pynits-other-commands|
+2. Reformatting Python code             |pynits-python-code|
+3. Handling strings                     |pynits-strings|
+4. Handling comments                    |pynits-comments|
+5. Finding nits                         |pynits-nits|
+6. Other commands                       |pynits-miscellaneous|
 
 The Pynits tool may be downloaded from:
     http://fp-etc.progiciels-bpi.ca/showfile.html?mode=archives
-while installation directives may be found at:
+while installation directions may be found at:
     http://fp-etc.progiciels-bpi.ca/showfile.html?name=pynits/README
 This file you are reading is also available on the Web as:
     http://fp-etc.progiciels-bpi.ca/showfile.html?name=pynits/pynits.txt
@@ -30,74 +32,58 @@ Write to the author for corrections, suggestions or bug reports.
 
 I once had to take over the maintenance of a set of big Python modules,
 written by someone without much concern about source line length limits,
-and also a bit lacking in the area of sound coding standards.  The
-sources were hard to read on an usual terminal screen, hard to print
-without stunts on a printer, hard to edit: in a word, hard to maintain.
+and also a bit lacking in the area of sound coding standards.  Trying to
+repair these things "manually" in Vim announced to be extremely tedious,
+and the idea of this tool imposed itself as the only reasonable avenue.
 
-When it comes to source coding standards, people develop religious
-feelings.  My personal coding practices, which are somehow reflected in
-this tool, are surely debatable and questionable, yet I dare to think
-they are quite reasonable.  I use an eclectic choice of good ideas from
-various sources: the Python mode as written for GNU Emacs, the standard
-Python plugin for Vim, Guido's own style as he documented it, some
-relevant parts of GNU and Gnits standards, good horse sense, but also,
-my own programming experience, accumulated for a good while by now.
+People develop religious feelings about source coding standards.  My
+personal coding practices, which are somehow reflected in this tool,
+are surely debatable and questionable, yet I dare to think they grew
+reasonably well.  I use an eclectic choice of good ideas from various
+sources: the Python mode as written for GNU Emacs, the standard Python
+plugin for Vim, Guido's own style as he documented it, some relevant
+parts of GNU and Gnits standards, good horse sense, but also, my own
+programming experience, accumulated for a good while by now.
 
-Source code lines are often carefully crafted by programmers, and a
-reformatting tool may defeat local art work.  This is why I think
-reformatting is best done from with a scalpel, like Vim may be, than
-operated in bulk or in batch.  The programmer may choose to accept or
-refuse, on a line basis, suggestions made by a tool like this one.
+As source code lines are often carefully crafted by programmers, a
+reformatting tool may defeat local art work.  Reformatting is better
+fixed with an interactive scalpel, such as a tool like Vim can provide,
+than performed as a bulk or batch operation.  The programmer may then
+choose, on a line-by-line basis, to accept or reject the formatting
+suggestions made by this tool.
 
-There are three sets of commands in this tool.  The first set is meant
-to discover and report various formatting nits.  The programmer may then
-ask the tool for correcting them, when a correction recipe is known.
-The second set takes a whole Python source line, possibly continued, and
-fully rebuilds a surface representation from its syntax tree.  The third
-set contains a few random commands for simple tasks.
+There are three sets of commands in this tool.  A first set takes an
+entire line of Python source code (which may contain line continuations)
+and works hard at choosing a "best" surface representation, completely
+rebuilt from its syntax tree.  A second set is meant to discover
+and report various formatting nits, and even to correct them when a
+correction recipe is known.  A final set contains random commands,
+usually for a few simple reformatting tasks.
 
-==============================================================================
-2. Finding nits						*pynits-finding-nits*
-
-All Python commands start with the |<LocalLeader>|, which is `\' if the
+All Pynits commands start with the |<LocalLeader>|, which is `\' if the
 user did not change it.  All mapping equivalence tables, below, assume
 that the local leader has not been set to some other value.  You should
 change your reading of these maps if the leader happens to be different.
 
-Mapping equivalences:
-	\\	<Plug>Pynits_trouver_broutille
-	\.	<Plug>Pynits_corriger_broutille
-
-The exact nature formatting nit is uneasy to formalize, so I merely
-escape the problem and define a nit as something I do not like! :-) This
-tool knows about many nits, and when asked to find one with "\\", it
-starts at the current line and forward, looking for all these nits in
-parallel.  When "\\" is repeated after another, seeking resumes after
-the found nit.  However, if the cursor moved or the line was modified
-in the vicinity of the nit, seeking starts back at the beginning of the
-current line, in case correcting a nit would have created another one.
-
-When a nit is found, it is highlighted, and diagnosed at the last line
-of the Vim frame.  However, merely because I do not know how to do
-better, all textual contents similar to the nit are also highlighted.
-But the nit really sits where the cursor is, best is to ignore the other
-occurrences of the highlight.
-
-Command "\." asks for the recently found nit to be corrected.  If the
-tool knows how to do so, it corrects the nit and automatically proceed
-to the next one.  Otherwise, it asks for a human to intervene, and does
-not move the cursor.
+This tool complies with the |'textwidth'| Vim option for the line
+length, but use 80 if that option is set to zero.  The |'shiftwidth'|
+option also gives the number of columns per indentation step.
 
 ==============================================================================
-3. Reformatting lines					*pynits-reformatting*
+2. Reformatting Python code				*pynits-python-code*
 
-Given the cursor is on a line of Python code, the following commands
-all reformat a Python line, but may yield different results whenever
-continuation lines are needed.  If the cursor is on a comment line, all
-the comment block encompassing the current line is reformatted.  If the
-cursor is on a white line, extraneous white lines are deleted.  Let's
-concentrate on Python code first.  See near the end of this section for
-ints about how comments are processed.
+The following commands distinguish between a set of white lines, a block
+of comments, or a group of physical lines representing a logical line of
+Python code.  They all have the purpose of producing a possibly different
+formatting of the same while preserving the execution semantics.
+
+If the cursor is on a white line, surrounding white lines are considered
+extraneous and deleted.  If the cursor is on a comment line, the entire
+comment block of which the line is a part is reformatted, see
+|pynits-comments| below for more details on this.  Otherwise, the cursor is on
+a line of executable Python code, and the following commands may yield
+different results whenever continuation lines are needed.  A few peculiarities
+of string formatting are listed separately, see |pynits-strings| below.
 
 Mapping equivalences:
 	\c	<Plug>Pynits_disposer_en_colonne
@@ -106,19 +92,19 @@ Mapping equivalences:
 	\q	<Plug>Pynits_disposer_en_mixte_remplie
 	\r	<Plug>Pynits_disposer_en_colonne_remplie
 
-When any of the above command is given, the tool first tries to find
-the Python line holding the cursor.  A Python line, here, means a set
-of physical lines in the buffer representing a single logical line, but
+When any of the above command is given, the tool first tries to find the
+Python line containing the cursor.  A Python line, here, means a set of
+physical lines in the buffer representing a single logical line, but
 possibly continued (either through an escaped-newline or an unbalanced
 bracket of any kind).  The Python line may start as far as a dozen
-physical lines before the cursor, and the Python line may hold as much
-as two dozen lines.  Beware that a physical line may look, all in
-itself, like a valid Python statement, while it is really a continuation
-line.  This tool may be fooled by such cases, so it may happen that you
-ought to explicitly reposition the cursor on the first physical line
-of the Python line first.  As the cursor is left on the physical line
-following the Python line after the operation, this gives you a good
-clue about what the tool found out to be a Python line.
+physical lines before the cursor, and the Python line may hold as many
+as two dozen lines.  Beware that a physical line may look, on its own,
+like a valid Python statement, while it is really a continuation line.
+This tool may be fooled by such cases, so it may happen that you ought
+to explicitly reposition the cursor on the first physical line of the
+Python line first.  As the cursor is left on the physical line following
+the Python line after the operation, this gives you a good indication of
+what the tool determined to be a Python line.
 
 Command "\l" reformats the Python line into a single physical line with
 no limit for the line length, and is meant to be useful as a first step
@@ -127,28 +113,32 @@ commands in this category try hard to fit the Python line into one or
 more physical lines of no more than 80 columns each.
 
 Command "\c" reformats the Python line so to vertically align
-continuation lines into a column, the position of which is selected to
-better stress the syntactic structure of a statement or expression.
-Command "\m" will rather align continuation lines by indenting the
-margin by a fixed amount, this is a bit less legible, yet still
-acceptable as this may save a few continuation lines.  However, "\m"
-will always revert to "\c", and recursively, if both yield the same
-number of continuation lines.
+continuation lines into a column, the position of which is selected
+to best reflect the syntactic structure of a statement or expression.
+In contrast to this, command "\m" will align continuation lines by
+indenting the margin by a fixed amount.  This is a bit less legible, yet
+still acceptable as it may save a few continuation lines.  However, if
+"\m" and "\c" would result in exactly the same number of continuation
+lines in the processed file, the "\m" command is (recursively)
+over-ridden by the "\c" command.  (This is because the cost of reduced
+legibility that results from the use of "\m" is only worth paying if
+fewer continuation lines result.)
 
 Command "\r" is the same as "\c" with refilling, while command "\q" is
 the same as "\m" with refilling.  Refilling is an operation by which
-continuation lines are combined after having been produced, only given
-this combining is natural and meaningful.  Here as well, refilling
-may represent some loss in legibility, but so might be using too much
-vertical space, so refilling may often be a worth compromise.
+continuation lines are combined after having been produced, provided
+that this combining is natural and meaningful.  Here as well, refilling
+may represent some loss in legibility, but so might the use of too much
+vertical space, so refilling may often be a worthwhile compromise.
 
 How to remember all these letters? "\q" has been chosen after "gq",
 which is the standard Vim command for reformatting a paragraph.  Our
-suggestion is that you use "\q", and only attempt one of the others if
-you are not satisfied by what you get.  And always keep in mind this
-wonderful Vim undo facility!  The other letters are chosen to stress a
-particular aspect of the reformatting, and they all to less work than
-"\q": "\c" favors columns, "\m" favors margins, "\r" favors refilling.
+suggestion is that you use "\q", and only attempt one of the others
+if you are not satisfied by the results.  And always keep in mind
+the wonderful Vim undo facility!  The other letters are chosen to
+stress a particular aspect of the reformatting, and they all take fewer
+formatting actions than does than "\q": "\c" favors columns, "\m" favors
+margins, "\r" favors refilling.
 
 Most of these commands accomplish a lot of work, and some heuristics
 keep a bound on the combinatorial complexity of the reformatting task.
@@ -158,44 +148,104 @@ the number of times successful attempts were in competition and had
 to undergo selection through quality comparison, and how many times a
 formatting sequence trapped itself into some dead-end.
 
-Mapping equivalences:
-	\od	<Plug>Pynits_choisir_mise_au_point
-	\om	<Plug>Pynits_montrer_syntaxe
-	\or	<Plug>Pynits_choisir_remplisseur
+==============================================================================
+3. Handling strings					*pynits-strings*
 
-These three commands, all starting with "\o", are meant for the maintainer of
-this tool for debugging, yet the third may have a wider usage, see below.
+This tool pays special attention to string formatting.  Here are a few
+of the principles it tries to follow:
 
-Command "\od" toggles the debugging level between a few states, in
-a round-robin fashion.  By default, and initially, debugging is not
-active.  A second level has the effect of mangling the result, each
-alphanumeric character being replaced by a letter indicating the
-strategy which was active when this character was being produced.  A
-third level details the arbitration process when successful formattings
-get into competition.  The fourth and last level gives an extremely
-verbose trace, and is only meant for resisting bugs!
+* Strings which represent natural language use double-quotes (") as
+external delimiters, others use single-quotes ('). The heuristic used to
+detect natural language strings is simplistic: there should be a word of
+four letters or more, at least one space is required, and there should
+be at least three times more letters than punctuation.
 
-Command "\om" does not do any formatting, but merely dumps the syntactic
-tree of the selected Python line.
+* Whenever a string is broken into a concatenated set of many lines, for
+fitting within the line width, the split occurs between words, and any
+white space sticks with the following word at such split points.  On a
+split string, there is always a split point after an embedded `\n'.
 
-Command "\or" toggles between a few refilling algorithms for comments,
-in a round-robin fashion.  By default, and initially, comment refilling
-is effected through the GNU `fmt' program, which should be already
-installed in the system: it seems to me that wherever it fits, this is
-the tool producing the nicest output.  The second algorithm uses the
-`par' program, which despite a bit less nice than `fmt', is more clever
-in some circumstances of complex quoting or boxing.  The third algorithm
-uses the Vim built-in paragraph reformatter, which seems a bit less
-interesting, but it may only be that I did not much study it yet.  The
-fourth and last algorithm is the `textwrap' module from the Python 2.3
-distribution, in practice so far, it does not seem fully up to the task.
+* Whenever a triple-quoted string is the most economical avenue for
+vertical space, all lines share the same left margin.  This means
+in particular that the opening triple-quote is always followed by a
+backslash, and the string contents may never start on the same line.
 
-This tool does not like intra-line comments.  All comments are extracted
+* Escape sequences are not used for non-ASCII letters.  It is assumed that
+the `coding' pragma of the whole file is compatible with such letters.
+
+* Isolated strings occur when a Python line contains a string and
+nothing else.  Such isolated strings are blindly taken as doc-strings,
+and so, are rendered with a triple-quoted string.  If this annoys you,
+add a comma after the string before formatting the line (this transforms
+the string into a 1-tuple), and remove that comma afterwards.
+
+==============================================================================
+4. Handling comments					*pynits-comments*
+
+This tool does not like in-line comments.  All comments are extracted
 out of a Python line, and put either before it if the line does not end
 with a colon, or after it whenever the Python line ends with a colon.
 
+Mapping equivalences:
+	\or	<Plug>Pynits_choisir_remplisseur
+
+Command "\or" cycles through a few refilling algorithms for comments.
+By default, comment refilling is effected through the GNU `fmt' program,
+which needs to be installed in the system for this procedure to work
+(most Linux systems have it bundled already): it seems to me that
+wherever it fits, this is the tool producing the nicest output.  The
+second algorithm uses the `par' program, which despite yielding results
+a bit less nice than `fmt', is more clever in some circumstances of
+complex quoting or so-called boxed comments.  The third algorithm
+uses the Vim built-in paragraph reformatter, which seems a bit less
+interesting, but it may only be that I have not studied it very much
+yet.  The fourth and last algorithm is the `textwrap' module from the
+Python 2.3 distribution; in practice so far, it does not seem fully up
+to the task.
+
 ==============================================================================
-4. Other commands					*pynits-other-commands*
+5. Finding nits						*pynits-nits*
+
+The exact nature of formatting nits is difficult to formalize, so I
+will evade the issue and rest content with the `definition' of a nit as
+something I do not like! :-)
+
+Mapping equivalences:
+	\\	<Plug>Pynits_trouver_broutille
+	\.	<Plug>Pynits_corriger_broutille
+
+This tool knows about many nits, and when asked to find one with "\\",
+it starts at the current line and move forward, looking for any instance
+of such a nit.  Once a nit is found by "\\", the user may choose to edit
+the code or to otherwise move the cursor before issuing another "\\"
+command.  When this is the case, the seek process for a nit resumes at
+the beginning of the current line.  This guards against the possibility
+that the correction of one nit might introduce another nit that goes
+undetected.  Otherwise, if the user immediately issues another "\\"
+command without changing anything, the tool assumes that the user
+decided to ignore the recently found nit, and so, the seek process
+resumes after the text of that nit.
+
+When a nit is found, it is highlighted, and explained in the last line.
+However, merely because I do not know how to do it any better, all
+textual contents similar to the nit are also highlighted.  But the
+nit really resides at the cursor location.  Simply ignore the other
+instances of highlighted text.
+
+Command "\." asks for the most recently found nit to be corrected.  If
+the tool knows how to do so, it corrects the nit and automatically
+proceeds to the next one.  Otherwise, it asks for human intervention,
+and does not move the cursor.
+
+Be warned that the nit correction is more lenient that Python code
+reformatting about strictly preserving the execution semantics.  While
+for most nits, the correction may be trusted, a few nits are better
+checked by the user to make sure they agree with the correction.
+(I intend to document nits more completely in some later version of this
+documentation.)
+
+==============================================================================
+6. Other commands					*pynits-miscellaneous*
 
 Mapping equivalences:
 	\"	<Plug>Pynits_forcer_guillemets
@@ -206,14 +256,33 @@ Mapping equivalences:
 Command `\"' seeks for the next string delimited by single quotes after
 the cursor on the current line, and changes the delimiters to double
 quotes.  Command `\'' similarly changes a double-quoted string into a
-single-quoted string.  Both these commands have an approximative effect,
+single-quoted string.  Both these commands have an approximate effect,
 they do not currently try to be right in every circumstance.
 
 Command `\(' adds an opening round parenthesis under the cursor, and a
 closing round parenthesis at the end of the physical line.  If the line
 ends with a colon, the closing parenthesis is added before the colon
-instead of after it.  Command `\)' only works in the cursor sits over
+instead of after it.  Command `\)' only works if the cursor sits over
 an opening or closing bracket of any kind, it deletes both the bracket
-under the cursor and the matching bracket, would it be on another line.
+under the cursor and the matching bracket, even if the matching bracket
+was on a different line.
+
+Mapping equivalences:
+	\od	<Plug>Pynits_choisir_mise_au_point
+	\om	<Plug>Pynits_montrer_syntaxe
+
+These two commands are meant for the use of the maintainer of this tool
+in debugging.
+
+Command "\od" cycles the debugging level through a few states.  By
+default, debugging is not active.  The second state has the effect of
+mangling the result, each alphanumeric character being replaced by a
+letter indicating the strategy which was active when this character was
+being produced.  The third state details the arbitration process when
+successful formattings get into competition.  The fourth and last state
+gives an extremely verbose trace, and is only meant for resisting bugs!
+
+Command "\om" does not do any formatting, but merely dumps the syntactic
+tree of the selected Python line.
 
 vim:tw=78:ts=8:ft=help:norl:

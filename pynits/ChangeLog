@@ -1,6 +1,14 @@
+2004-06-16  François Pinard  <pinard@iro.umontreal.ca>
+
+	* pynitx.txt: Stylistic corrections.
+	Reported by Brian van den Broek.
+
+	* punits.py: Internationalised.
+	Reported by Ronald Hoellwarth.
+
 2004-06-14  François Pinard  <pinard@iro.umontreal.ca>
 
-	* : A few bugs corrected.
+	* pynits.py: A few miscellaneous bugs.
 	Reported by Robert Lachance.
 
 	* : Initial release.

@@ -1,0 +1,273 @@
+# A Python style nit-picker for use in Vim.
+# Copyright (C) 2004 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2004.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: pynits 0.0\n"
+"POT-Creation-Date: Wed Jun 16 22:31:16 2004\n"
+"PO-Revision-Date: 2004-06-16 22:41-0500\n"
+"Last-Translator: François Pinard <pinard@iro.umontreal.ca>\n"
+"Language-Team: LANGUAGE <fr@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=ISO-8859-1\n"
+"Content-Transfer-Encoding: 8-bit\n"
+"Generated-By: pygettext.py 1.4\n"
+
+
+#: pynits.py:370
+msgid "Many empty lines in a row."
+msgstr "Plusieurs lignes vides d'affilée."
+
+#: pynits.py:388
+msgid "TAB within source."
+msgstr "Tabulation dans le source."
+
+#: pynits.py:401
+msgid "Many spaces in a row."
+msgstr "Plusieurs blancs d'affilée."
+
+#: pynits.py:415
+msgid "Trailing spaces."
+msgstr "Blancs suffixes."
+
+#: pynits.py:424
+msgid "Line is too long."
+msgstr "Ligne trop longue."
+
+#: pynits.py:447
+msgid "Questionnable formatting of triple quotes."
+msgstr "Triple guillemets mal disposé."
+
+#: pynits.py:471
+msgid "In-line comment."
+msgstr "Commentaire `en ligne'."
+
+#: pynits.py:508
+msgid "Space after opening symbol."
+msgstr "Blanc après symbole ouvrant."
+
+#: pynits.py:518
+msgid "Space before closing symbol."
+msgstr "Blanc avant symbole fermant."
+
+#: pynits.py:528
+msgid "Punctuation not followed by space."
+msgstr "Ponctuation non-suivie d'un blanc."
+
+#: pynits.py:539
+msgid "Punctuation preceded by space."
+msgstr "Ponctuation précédée d'un blanc."
+
+#: pynits.py:556
+msgid "Assignment or comparison symbol not preceded by space."
+msgstr "Symbole d'affectation ou de comparaison non précédé d'un blanc."
+
+#: pynits.py:569
+msgid "Assignment or comparison symbol not followed by space."
+msgstr "Symbole d'affectation ou de comparaison non suivi d'un blanc."
+
+#: pynits.py:586
+msgid "Escaped newline."
+msgstr "Fin de ligne échappée."
+
+#: pynits.py:602
+msgid "Operator at end of line."
+msgstr "Opérateur en fin de ligne."
+
+#: pynits.py:620
+msgid "Use of `import *' (detail what should be imported)."
+msgstr "Usage de l'énoncé `import *' (énumérer ce qu'il faut importer)."
+
+#: pynits.py:626
+msgid "Use of `print' statement (maybe for debugging)."
+msgstr "Usage de l'énoncé `print' (peut-être pour mise-au-point)."
+
+#: pynits.py:632
+msgid "Use of `apply' function (prefer `function(*arguments)')."
+msgstr "Usage de la fonction `apply' (utiliser `fonction(*arguments)')."
+
+#: pynits.py:638
+msgid "Use of `close' method (maybe useless)."
+msgstr "Usage de la méthode `close' (peut-être inutile)."
+
+#: pynits.py:643
+msgid "Use of `eval' function (rethink the algorithm)."
+msgstr "Usage de la fonction `eval' (repenser l'algorithme)."
+
+#: pynits.py:648
+msgid "Use of `exec' statement (rethink the algorithm)."
+msgstr "Usage de l'énoncé `exec' (repenser l'algorithme)."
+
+#: pynits.py:653
+msgid "Use of `execfile' function (rethink the algorithm)."
+msgstr "Usage de la fonction `execfile' (repenser l'algorithme)."
+
+#: pynits.py:658
+msgid "Use of `find' method (maybe use `in')."
+msgstr "Usage de la méthode `find' (peut-être utiliser `in')."
+
+#: pynits.py:663
+msgid "Use of `global' statement (use class variables)."
+msgstr "Usage de l'énoncé `global' (utiliser des variables de classe)."
+
+#: pynits.py:669
+msgid "Use of `has_key' method (maybe use `in')."
+msgstr "Usage de la méthode `has_key' (peut-être utiliser `in')."
+
+#: pynits.py:674
+msgid "Use of `input' function (rethink the algorithm)."
+msgstr "Usage de la fonction `input' (repenser l'algorithme)."
+
+#: pynits.py:679
+msgid "Use of `keys' method (maybe useless)."
+msgstr "Usage de la méthode `keys' (peut-être inutile)."
+
+#: pynits.py:688
+msgid "Use of `open' method (maybe use `file')."
+msgstr "Usage de la méthode `open' (peut-être utiliser `file')."
+
+#: pynits.py:697
+msgid "Use of `readlines' method (maybe useless)."
+msgstr "Usage de la méthode `readlines' (peut-être inutile)."
+
+#: pynits.py:706
+msgid "Use of `string' module (maybe string methods)."
+msgstr "Usage du module `string' (peut-être méthodes chaînes)."
+
+#: pynits.py:712
+msgid "Use of `type' function (maybe use `isinstance')."
+msgstr "Usage de la fonction `type' (peut-être utiliser `isinstance')."
+
+#: pynits.py:718
+msgid "Richard Nault's style date (use ISO-8601 notation)."
+msgstr "Date à la Richard Nault (utiliser la notation ISO-8601)."
+
+#: pynits.py:909
+msgid "Syntax error, maybe did not back up enough."
+msgstr "Erreur de syntaxe, peut-être recul insuffisant."
+
+#: pynits.py:1004
+msgid "Spurious `%s'."
+msgstr "`%s' intempestif."
+
+#: pynits.py:1007
+msgid "`%s' seen, `%s' expected!"
+msgstr "`%s' vu, `%s' attendu!"
+
+#: pynits.py:1054
+msgid "`%s' expected!"
+msgstr "`%s' attendu!"
+
+#: pynits.py:1056
+msgid "No Python code!"
+msgstr "Pas de code Python!"
+
+#: pynits.py:1161
+msgid "Tracing disabled."
+msgstr "Trace inactive."
+
+#: pynits.py:1162
+msgid "Strategy per text region."
+msgstr "Stratégies par région de texte."
+
+#: pynits.py:1163
+msgid "Tracing choices between solutions."
+msgstr "Trace des choix entre solutions."
+
+#: pynits.py:1164
+msgid "Detailed trace, very verbose."
+msgstr "Trace détaillée, très verbeuse."
+
+#: pynits.py:1169
+msgid "Column"
+msgstr "Colonne"
+
+#: pynits.py:1169
+msgid "Line"
+msgstr "Ligne"
+
+#: pynits.py:1169
+msgid "Mixed"
+msgstr "Mixte"
+
+#: pynits.py:1229
+msgid " filled"
+msgstr " remplie"
+
+#: pynits.py:1233
+msgid "%d tries"
+msgstr "%d essais"
+
+#: pynits.py:1235
+msgid "one try"
+msgstr "un essai"
+
+#: pynits.py:1237
+msgid "no try"
+msgstr "aucun essai"
+
+#: pynits.py:1240
+msgid ", %d choices"
+msgstr ", %d choix"
+
+#: pynits.py:1242
+msgid ", one choice"
+msgstr ", un choix"
+
+#: pynits.py:1245
+msgid ", %d dead-ends"
+msgstr ", %d impasses"
+
+#: pynits.py:1247
+msgid ", one dead-end"
+msgstr ", une impasse"
+
+#: pynits.py:1264
+msgid "Text "
+msgstr "Texte "
+
+#: pynits.py:1972 pynits.py:2000 pynits.py:2017
+msgid "String too long"
+msgstr "Chaîne trop longue"
+
+#: pynits.py:2075
+msgid ""
+"WARNING: floating values are not dependable.\n"
+"(There is a bug in `import compiler'.  Sigh!)"
+msgstr ""
+"ATTENTION: les valeurs flottantes ne sont pas fiables.\n"
+"(Il s'agit d'un bug dans `import compiler'.  Misère!)"
+
+#: pynits.py:2110 pynits.py:2144
+msgid "But how?!"
+msgstr "Comment faire?!"
+
+#: pynits.py:2117 pynits.py:2128
+msgid "Try"
+msgstr "Essai"
+
+#: pynits.py:2136
+msgid "Save-%d"
+msgstr "Sauve-%d"
+
+#: pynits.py:2201
+msgid "Format"
+msgstr "Format"
+
+#: pynits.py:2236
+msgid "Visit"
+msgstr "Visit"
+
+#: pynits.py:2322
+msgid "After %"
+msgstr "Après %"
+
+#: pynits.py:2366
+msgid "Line overflow"
+msgstr "Débordement de ligne"
+
+#: pynits.py:2411
+msgid "Point "
+msgstr "Point "
+
