@@ -1,6 +1,6 @@
 " Traitement des fichiers Allout.
 " Copyright (C) Progiciels Bourbeau-Pinard, inc.
-" François Pinard, 2003-12.
+" FranÃ§ois Pinard, 2003-12.
 
 if exists('loaded_allout')
   finish
@@ -20,7 +20,7 @@ function AlloutFoldExpr(line)
     endif
     let text2 = substitute(text, '^\.\( *\)[-*+@#.:,;].*', '\1', '')
     if text != text2
-      return  strlen(text2) + 2
+      return strlen(text2) + 2
     endif
   endif
   return &foldnestmax
@@ -37,13 +37,6 @@ endif
 let s:save_cpo = &cpo
 set cpo&vim
 
-python <<EOF
-try:
-    import allout
-except ImportError:
-    import Allout.vim as allout
-
-allout.register_key_bindings(vim.eval('maplocalleader'), 0x02)
-EOF
+python from Etc.Allout import vim as allout
 
 let &cpo = s:save_cpo

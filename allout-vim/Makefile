@@ -19,7 +19,6 @@ install-common:
 	done
 	cp doc.txt $(VIMFILES)/doc/allout.txt
 	cp ftplugin.vim $(VIMFILES)/ftplugin/allout.vim
-	cp ../Allout/vim.py $(VIMFILES)/python/allout.py
 	cp syntax.vim $(VIMFILES)/syntax/allout.vim
 	vim -fNn -u NONE >/dev/null 2>/dev/null \
 	  -c 'helptags $(VIMFILES)/doc' -c q
@@ -34,7 +33,7 @@ dist-tar:
 	mkdir $(PACKAGE)-$(VERSION)
 	ln ChangeLog Makefile README THANKS TODO $(PACKAGE)-$(VERSION)
 	ln doc.txt ftplugin.vim syntax.vim $(PACKAGE)-$(VERSION)
-	ln ../Allout/vim.py $(PACKAGE)-$(VERSION)/python.py
+#	ln ../Allout/vim.py $(PACKAGE)-$(VERSION)/python.py
 	rm -f $(ARCHIVES)/$(PACKAGE)-$(VERSION).tgz $(ARCHIVES)/$(PACKAGE).tgz
 	tar cfz $(ARCHIVES)/$(PACKAGE)-$(VERSION).tgz $(PACKAGE)-$(VERSION)
 	ln -s $(PACKAGE)-$(VERSION).tgz $(ARCHIVES)/$(PACKAGE).tgz
@@ -47,7 +46,7 @@ dist-zip:
 	mkdir tmp/ftplugin
 	cp ftplugin.vim tmp/ftplugin/allout.vim
 	mkdir tmp/python
-	cp ../Allout/vim.py tmp/python/allout.py
+#	cp ../Allout/vim.py tmp/python/allout.py
 	mkdir tmp/syntax
 	cp syntax.vim tmp/syntax/allout.vim
 	rm -f $(ARCHIVES)/$(PACKAGE)-$(VERSION).zip $(ARCHIVES)/$(PACKAGE).zip

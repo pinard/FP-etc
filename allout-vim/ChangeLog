@@ -1,4 +1,23 @@
-2004-01-02  Fran�ois Pinard  <pinard@iro.umontreal.ca>
+2005-03-19  François Pinard  <pinard@iro.umontreal.ca>
+
+	* doc.txt: More stylistic corrections.
+	Reported by Brian van den Broek.
+
+2004-07-09  François Pinard  <pinard@iro.umontreal.ca>
+
+	* doc.txt: Many stylistic corrections.
+	Reported by Brian van den Broek.
+
+2004-06-15  François Pinard  <pinard@iro.umontreal.ca>
+
+	* vim.py: Handle undefined maplocalleader.  Use an autocommand for
+	re-establish keys in each new Allout buffer.
+
+2004-01-03  François Pinard  <pinard@iro.umontreal.ca>
+
+	* doc.txt, vim.py: For \=, \+ and \-, switch to Insert mode.
+
+2004-01-02  François Pinard  <pinard@iro.umontreal.ca>
 
 	* doc.txt, vim.py: Split \c into \c and \C, redefine \o and \O, split
 	\v into \v and \V, split \D into \d and \D.  Rename \= into \|, and
@@ -9,7 +28,7 @@
 
 	* doc.txt, vim.py: Handle \|, \0, \<CR>, \# and \~ in Visual mode.
 
-2004-01-01  Fran�ois Pinard  <pinard@iro.umontreal.ca>
+2004-01-01  François Pinard  <pinard@iro.umontreal.ca>
 
 	* README, doc.txt, vim.py: Add uniformity to nomenclature: replace
 	header or heading by topic, entry by text, and such things.
@@ -17,7 +36,7 @@
 	* doc.txt, vim.py: Command changes or additions: handle \< and \> in
 	Visual mode, add \H, \J, \K and \V, add \1 through \9.
 
-2003-12-30  Fran�ois Pinard  <pinard@iro.umontreal.ca>
+2003-12-30  François Pinard  <pinard@iro.umontreal.ca>
 
 	* ChangeLog, THANKS, TODO: New files.
 	* README: Simplified, and completed.
@@ -26,6 +45,6 @@
 	* Makefile (dist-zip): New goal.
 	Reported by Benji Fisher.
 
-2003-12-29  Fran�ois Pinard  <pinard@iro.umontreal.ca>
+2003-12-29  François Pinard  <pinard@iro.umontreal.ca>
 
 	* : Initial release.

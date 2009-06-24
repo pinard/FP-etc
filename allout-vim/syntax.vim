@@ -9,25 +9,25 @@
 "    Orange      Purple          Violet
 
 if &background == 'dark'
-  highlight alloutLevel0 gui=bold guifg=Yellow
-  highlight alloutLevel1 gui=bold guifg=LightBlue
-  highlight alloutLevel2 gui=bold guifg=Orange
-  highlight alloutLevel3 gui=bold guifg=LightCyan
-  highlight alloutLevel4 gui=bold guifg=LightRed
-  highlight alloutLevel5 gui=bold guifg=LightGray
-  highlight alloutLevel6 gui=bold guifg=LightMagenta
-  highlight alloutLevel7 gui=bold guifg=LightGreen
-  highlight alloutLevel8 gui=bold guifg=Violet
+  highlight alloutLevel0 cterm=bold gui=bold ctermfg=Yellow guifg=Yellow
+  highlight alloutLevel1 cterm=bold gui=bold ctermfg=LightBlue guifg=LightBlue
+  highlight alloutLevel2 cterm=bold gui=bold ctermfg=DarkGreen guifg=Orange
+  highlight alloutLevel3 cterm=bold gui=bold ctermfg=LightCyan guifg=LightCyan
+  highlight alloutLevel4 cterm=bold gui=bold ctermfg=LightRed guifg=LightRed
+  highlight alloutLevel5 cterm=bold gui=bold ctermfg=LightGray guifg=LightGray
+  highlight alloutLevel6 cterm=bold gui=bold ctermfg=LightMagenta guifg=LightMagenta
+  highlight alloutLevel7 cterm=bold gui=bold ctermfg=LightGreen guifg=LightGreen
+  highlight alloutLevel8 cterm=bold gui=bold ctermfg=DarkCyan guifg=Violet
 else
-  highlight alloutLevel0 gui=bold guifg=DarkYellow
-  highlight alloutLevel1 gui=bold guifg=Blue
-  highlight alloutLevel2 gui=bold guifg=Brown
-  highlight alloutLevel3 gui=bold guifg=DarkCyan
-  highlight alloutLevel4 gui=bold guifg=Red
-  highlight alloutLevel5 gui=bold guifg=DarkGray
-  highlight alloutLevel6 gui=bold guifg=DarkMagenta
-  highlight alloutLevel7 gui=bold guifg=DarkGreen
-  highlight alloutLevel8 gui=bold guifg=Purple
+  highlight alloutLevel0 cterm=bold gui=bold ctermfg=DarkYellow guifg=DarkYellow
+  highlight alloutLevel1 cterm=bold gui=bold ctermfg=Blue guifg=Blue
+  highlight alloutLevel2 cterm=bold gui=bold ctermfg=Brown guifg=Brown
+  highlight alloutLevel3 cterm=bold gui=bold ctermfg=DarkCyan guifg=DarkCyan
+  highlight alloutLevel4 cterm=bold gui=bold ctermfg=Red guifg=Red
+  highlight alloutLevel5 cterm=bold gui=bold ctermfg=DarkGray guifg=DarkGray
+  highlight alloutLevel6 cterm=bold gui=bold ctermfg=DarkMagenta guifg=DarkMagenta
+  highlight alloutLevel7 cterm=bold gui=bold ctermfg=DarkGreen guifg=DarkGreen
+  highlight alloutLevel8 cterm=bold gui=bold ctermfg=DarkBlue guifg=Purple
 endif
 
 syntax match alloutLevel0 /^\*.*/
