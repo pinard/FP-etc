@@ -19,11 +19,11 @@ Vim offers tools and help for browsing or editing these Allout files.
 8. Similar tools                        |allout-references|
 
 The `allout-vim' package may be downloaded from:
-    http://fp-etc.progiciels-bpi.ca/showfile.html?mode=archives
+    http://fp-etc.progiciels-bpi.ca/allout-vim/
 while installation directives may be found at:
-    http://fp-etc.progiciels-bpi.ca/showfile.html?name=allout/vim/README
+    http://fp-etc.progiciels-bpi.ca/allout-vim/README
 This file you are reading is also available on the Web as:
-    http://fp-etc.progiciels-bpi.ca/showfile.html?name=allout/vim/doc.txt
+    http://fp-etc.progiciels-bpi.ca/allout-vim/doc.txt
 
 While syntax colouring of Allout files should work in almost any Vim,
 Allout specific commands and mappings require a Python-enabled Vim.
