@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-# Copyright © 2004 Progiciels Bourbeau-Pinard inc.
+# -*- coding: utf-8 -*-
+# Copyright © 2004, 2005 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2004.
 
 """\
@@ -162,6 +162,29 @@ def register_local_keys(plugin, triplets):
             else:
                 vim.command('%snoremap <buffer> <silent> %s %s<CR>'
                             % (mode, sid_name, python_command))
+
+def ajuster_codage():
+    if vim.eval('&filetype') != 'python':
+        return
+    codage = vim.eval('&fileencoding') or vim.eval('&encoding')
+    substitutions = {'latin1': 'ISO-8859-1'}
+    codage = substitutions.get(codage, codage).lower()
+    tampon = vim.current.buffer
+    for index in 0, 1:
+        if index < len(tampon):
+            ligne = tampon[index]
+            # En théorie: coding[=:]\s*([-\w-.]+)
+            match = re.match(r'(#.*?-\*-.*coding: *)([-_A-Za-z0-9]*)(.*)',
+                             ligne)
+            if match:
+                ligne = match.expand(r'\1%s\3' % codage)
+                if ligne != tampon[index]:
+                    tampon[index] = ligne
+                return
+    index = 0
+    if index < len(tampon) and tampon[index].startswith('#!'):
+        index = 1
+    tampon[index:index] = ['# -*- coding: %s -*-' % codage]
 
 ## Redisposition contrôlée par la syntaxe.
 
@@ -829,12 +852,12 @@ class Editeur:
         format = 'from %s import'
         arguments = [noeud.modname]
         separateur = ' '
-        for nom, as in noeud.names:
+        for nom, alias in noeud.names:
             format += separateur + '%s'
             arguments += [nom]
-            if as is not None:
-                format += ' as %s'
-                arguments += [as]
+            if alias is not None:
+                format += ' alias %s'
+                arguments += [alias]
             separateur = ', '
         self.traiter(format, *arguments)
 
@@ -861,12 +884,12 @@ class Editeur:
         format = 'import'
         arguments = []
         separateur = ' '
-        for nom, as in noeud.names:
+        for nom, alias in noeud.names:
             format += separateur + '%s'
             arguments += [nom]
-            if as is not None:
+            if alias is not None:
                 format += ' as %s'
-                arguments += [as]
+                arguments += [alias]
             separateur = ', '
         self.traiter(format, *arguments)
 
@@ -2010,11 +2033,16 @@ class Editeur:
             self.colonne = len(texte) - (position + 1)
             if self.colonne == 0:
                 self.ligne -= 1
+        if self.texte_deborde():
+            raise Impasse(_("Line overflow"))
+        self.economie = False
+
+    def texte_deborde(self):
         if (self.remplir is not None
               and self.colonne + self.flottements[-1] > Editeur.limite):
             self.debug_texte(_("Overflow"))
-            raise Impasse(_("Line overflow"))
-        self.economie = False
+            return True
+        return False
 
 class Branchement:
     generation = 0
@@ -2299,9 +2327,9 @@ class Fichier_Vide(Broutille):
         # Insérer un squelette de programme Python.
         vim.current.buffer[:] = [
             '#!/usr/bin/env python',
-            '# -*- coding: Latin-1',
-            '# Copyright © 2004 Progiciels Bourbeau-Pinard inc.',
-            '# François Pinard <pinard@iro.umontreal.ca>, 2004.',
+            '# -*- coding: utf-8 -*-',
+            '# Copyright © 2009 Progiciels Bourbeau-Pinard inc.',
+            '# François Pinard <pinard@iro.umontreal.ca>, 2009.',
             '',
             '"""\\',
             '',
@@ -2311,8 +2339,6 @@ class Fichier_Vide(Broutille):
             'import sys',
             '',
             'class Main:',
-            '    def __init__(self):',
-            '        pass',
             '',
             '    def main(self, *arguments):',
             '        import getopt',
@@ -2330,7 +2356,7 @@ class Fichier_Vide(Broutille):
 
     def repositionner(self):
         # Déclencher une insertion à l'intérieur du doc-string.
-        changer_curseur_courant(7, 0)
+        changer_curseur_courant(6, 0)
         vim.command('startinsert')
 
 class Double_LigneVide(Broutille):
@@ -2591,29 +2617,6 @@ class Triple_Guillemets(Broutille):
             if suffixe in ('', ',', ')'):
                 return colonne > 0
             return True
-
-class Dates_Richard(Broutille):
-    # Richard Nault a sa méthode bien personnelle pour écrire les dates.
-    plainte = _("Richard Nault's style date (consider ISO-8601 notation).")
-    mois = {
-        # Écriture américaine.
-        'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5, 'Jun': 6,
-        'Jul': 7, 'Aug': 8, 'Sep': 9, 'Oct': 10, 'Nov': 11, 'Dec': 12,
-        # Ajouts pour le français.
-        'Fév': 2, 'Avr': 4, 'Mai': 5, 'Aoû': 8, 'Déc': 12,
-        # Écriture française majuscule.
-        'JAN': 1, 'FÉB': 2, 'MAR': 3, 'AVR': 4, 'MAI': 5, 'JUN': 6,
-        'JUL': 7, 'AOÛ': 8, 'SEP': 9, 'OCT': 10, 'NOV': 11, 'DÉC': 12,
-        # Écriture française minuscule.
-        'jan': 1, 'féb': 2, 'mar': 3, 'avr': 4, 'mai': 5, 'jun': 6,
-        'jul': 7, 'aoû': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'déc': 12,
-        # Erreurs orthographiques observées.
-        'AOU': 8, 'aou': 8,
-        }
-    gabarit = r'([0-3][0-9])\.(%s)\.(200[0-4])' % '|'.join(mois)
-
-    def corriger(self):
-        self.remplacer_texte(r'\3-%02d-\1' % self.mois[self.match.group(2)])
 
 class GrandeLigne(Broutille):
     # Les lignes doivent tenir dans Editeur.LIMITE colonnes.
@@ -2929,7 +2932,14 @@ def marge_gauche(texte):
 
 if vim is not None:
     installer_vim()
-    vim.command('autocmd FileType python python pynits.installer_vim()')
+    for commande in ("""\
+augroup Pynits
+  autocmd!
+  autocmd FileType python python pynits.installer_vim()
+  autocmd BufWrite * python pynits.ajuster_codage()
+augroup END
+""").splitlines():
+        vim.command(commande.lstrip())
 
 if __name__ == '__main__':
     run = Main()
