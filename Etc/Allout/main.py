@@ -11,6 +11,7 @@ Usage: allout ACTION [OPTION]... [FICHIER]...
 """
 
 __metaclass__ = type
+import sys
 
 def main(*arguments):
     import allout

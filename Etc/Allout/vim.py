@@ -8,7 +8,6 @@ Allout support for Vim.
 """
 
 __metaclass__ = type
-from Etc.Unicode import apply, deunicode, file, open, os, reunicode, sys
 from Etc.UniVim import vim
 
 def install_with_vim():

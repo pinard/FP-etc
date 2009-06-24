@@ -4,13 +4,13 @@
 # François Pinard <pinard@iro.umontreal.ca>, 2003-06.
 
 u"""\
-Ce module regroupe quelques déclarations communes au projet Classer.
+Ce module regroupe quelques déclarations utiles.
 """
 
 __metaclass__ = type
-from Etc.Unicode import apply, deunicode, file, open, os, reunicode, sys
 
 def garantir_repertoire(nom):
+    import os
     base = os.path.dirname(nom)
     if base and not os.path.isdir(base):
         # REVOIR: Plante s'il existe déjà un fichier à ce nom.
@@ -67,10 +67,10 @@ class Profilage:
         if self.profileur is None:
             return u"\n   Pas de rapport: le profilage n'a pas eu lieu.\n"
         stats = self.Stats(self.profileur.getstats())
-        stats.sort(u'inlinetime')
+        stats.sort('inlinetime')
         from StringIO import StringIO
         tampon = StringIO()
-        tampon.write(u'\n')
+        tampon.write('\n')
         stats.pprint(20, tampon)
         return tampon.getvalue()
 

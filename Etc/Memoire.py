@@ -10,7 +10,7 @@ déperdition de mémoire, puisque c'est le besoin à l'origine de ce module.
 """
 
 __metaclass__ = type
-from Etc.Unicode import apply, deunicode, file, open, os, reunicode, sys
+import os, sys
 
 ## Examen de l'usage de la mémoire.
 
@@ -93,10 +93,10 @@ class Inventaire:
 
     def rapporter_differences(self, titre, write, avant, apres):
         if titre is None:
-            titre = u'-' * 79
+            titre = '-' * 79
         if write is None:
             write = sys.stderr.write
-        write(titre + u'\n')
+        write(titre + '\n')
         pertes = []
         for cle, auparavant in avant.iteritems():
             if cle in apres:
@@ -129,17 +129,17 @@ class Inventaire:
         self.rapporter()
         pause()
         essai = Bulgroz(), Bulgroz(), Bulgroz()
-        self.rapporter(u'Rapport 1')
+        self.rapporter('Rapport 1')
         pause()
         zorglub = [Zorglub() for compteur in range(50)]
-        self.rapporter(u'Rapport 2')
+        self.rapporter('Rapport 2')
         pause()
         zorglub += list(essai)
-        self.rapporter(u'Rapport 3')
+        self.rapporter('Rapport 3')
         pause()
         zorglub = zorglub[:10]
         essai = None
-        self.rapporter(u'Rapport 4')
+        self.rapporter('Rapport 4')
         pause()
 
 class Graphique:
@@ -157,10 +157,10 @@ class Graphique:
     compteur = 0
 
     def __init__(self):
-        if not os.environ.get(u'DISPLAY'):
+        if not os.environ.get('DISPLAY'):
             return
-        for repertoire in os.environ[u'PATH'].split(u':'):
-            nom = repertoire + u'/gnuplot'
+        for repertoire in os.environ['PATH'].split(':'):
+            nom = repertoire + '/gnuplot'
             if os.access(nom, os.X_OK):
                 break
         else:
@@ -175,13 +175,13 @@ class Graphique:
                                       u"Mémoire modifiée (K)"))
         self.fichier = os.popen(
             # REVOIR: Comment faire ça tout en Python?
-            u'sh -c \'trap "" 1; %s -persist\'' % nom, u'w',
-            u'ISO-8859-1')
+            'sh -c \'trap "" 1; %s -persist\'' % nom, 'w',
+            'ISO-8859-1')
         write = self.fichier.write
-        write(u'set data style lines\n'
-              u'set key right bottom\n')
+        write('set data style lines\n'
+              'set key right bottom\n')
         if self.echelle_logarithmique:
-            write(u'set logscale y\n')
+            write('set logscale y\n')
 
     def avancer(self, compteur_references):
         if self.fichier is not None:
@@ -193,7 +193,7 @@ class Graphique:
             #        return
             #    self.compteur = 0
             compteur = 0
-            for champ in file(u'/proc/self/statm').read().split():
+            for champ in file('/proc/self/statm').read().split():
                 self.statm[compteur].append(int(champ))
                 compteur += 1
             self.references.append(compteur_references)
@@ -210,13 +210,13 @@ class Graphique:
         write = self.fichier.write
         position = 1.0
         delta = 1.0 / len(ensembles)
-        write(u'set multiplot\n')
+        write('set multiplot\n')
         for ensemble in ensembles:
             position -= delta
-            write(u'set size 1.0, %s\n' % formater_point(delta, u'%f'))
-            write(u'set origin 0.0, %s\n' % formater_point(position, u'%f'))
+            write('set size 1.0, %s\n' % formater_point(delta, '%f'))
+            write('set origin 0.0, %s\n' % formater_point(position, '%f'))
             self.tracer_collections(*ensemble)
-        write(u'set nomultiplot\n')
+        write('set nomultiplot\n')
 
     def tracer_collections(self, *collections):
         if not collections:
@@ -238,24 +238,24 @@ class Graphique:
         # Fabriquer la commande `plot'.
         write = self.fichier.write
         collection = collections[0]
-        write(u'plot [%d:%d] [%d:%d] \'-\' title "%s"'
+        write('plot [%d:%d] [%d:%d] \'-\' title "%s"'
               % (minx, maxx, miny, maxy+100, collection.titre))
         for collection in collections[1:]:
-            write(u', \'-\' title "%s"' % collection.titre)
-        write(u'\n')
+            write(', \'-\' title "%s"' % collection.titre)
+        write('\n')
         # Fournir toutes les données.
         for collection in collections:
             abcisse = collection.points_elimines
             for ordonnee in collection.array:
                 if self.echelle_logarithmique:
                     ordonnee = max(1, ordonnee)
-                write(u'%d %d\n' % (abcisse, ordonnee))
+                write('%d %d\n' % (abcisse, ordonnee))
                 abcisse += 1
-            write(u'e\n')
+            write('e\n')
 
 class Collection:
 
-    def __init__(self, titre=None, typecode=u'I'):
+    def __init__(self, titre=None, typecode='I'):
         self.titre = titre
         import array
         self.array = array.array(str(typecode))
@@ -280,7 +280,7 @@ class Inventaire_Vieux:
 
     def surveiller(self):
         write = sys.stderr.write
-        write(u'\n' + u'\\' * 59 + u'\n')
+        write('\n' + '\\' * 59 + '\n')
         self.ordinal += 1
         write(u"nº%d  " % self.ordinal)
         import resource
@@ -299,7 +299,7 @@ class Inventaire_Vieux:
         gc.collect()
         if gc.garbage:
             write(u"   %d miettes" % len(gc.garbage))
-        write(u'\n')
+        write('\n')
         compteurs = {}
         for objet in gc.get_objects():
             nom = type(objet).__name__
@@ -318,13 +318,13 @@ class Inventaire_Vieux:
             for nom, compteur in sorted(self.compteurs.iteritems()):
                 write(u"  %+7d -> %-7d   %s\n" % (-compteur, 0, nom))
         self.compteurs = compteurs
-        write(u'/' * 59 + u'\n')
+        write('/' * 59 + '\n')
 
 def formater_point(valeur, format):
-    return (format % valeur).replace(u',', u'.')
+    return (format % valeur).replace(',', '.')
 
 def main(*arguments):
     Inventaire().essai()
 
-if __name__ == u'__main__':
+if __name__ == '__main__':
     main(*sys.argv[1:])

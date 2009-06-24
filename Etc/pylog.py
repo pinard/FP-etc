@@ -7,7 +7,7 @@
 # et même fichier, et fusionner correctement dans ce cas.
 
 __metaclass__ = type
-from Etc.Unicode import apply, deunicode, file, open, os, reunicode, sys
+import sys
 
 class Error(Exception):
     pass
@@ -19,20 +19,20 @@ class Message_X(object):
         self.args = args
 
     def content(self):
-        return u' '.join(map(unicode, self.args))
+        return ' '.join(map(unicode, self.args))
 
     def prefix(self):
-        return u'[%s] ' % (u':'.join(self.keywords))
+        return '[%s] ' % (':'.join(self.keywords))
 
     def __unicode__(self):
         prefix = self.prefix()
         content = self.content().rstrip()
-        if u'\n' in content:
+        if '\n' in content:
             lines = []
             for line in content.splitlines():
                 lines.append(prefix + line)
-                prefix = u' ' * len(prefix)
-            return u'\n'.join(lines)
+                prefix = ' ' * len(prefix)
+            return '\n'.join(lines)
         return prefix + content
 
     __str__ = __unicode__
@@ -43,14 +43,14 @@ class Producer(object):
 
     def __init__(self, keywords):
         if isinstance(keywords, unicode):
-            keywords = tuple(keywords.split(u'.'))
+            keywords = tuple(keywords.split('.'))
         self.keywords = keywords
 
     def __repr__(self):
-        return u'<py.log.Producer %s>' % u':'.join(self.keywords)
+        return '<py.log.Producer %s>' % ':'.join(self.keywords)
 
     def __getattr__(self, name):
-        if u'_' in name:
+        if '_' in name:
             raise AttributeError, name
         producer = self.__class__(self.keywords + (name,))
         setattr(self, name, producer)
@@ -67,12 +67,12 @@ class Producer(object):
                 return self.keywords2consumer[self.keywords[:i]]
             except KeyError:
                 continue
-        return self.keywords2consumer.get(u'default', default_consumer)
+        return self.keywords2consumer.get('default', default_consumer)
 
     def set_consumer(self, consumer):
         self.keywords2consumer[self.keywords] = consumer
 
-default = Producer(u'default')
+default = Producer('default')
 
 def _getstate():
     return Producer.keywords2consumer.copy()
@@ -82,9 +82,9 @@ def _setstate(state):
     Producer.keywords2consumer.update(state)
 
 def default_consumer(msg):
-    sys.stdout.write(unicode(msg) + u'\n')
+    sys.stdout.write(unicode(msg) + '\n')
 
-Producer.keywords2consumer[u'default'] = default_consumer
+Producer.keywords2consumer['default'] = default_consumer
 
 ### Adapté à partir de codespeak/log/consumer.py
 ### ============================================
@@ -92,12 +92,12 @@ Producer.keywords2consumer[u'default'] = default_consumer
 class File(object):
 
     def __init__(self, f):
-        assert hasattr(f, u'write')
-        assert isinstance(f, file) or not hasattr(f, u'open')
+        assert hasattr(f, 'write')
+        assert isinstance(f, file) or not hasattr(f, 'open')
         self._file = f
 
     def __call__(self, msg):
-        self._file.write(unicode(msg) + u'\n')
+        self._file.write(unicode(msg) + '\n')
 
 class Path(object):
 
@@ -110,35 +110,35 @@ class Path(object):
             self._openfile()
 
     def _openfile(self):
-        self._file = file(unicode(self._filename),
-                          self._append and u'a' or u'w',
+        self._file = file(self._filename,
+                          self._append and 'a' or 'w',
                           #buffering=self._buffering,
                           )
 
     def __call__(self, msg):
-        if not hasattr(self, u'_file'):
+        if not hasattr(self, '_file'):
             self._openfile()
-        self._file.write(unicode(msg) + u'\n')
+        self._file.write(unicode(msg) + '\n')
 
 def STDOUT(msg):
-    sys.stdout.write(unicode(msg) + u'\n')
+    sys.stdout.write(unicode(msg) + '\n')
 
 def STDERR(msg):
     progression.preparer_interruption()
-    sys.stderr.write(unicode(msg) + u'\n')
+    sys.stderr.write(unicode(msg) + '\n')
 
 def ERROR(msg):
-    raise Error(unicode(msg) + u'\n')
+    raise Error(unicode(msg) + '\n')
 
 def setconsumer(keywords, consumer):
     if isinstance(keywords, unicode):
-        keywords = tuple(map(None, keywords.split(u'.')))
-    elif hasattr(keywords, u'keywords'):
+        keywords = tuple(map(None, keywords.split('.')))
+    elif hasattr(keywords, 'keywords'):
         keywords = keywords.keywords
     elif not isinstance(keywords, tuple):
         raise TypeError(u"key %r is not a string or tuple" % (keywords,))
     if consumer is not None and not callable(consumer):
-        if not hasattr(consumer, u'write'):
+        if not hasattr(consumer, 'write'):
             raise TypeError(u"%r should be None, callable or file-like"
                             % (consumer,))
         consumer = File(consumer)
@@ -155,10 +155,10 @@ class Message(object):
         self.keywords = (processor.logger._ident, processor.name)
 
     def strcontent(self):
-        return u' '.join(map(unicode, self.content))
+        return ' '.join(map(unicode, self.content))
 
     def strprefix(self):
-        return u'[%s] ' % u':'.join(map(unicode, self.keywords))
+        return '[%s] ' % ':'.join(map(unicode, self.keywords))
 
     def __unicode__(self):
         return self.strprefix() + self.strcontent()
@@ -206,10 +206,10 @@ class Logger(object):
             pass
 
     def _setsub(self, name, dest):
-        assert u'_' not in name
+        assert '_' not in name
         setattr(self, name, Processor(self, name, dest))
 
-def get(ident=u'global', **kwargs):
+def get(ident='global', **kwargs):
     try:
         log = Logger._key2logger[ident]
     except KeyError:
@@ -225,8 +225,8 @@ class Progression:
     memoire = False
     compteur = 0
     colonne = 0
-    marge = u'  '
-    retard = u''
+    marge = '  '
+    retard = ''
 
     def demarrer(self, titre=None, maximum=None, majeur=200, mineur=10):
         if self.colonne:
@@ -236,15 +236,15 @@ class Progression:
         self.mineur = mineur
         self.compteur = 0
         self.colonne = 0
-        self.retard = u''
+        self.retard = ''
         if not self.silence:
             if titre is None:
                 self.retard = self.marge
             else:
-                self.retard = titre + u' '
+                self.retard = titre + ' '
             #self.maximum = maximum
             if maximum is not None:
-                self.retard += u'[%d] ' % maximum
+                self.retard += '[%d] ' % maximum
                 #self.mineur = max(
                 #        1,
                 #        ((maximum - 1)
@@ -255,9 +255,9 @@ class Progression:
 
     def completer(self):
         if self.colonne or self.retard:
-            self.annoter(u' [%d]' % self.compteur)
+            self.annoter(' [%d]' % self.compteur)
             if not self.silence:
-                sys.stderr.write(u'\n')
+                sys.stderr.write('\n')
                 self.colonne = 0
         if self.memoire:
             surveiller_memoire(force=True)
@@ -269,7 +269,7 @@ class Progression:
                     and self.compteur % self.majeur == 0):
                 self.annoter(unicode(self.compteur))
             else:
-                self.annoter(u'.')
+                self.annoter('.')
         self.compteur += 1
         if self.memoire:
             surveiller_memoire()
@@ -278,9 +278,9 @@ class Progression:
         if not self.silence:
             sys.stderr.write(self.retard)
             self.colonne += len(self.retard)
-            self.retard = u''
+            self.retard = ''
             if self.colonne + len(note) > self.largeur_ligne:
-                sys.stderr.write(u'\n' + self.marge)
+                sys.stderr.write('\n' + self.marge)
                 self.colonne = len(self.marge)
             sys.stderr.write(note)
             sys.stderr.flush()
@@ -288,8 +288,8 @@ class Progression:
 
     def preparer_interruption(self):
         if self.colonne:
-            sys.stderr.write(self.retard + u'\n')
-            self.retard = u' ' * self.colonne
+            sys.stderr.write(self.retard + '\n')
+            self.retard = ' ' * self.colonne
             self.colonne = 0
 
 progression = Progression()

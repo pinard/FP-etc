@@ -25,19 +25,19 @@ répertoire courant, ainsi que tous ses sous-répertoires, récursivement.
 # contienne la ligne: "from Local.pypoux import *".
 
 __metaclass__ = type
-from Etc.Unicode import apply, deunicode, file, open, os, reunicode, sys
+import sys
 
 class Main:
     volubile = False
 
     def main(self, *arguments):
         import getopt
-        options, arguments = getopt.getopt(arguments, u'hv')
+        options, arguments = getopt.getopt(arguments, 'hv')
         for option, value in options:
-            if option == u'-h':
+            if option == '-h':
                 sys.stdout.write(__doc__)
                 return
-            elif option == u'-v':
+            elif option == '-v':
                 self.volubile = True
         setup_module(None)
         write = sys.stderr.write
@@ -45,13 +45,13 @@ class Main:
         for compteur, arguments in enumerate(Test_Poux().test_chacun()):
             test, fichier = arguments
             if self.volubile:
-                if fichier.startswith(u'./'):
+                if fichier.startswith('./'):
                     fichier = fichier[2:]
                 if fichier != courant:
                     courant = marge = fichier
-                write(u'%d. %s %s\n'
+                write('%d. %s %s\n'
                       % (compteur + 1, marge, test.im_func.__name__))
-                marge = u' ' * len(marge)
+                marge = ' ' * len(marge)
             try:
                 test(fichier)
             except AssertionError:
@@ -93,34 +93,34 @@ class Test_Poux:
 
     def verifier_tabs(self, fichier):
         self.garantir_tampon(fichier)
-        self.position = self.tampon.find(u'\t')
+        self.position = self.tampon.find('\t')
         assert self.position < 0, self.rapporter(u"Caractère TAB.")
 
     def ligne_blanche_debut(self, fichier):
         self.garantir_tampon(fichier)
         self.position = 0
-        assert not self.tampon.startswith(u'\n'), (
+        assert not self.tampon.startswith('\n'), (
                 self.rapporter(u"Ligne blanche au début."))
 
     def ligne_blanche_fin(self, fichier):
         self.garantir_tampon(fichier)
         self.position = len(self.tampon)
-        assert not self.tampon.endswith(u'\n\n'), (
+        assert not self.tampon.endswith('\n\n'), (
                 self.rapporter(u"Ligne blanche à la fin."))
 
     def blancs_suffixes(self, fichier):
         self.garantir_tampon(fichier)
-        self.position = self.tampon.find(u' \n')
+        self.position = self.tampon.find(' \n')
         assert self.position < 0, self.rapporter(u"Espace blanc suffixe.")
 
     def double_ligne_blanche(self, fichier):
         self.garantir_tampon(fichier)
-        self.position = self.tampon.find(u'\n\n\n')
+        self.position = self.tampon.find('\n\n\n')
         assert self.position < 0, self.rapporter(u"Double ligne blanche.")
 
     def commentaire_vide(self, fichier):
         self.garantir_tampon(fichier)
-        self.position = self.tampon.find(u'#\n')
+        self.position = self.tampon.find('#\n')
         assert self.position < 0, self.rapporter(u"Commentaire vide.")
 
     def ligne_blanche_manquante(self, fichier):
@@ -131,12 +131,12 @@ class Test_Poux:
             if ligne:
                 mots = ligne.split(None, 1)
                 if mots:
-                    if (len(mots) == 1 and mots[0][0] == u'@'
+                    if (len(mots) == 1 and mots[0][0] == '@'
                             and mots[0][1].isalpha()):
                         assert blanche, self.rapporter(
                             u"Ligne blanche manquante.")
                         blanche = True
-                    elif mots and mots[0] in (u'class', u'def'):
+                    elif mots and mots[0] in ('class', 'def'):
                         assert blanche, self.rapporter(
                             u"Ligne blanche manquante.")
                         blanche = False
@@ -154,7 +154,7 @@ class Test_Poux:
         self.garantir_tampon(fichier)
         if not self.tampon:
             return
-        self.position = self.tampon.find(u'# -*- coding: UTF-8 -*-\n')
+        self.position = self.tampon.find('# -*- coding: UTF-8 -*-\n')
         if self.position < 0:
             self.position = 0
             assert False, self.rapporter(u"Biscuit coding manquant.")
@@ -163,7 +163,7 @@ class Test_Poux:
         self.garantir_tampon(fichier)
         if not self.tampon:
             return
-        self.position = self.tampon.find(u'__metaclass__ = type\n')
+        self.position = self.tampon.find('__metaclass__ = type\n')
         if self.position < 0:
             self.position = 0
             assert False, self.rapporter(u"Méta-classe n'est pas `type'.")
@@ -180,7 +180,7 @@ class Test_Poux:
         self.lignes = [0, 0]
         position = 0
         while True:
-            position = self.tampon.find(u'\n', position) + 1
+            position = self.tampon.find('\n', position) + 1
             if not position:
                 break
             self.lignes.append(position)
@@ -204,7 +204,7 @@ class Test_Poux:
                 position = 0
                 while jeton[position].isalpha():
                     position += 1
-                if u'u' in jeton[:position] or u'U' in jeton[:position]:
+                if 'u' in jeton[:position] or 'U' in jeton[:position]:
                     chaine_vide = None
                     continue
                 # Ça n'est pas une chaîne unicode.
@@ -212,7 +212,7 @@ class Test_Poux:
                     # Laisser passer si précédée d'une chaîne vide.
                     chaine_vide = None
                     continue
-                if jeton in (u'\'\'', u'""'):
+                if jeton in ('\'\'', '""'):
                     chaine_vide = jeton
                     continue
                 diagnostic = self.rapporter(u"Chaîne `%s' non Unicode." % jeton)
@@ -225,13 +225,13 @@ class Test_Poux:
 
     def verifier_syntaxe(self, fichier):
         pyc = os.path.basename(fichier)
-        if pyc.endswith(u'.py'):
-            pyc += u'c'
+        if pyc.endswith('.py'):
+            pyc += 'c'
         else:
-            pyc += u'.pyc'
+            pyc += '.pyc'
         import py_compile
         try:
-            py_compile.compile(fichier.encode(u'UTF-8'),
+            py_compile.compile(fichier.encode('UTF-8'),
                                os.path.join(run.repertoire, pyc),
                                doraise=True)
         except py_compile.PyCompileError, exception:
@@ -241,7 +241,7 @@ class Test_Poux:
     ## Services.
 
     def chaque_fichier(self):
-        pile = [u'.']
+        pile = ['.']
         while pile:
             pile.sort()
             repertoire = pile.pop(0)
@@ -262,61 +262,61 @@ class Test_Poux:
             self.tampon = file(fichier).read()
 
     def rapporter(self, diagnostic):
-        ligne = self.tampon[:self.position].count(u'\n') + 1
-        position = self.tampon.rfind(u'\n', 0, self.position)
+        ligne = self.tampon[:self.position].count('\n') + 1
+        position = self.tampon.rfind('\n', 0, self.position)
         if position < 0:
             colonne = self.position + 1
         else:
             colonne = self.position - position
-        sys.stdout.write(u'%s:%d:%d: %s\n'
+        sys.stdout.write('%s:%d:%d: %s\n'
                          % (self.fichier, ligne, colonne, diagnostic))
         return diagnostic
 
 def est_fichier_acceptable(base):
-    if base in (u'tags', u'TAGS'):
+    if base in ('tags', 'TAGS'):
         return False
-    if base.startswith(u'.'):
+    if base.startswith('.'):
         return False
-    if base.startswith(u'#'):
+    if base.startswith('#'):
         return False
-    if base.endswith(u'-'):
+    if base.endswith('-'):
         return False
-    if base.endswith(u',v'):
+    if base.endswith(',v'):
         return False
-    if base.endswith(u'~'):
+    if base.endswith('~'):
         return False
     if os.path.splitext(base)[1] in (
             # REVOIR: .c66 ne devrait pas être là!!
-            u'.703', u'.c66', u'défi', u'.doc', u'.gif', u'.jpg', u'.pdf',
-            u'.pickle', u'.png', u'.pyc', u'.tmp', u'.zip'):
+            '.703', '.c66', u'défi', '.doc', '.gif', '.jpg', '.pdf',
+            '.pickle', '.png', '.pyc', '.tmp', '.zip'):
         return False
     return True
 
 def est_repertoire_acceptable(base):
-    if base in (u'CVS', u'RCS'):
+    if base in ('CVS', 'RCS'):
         return False
-    if base.startswith(u'.'):
+    if base.startswith('.'):
         return False
-    if base.startswith(u'build-'):
+    if base.startswith('build-'):
         return False
-    if base.endswith(u'~'):
+    if base.endswith('~'):
         return False
     return True
 
 def peut_avoir_tabs(fichier):
-    if os.path.basename(fichier) in (u'Makefile',):
+    if os.path.basename(fichier) in ('Makefile',):
         return True
-    if os.path.splitext(fichier)[1] in (u'.htm',):
+    if os.path.splitext(fichier)[1] in ('.htm',):
         return True
     return False
 
 def est_python(fichier):
-    if fichier.endswith(u'.py'):
+    if fichier.endswith('.py'):
         return True
     ligne = file(fichier).readline()
-    if ligne.startswith(u'#!') and ligne.endswith(u'python\n'):
+    if ligne.startswith('#!') and ligne.endswith('python\n'):
         return True
     return False
 
-if __name__ == u'__main__':
-    apply(main, sys.argv[1:])
+if __name__ == '__main__':
+    main(*sys.argv[1:])

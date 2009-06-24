@@ -26,7 +26,7 @@ s'effectue sur l'arbre après les simplifications décrites plus haut.
 """
 
 __metaclass__ = type
-from Etc.Unicode import apply, deunicode, file, open, os, reunicode, sys
+import sys
 
 string = str, unicode
 

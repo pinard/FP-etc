@@ -32,8 +32,8 @@ Report bugs or suggestions to François Pinard <pinard@iro.umontreal.ca>.
 """
 
 __metaclass__ = type
-from Etc.Unicode import apply, deunicode, file, open, os, reunicode, sys
 
+import sys
 string = str, unicode
 
 class UsageError(Exception):

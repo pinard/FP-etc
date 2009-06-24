@@ -19,8 +19,7 @@ Texinfo ne sont pas encore décrites ici.  Pour l'un des ces jours pluvieux!
 """
 
 __metaclass__ = type
-from Etc.Unicode import apply, deunicode, file, open, os, reunicode, sys
-import re
+import os, re, sys
 
 Default_Copyright = u"""\
 Permission is granted to make and distribute verbatim copies of
