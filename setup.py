@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 
 import os
 from distutils.core import setup
@@ -17,7 +17,7 @@ for base in os.listdir('scripts'):
     scripts.append('scripts/%s' % base)
 
 setup(name='etc', version='0.1',
-      description="Collection de modules Python d'intérêt commun.",
+      description="Miscellaneous small projects",
       author='François Pinard',
       author_email='pinard@iro.umontreal.ca',
       url='http://www.iro.umontreal.ca/~pinard',
