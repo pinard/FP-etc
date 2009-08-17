@@ -1,0 +1,91 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8
+# Copyright © 2000, 2002, 2003 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2000.
+
+u"""\
+Locate programs containing a pattern, on execution PATH.
+
+Usage: locate-path [OPTION]... PATTERN...
+
+Options:
+  -p  Find RPM package including each match.
+  -r  Patterns are regular expressions, not substrings.
+"""
+
+__metaclass__ = type
+import os, sys
+
+class Main:
+
+    def __init__(self):
+        self.rpm = False
+        self.regexp = False
+
+    def main(self, *arguments):
+        if not arguments:
+            sys.stdout.write(__doc__)
+            return
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'pr')
+        for option, value in options:
+            if option == '-p':
+                self.rpm = True
+            elif option == '-r':
+                self.regexp = True
+                import re
+        if self.regexp:
+            patterns = [re.compile(argument) for argument in arguments]
+        else:
+            patterns = arguments
+        write = sys.stdout.write
+        from Etc import nicepath
+        directories = {}
+        names = []
+        for directory in os.environ['PATH'].split(':'):
+            directory = nicepath.canonical(directory)
+            if directory not in directories and os.path.isdir(directory):
+                directories[directory] = None
+                for base in os.listdir(directory):
+                    name = os.path.join(directory, base)
+                    for pattern in patterns:
+                        if self.regexp:
+                            selected = pattern.search(name)
+                        else:
+                            selected = base.find(pattern) >= 0
+                        if selected:
+                            names.append(name)
+                            break
+        if self.rpm:
+            within = {}
+            for name in names:
+                within[name] = ''
+            packages = {}
+            for line in os.popen('rpm -qf %s 2> /dev/null' % ' '.join(names)):
+                packages[line.strip()] = None
+            packages = packages.keys()
+            packages.sort()
+            for package in packages:
+                for line in os.popen('rpm -ql %s' % package):
+                    name = line.rstrip()
+                    if name in within:
+                        within[name] = package
+            items = [(package, name) for name, package in within.iteritems()]
+            items.sort()
+            previous = None
+            for package, name in items:
+                if package == previous:
+                    if package:
+                        package = '  "'
+                else:
+                    previous = package
+                write('%-31s %s\n' % (package, name))
+        else:
+            names.sort()
+            for name in names:
+                write('%s\n' % name)
+
+main = Main().main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

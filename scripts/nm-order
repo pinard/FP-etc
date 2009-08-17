@@ -1,0 +1,220 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8
+# Copyright © 1991, 97, 98, 99, 00, 01, 02, 03 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, April 1991.
+
+u"""\
+Order object archives or object modules for bottom-up study.
+
+Usage: nm-order [OPTION]... {LIBRARY | OBJECT}...
+
+  -i SYMBOL   Ignore SYMBOL in output lists
+  -l          Consider local symbols as well
+  -x          Cross-reference all entry points
+
+This tool gives a progressive list of modules, in which each module
+only depends on modules already listed on previous lines.  Each module
+is followed, on the same line, by other modules needing this one.  Also,
+if any, all modules having circular dependencies are listed, one per line.
+Each module is followed, on the same line, by the list of other modules
+it needs.  The tool uses the `nm' program to study object modules and
+object libraries.
+
+If `-x' is given, an initial list shows all entry points or definitions,
+one per line, ordered alphabetically.  Each line starts with the entry point
+or definition name, followed by the list of the defining modules and then
+the list of referencing modules, both lists begin ordered alphabetically.
+The `#' prefix indicates a definition, the `=' prefix indicates an entry
+point, and the `/' indicates an common symbol.
+"""
+
+__metaclass__ = type
+import os, sys
+
+class run:
+    locals = False
+    xref = False
+    ignore = []
+    map = {}
+    column = 0
+
+def main(*arguments):
+    if not arguments:
+        sys.stdout.write(__doc__)
+        return
+    import getopt
+    options, arguments = getopt.getopt(arguments, 'i:lx')
+    for option, value in options:
+        if option == '-i':
+            run.ignore.append(value)
+        elif option == '-l':
+            run.locals = True
+        elif option == '-x':
+            run.xref = True
+    assert arguments
+    for argument in arguments:
+        study(argument)
+    print_references(sys.stdout.write)
+
+def study(name):
+    module = None
+    if name.startswith('./'):
+        name = name[2:]
+    base, extension = os.path.splitext(name)
+    if extension == '.a':
+        module = None
+    elif extension == '.o':
+        module = base
+    else:
+        assert False, u"`%s' (%s) de type inconnu\n" % (name, extension)
+    import re
+    for line in os.popen('nm %s' % name):
+        if not line:
+            continue
+        match = re.match('([^:]+).o:$', line)
+        if match:
+            module = match.group(1)
+            continue
+        # Skip any local definition.
+        if not run.locals and re.match('[ 0-9a-f]+ [bdrt] ', line):
+            continue
+        # Save a common symbol.
+        match = re.match('[ 0-9a-f]+ [Cb] ([^ ]+)$', line)
+        if match:
+            symbol = match.group(1)
+            if symbol in run.ignore:
+                continue
+            if run.map.has_key(symbol):
+                run.map[symbol].append('/' + module)
+            else:
+                run.map[symbol] = ['/' + module]
+            continue
+        # Save a constant definition.
+        match = re.match('[ 0-9a-f]+ [Dd] ([^ ]+)$', line)
+        if match:
+            symbol = match.group(1)
+            if symbol in run.ignore:
+                continue
+            if run.map.has_key(symbol):
+                run.map[symbol].append('#' + module)
+            else:
+                run.map[symbol] = ['#' + module]
+            continue
+        # Save an entry point definition.
+        match = re.match('[ 0-9a-f]+ [RTt] ([^ ]+)$', line)
+        if match:
+            symbol = match.group(1)
+            if symbol in run.ignore:
+                continue
+            if run.map.has_key(symbol):
+                run.map[symbol].append('=' + module)
+            else:
+                run.map[symbol] = ['=' + module]
+            continue
+        # Save an external reference.
+        match = re.match(' *U ([^ ]+)$', line)
+        if match:
+            symbol = match.group(1)
+            if symbol in run.ignore:
+                continue
+            if run.map.has_key(symbol):
+                run.map[symbol].append(module)
+            else:
+                run.map[symbol] = [module]
+            continue
+        # Else, this is an error.
+        sys.stderr.write('<%s> %s\n' % (module, line))
+
+def print_references(write):
+    needs = {}
+    diagnostics = []
+    # Produce the reference table.
+    if run.xref:
+        write('\nENTRY POINTS (and usages)\n')
+    entries = run.map.keys()
+    entries.sort()
+    for entry in entries:
+        if run.xref:
+            print_begin(write, entry)
+        module = None
+        run.map[entry].sort()
+        for caller in run.map[entry]:
+            if run.xref:
+                print_item(write, caller)
+            if caller[0] == '=':
+                if module:
+                    diagnostics.append(u"`%s' defined in `%s' and `%s'\n"
+                                       % (entry, module, caller[1:]))
+                else:
+                    module = caller[1:]
+                continue
+            elif caller[0] in '/#':
+                continue
+            elif module:
+                if needs.has_key(caller):
+                    if module not in needs[caller]:
+                        needs[caller].append(module)
+                else:
+                    needs[caller] = [module]
+                if not needs.has_key(module):
+                    needs[module] = []
+        if run.xref:
+            print_end(write)
+    write('\nPROGRESSIVE (and callers)\n')
+    modules = needs.keys()
+    modules.sort()
+    modified = True
+    while modified:
+        modified = False
+        for module in modules:
+            if not needs[module]:
+                print_begin(write, module)
+                modules.remove(module)
+                modified = True
+                for caller in modules:
+                    if module in needs[caller]:
+                        print_item(write, caller)
+                        needs[caller].remove(module)
+                print_end(write)
+                break
+    if modules:
+        write('\nCYCLES (and callees)\n')
+        for caller in modules:
+            print_begin(write, caller)
+            callees = needs[caller]
+            callees.sort()
+            for callee in callees:
+                print_item(write, callee)
+            print_end(write)
+    if diagnostics:
+        write('\nDIAGNOSTIQUES\n')
+        for diagnostic in diagnostics:
+            write(diagnostic)
+
+def print_begin(write, word):
+    write(word)
+    run.column = len(word)
+    if run.column >= 24:
+        run.column = 80
+    while run.column < 24:
+        write('\t')
+        run.column = run.column / 8 * 8 + 8
+
+def print_item(write, word):
+    if run.column == 24:
+        write(word)
+        run.column += len(word)
+    elif run.column + 1 + len(word) < 80:
+        write(' ')
+        write(word)
+        run.column += 1 + len(word)
+    else:
+        write('\n\t\t\t')
+        write(word)
+        run.column = 24 + len(word)
+
+def print_end(write):
+    write('\n')
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

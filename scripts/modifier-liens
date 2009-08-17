@@ -1,0 +1,77 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2000, 2002, 2003, 2006 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2000.
+
+u"""\
+Modifier la définition des liens symboliques.
+
+Usage: modifier-liens [OPTION]... AVANT:APRÈS... [FICHIER]...
+
+Options:
+  -n   Dire ce qui serait fait, sans le faire.
+  -q   Diminuer le niveau de volubilité.
+
+Pour les fichiers ou hiérarchies de fichiers indiqués par les FICHIERs,
+modifier la définition des liens symboliques trouvés en remplaçant
+chaque chaîne AVANT par la chaîne APRÈS correspondante.  Chaque AVANT
+est une expression régulière, et APRÈS est évalué dans le contexte
+de AVANT.  Un ":" ne peut apparaître dans aucun AVANT, APRÈS ou FICHIER.
+
+Si aucun FICHIER n'est fourni, le répertoire courant est présumé.
+"""
+
+__metaclass__ = type
+import os, sys
+
+class Main:
+    galop_essai = False
+    volubile = True
+
+    def main(self, *arguments):
+        if not arguments:
+            sys.stdout.write(__doc__)
+            return
+        # Décoder les arguments.
+        import getopt, re
+        options, arguments = getopt.getopt(arguments, 'nv')
+        for option, valeur in options:
+            if option == '-n':
+                self.galop_essai = True
+            elif option == '-q':
+                self.volubile = False
+        regles = []
+        fichiers = []
+        for argument in arguments:
+            parts = argument.split(':', 1)
+            if len(parts) == 1:
+                fichiers.append(argument)
+            elif len(parts) == 2:
+                regles.append((re.compile(parts[0]), parts[1]))
+            else:
+                assert False, argument
+        assert regles
+        # Trouver et modifier les liens symboliques.
+        pile = fichiers or ['.']
+        while pile:
+            fichier = pile.pop()
+            if os.path.islink(fichier):
+                valeur = original = os.readlink(fichier)
+                for regexp, remplace in regles:
+                    valeur = regexp.sub(remplace, valeur)
+                if valeur != original:
+                    if self.volubile:
+                        sys.stdout.write('ln -sf %s %s\n'
+                                         % (valeur, fichier))
+                    if not self.galop_essai:
+                        os.remove(fichier)
+                        os.symlink(valeur, fichier)
+            if os.path.isdir(fichier):
+                for base in os.listdir(fichier):
+                    pile.append(os.path.join(fichier, base))
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

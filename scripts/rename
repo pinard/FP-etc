@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# François Pinard <pinard@iro.umontreal.ca>, 1991, 2004.
+# D'après Tom Christiansen <tchrist@convex.com>, alt.sources 1990-12-08.
+
+u"""\
+Renommer les fichiers selon un thème de transformation fourni.
+
+Usage: rename [OPTION]... TRANSFORMATION FICHIER...
+
+Options:
+    -v   Décrire les changements effectués.
+
+TRANSFORMATION doit être, soit une expression Python qui évalue le
+nouveau nom pour le fichier dont le nom est fourni initialement dans
+`_', soit un énoncé Python qui affecte à la variable `_' le nouveau nom
+pour le fichier dont le nom est initialement contenu dans `_'.
+
+On peut compter sur les modules `os', `re' et `sys'.
+
+Exemples:
+    rename '_[:-5]' *.orig
+    rename -v 'if not _.startswith("Make"): _ = _.lower()' *
+    rename '_ + ".bad"' *.f
+    rename 'if _[0] in "yY": print _; _ = _.replace("foo", "bar")' *
+"""
+
+__metaclass__ = type
+import os, re, sys
+
+def main(*arguments):
+    if not arguments:
+        sys.stdout.write(__doc__)
+        return
+    assert len(arguments) >= 2, arguments
+    verbeux = False
+    import getopt
+    options, arguments = getopt.getopt(arguments, 'v')
+    for option, valeur in options:
+        if option == '-v':
+            verbeux = True
+    operation = arguments[0]
+    for argument in arguments[1:]:
+        _ = argument
+        try:
+            _ = eval(operation)
+        except SyntaxError:
+            exec operation
+        if _ != argument:
+            if verbeux:
+                sys.stderr.write('%s -> %s\n' % (argument, _))
+            assert not os.path.exists(_), (argument, _)
+            try:
+                os.rename(argument, _)
+            except IOError, diagnostic:
+                sys.stderr.write('* %s: %s\n' % (argument, diagnostic))
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

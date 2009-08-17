@@ -1,0 +1,5 @@
+#!/bin/bash
+
+exec emacs -geometry 80x58 -f gnus \
+  --eval "(setq gnus-after-exiting-gnus-hook 'save-buffers-kill-emacs)"
+

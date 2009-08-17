@@ -1,0 +1,146 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2008 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2008.
+
+"""\
+Fit an EPS file, or a PostScript file with a BoundingBox, into a page.
+This tool relies on "pstoedit".
+
+Usage:
+  pageps [OPTION]... [INPUT [OUTPUT]]
+
+Option:
+  -h   Produce this help and exit.
+  -v   Show the generated program calls.
+  -g   Launch "gv" on the resulting file.
+  -l   Force landscape
+  -p   Force portrait
+
+INPUT or OUTPUT may be empty or "-", for standard input or output.
+If -g and no explicit OUTPUT file name, there is no standard output.
+Without -lp, use the orientation which best fit the diagram.
+"""
+
+__metaclass__ = type
+import sys
+
+page_dx = int(72 * 8.5)
+page_dy = int(72 * 11.0)
+margin = int(72 * 0.5)
+
+class Main:
+    input = None
+    output = None
+    landscape = False
+    portrait = False
+    gv = False
+    verbose = False
+
+    def main(self, *arguments):
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'ghlpv')
+        for option, valeur in options:
+            if option == '-g':
+                self.gv = True
+            elif option == '-h':
+                sys.stdout.write(__doc__)
+                sys.exit(0)
+            elif option == '-l':
+                self.landscape = True
+            elif option == '-p':
+                self.portrait = True
+            elif option == '-v':
+                self.verbose = True
+        assert not (self.landscape and self.portrait)
+
+        if len(arguments) > 0 and arguments[0] and arguments[0] != '-':
+            self.input = arguments[0]
+        if len(arguments) > 1 and arguments[1] and arguments[1] != '-':
+            self.output = arguments[1]
+        if len(arguments) > 2:
+            sys.exit(__doc__)
+
+        # Extract bounding box.
+        if self.input is None:
+            buffer = sys.stdin.read()
+        else:
+            buffer = file(self.input).read()
+        prefix = '%%BoundingBox:'
+        begin = buffer.rfind('%%BoundingBox:')
+        if begin < 0:
+            sys.exit("Bounding box not found")
+        begin += len(prefix)
+        end = buffer.find('\n', begin)
+        assert end > 0
+        llx, lly, urx, ury = map(int, buffer[begin :end].split())
+
+        # It seems that pstoedit does shifting, scaling, rotation in that
+        # order, regardless of option position.  Let's plan accordingly.
+
+        # Decide the rotation.
+        dx = urx - llx
+        dy = ury - lly
+        if self.portrait or (not self.landscape and dx < dy):
+            rotate = 0
+            # Shift image back to origin.
+            xshift = -llx
+            yshift = -lly
+            # Select the scale.
+            scale = min(1.0,
+                        (page_dx - 2 * margin) / float(dx),
+                        (page_dy - 2 * margin) / float(dy))
+            # Center the result.
+            xshift += (page_dx / scale - dx) / 2
+            yshift += (page_dy / scale - dy) / 2
+        else:
+            rotate = 90
+            # Shift image back to origin.
+            xshift = -llx
+            yshift = -lly - dy
+            # Select the scale.
+            scale = min(1.0,
+                        (page_dx - 2 * margin) / float(dy),
+                        (page_dy - 2 * margin) / float(dx))
+            # Center the result.
+            xshift += (page_dy / scale - dx) / 2
+            yshift -= (page_dx / scale - dy) / 2
+
+        # Do the work.
+        pstoedit = ('pstoedit -f ps -pagesize letter'
+                    ' -xshift %f -yshift %f -xscale %f -yscale %f -rotate %f'
+                    ' -'
+                    % (xshift, yshift, scale, scale, rotate))
+        if self.gv:
+            import socket
+            if socket.gethostname() == 'ritchie':
+                orientation = '-orientation '
+            else:
+                orientation = '-'
+            if rotate:
+                orientation += 'landscape'
+            else:
+                orientation += 'portrait'
+            gv = 'gv -media letter -antialias %s' % orientation
+            if self.output is None:
+                gv += ' -'
+                command = pstoedit + ' | ' + gv
+            else:
+                pstoedit += ' %s' % self.output
+                gv += ' %s' % self.output
+                command = pstoedit + ' && ' + gv
+        else:
+            if self.output is None:
+                command = pstoedit
+            else:
+                command = pstoedit + ' %s' % self.output
+        if self.verbose:
+            sys.stderr.write(command + '\n')
+        import os
+        os.popen(command, 'w').write(buffer)
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

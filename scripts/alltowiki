@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2007 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2008.
+
+"""\
+Convertir Allout à Wiki.
+
+Usage: alltowiki FICHIER N M
+
+Lit FICHIER en format Allout et produit un équivalent en format Wiki
+sur la sortie standard.
+
+N donne le niveau de section Wiki correspondant au niveau 0 de Allout.
+Par exemple, N valant 2 transforme "* TEXTE" en "== TEXTE ==".
+Les niveaux subséquents de Allout, plus petits que M, fournissent des
+sous-sections de Wiki.
+
+M donne le niveau de Allout à partir duquel on énumère dans le Wiki.
+Par exemple, si M valant 3 transforme ".  ," en "*".  Les niveaux
+subséquents dans Allout font des des énumérations imbriquées dans
+le Wiki.
+"""
+
+__metaclass__ = type
+import sys
+from Etc.Allout import allout
+
+class Main:
+
+    def main(self, *arguments):
+        import getopt
+        options, arguments = getopt.getopt(arguments, '')
+        for option, valeur in options:
+            pass
+        assert len(arguments) == 3, arguments
+        name = arguments[0]
+        self.n = int(arguments[1])
+        self.m = int(arguments[2])
+        structure = allout.read(name)
+        self.convert(structure, sys.stdout.write, 0)
+
+    def convert(self, structure, write, level):
+        if isinstance(structure, basestring):
+            write('%s\n', structure)
+        else:
+            if level < self.m:
+                fragment = '=' * (self.n + level)
+                write('%s %s %s\n' % (fragment, structure[0], fragment))
+            else:
+                fragment = '*' * (1 + level - self.m)
+                write('%s %s\n' % (fragment, structure[0]))
+            for child in structure[1:]:
+                self.convert(child, write, level + 1)
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

@@ -1,0 +1,93 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 1990, 2000, 2002, 2003, 2006 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 1990-10.
+
+u"""\
+Changer la casse de noms de fichiers.
+
+Usage: changer-casse [OPTION]... [FICHIER]...
+
+  -n   Dire ce qui serait fait, mais sans le faire.
+  -v   Détailler pour l'usager les changements de nom.
+
+  -c   Capitaliser le premier caractère de chaque nom.
+  -M   Mettre chaque nom tout en majuscules.
+  -m   Mettre chaque nom tout en minuscules.
+  -l   Forcer les noms en Latin-1.
+  -u   Forcer les noms en UTF-8.
+
+Si ni `-l' ni `-u' ne sont fournis, le code du nom sera celui du terminal.
+"""
+
+__metaclass__ = type
+import os, sys
+
+class Main:
+    galop_essai = False
+    volubile = False
+    capitale = False
+    majuscules = False
+    minuscules = False
+    code = None
+
+    def main(self, *arguments):
+        if not arguments:
+            sys.stdout.write(__doc__)
+            return
+        # Décoder les options.
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'Mclmnuv')
+        for option, valeur in options:
+            if option == '-M':
+                self.majuscules = True
+            elif option == '-c':
+                self.capitale = True
+            elif option == '-l':
+                assert self.code is None
+                self.code = 'ISO-8859-1'
+            elif option == '-m':
+                self.minuscules = True
+            elif option == '-n':
+                self.galop_essai = self.volubile = True
+            elif option == '-u':
+                assert self.code is None
+                self.code = 'UTF-8'
+            elif option == '-v':
+                self.volubile = True
+        assert self.majuscules + self.minuscules + self.capitale <= 1
+        # Traiter chaque argument tour à tour.
+        for vieux_nom in arguments:
+            # Choisir le nouveau nom, hors de toute considération de code.
+            repertoire, base = os.path.split(vieux_nom)
+            if self.majuscules:
+                nouveau_nom = os.path.join(repertoire, base.upper())
+            elif self.minuscules:
+                nouveau_nom = os.path.join(repertoire, base.lower())
+            elif self.capitale:
+                nouveau_nom = os.path.join(repertoire,
+                                           base[0].upper() + base[1:].lower())
+            else:
+                nouveau_nom = vieux_nom
+            if nouveau_nom != vieux_nom:
+                if os.path.exists(nouveau_nom):
+                    sys.stderr.write(u"# %r écraserait %r, non renommé!\n"
+                                     % (vieux_nom, nouveau_nom))
+                    continue
+            # Choisir le nouveau nom, en tenant compte de son code 8-bits.
+            vieux_str = vieux_nom
+            nouveau_str = nouveau_nom.encode(self.code or 'UTF-8')
+            if nouveau_str != vieux_str:
+                if os.path.exists(nouveau_str):
+                    sys.stderr.write(u"# %r écraserait %r, non renommé!\n"
+                                     % (vieux_nom_str, nouveau_nom_str))
+                    continue
+                if self.volubile:
+                    sys.stderr.write('mv %s %s\n' % (vieux_nom, nouveau_nom))
+                if not self.galop_essai:
+                    os.rename(vieux_str, nouveau_str)
+
+main = Main().main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

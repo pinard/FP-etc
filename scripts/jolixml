@@ -1,0 +1,138 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2005 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2005.
+
+u"""\
+Reformatter un ou plusieurs fichiers XML.
+
+Usage: jolixml [OPTION] FICHIER...
+
+Options:
+    -m      Utiliser le reformatteur inclus dans `xml.dom.minidom'.
+    -i PAS  Prendre PAS colonnes d'intentation par niveau, plutôt que 2.
+    -s      Placer le texte sur une ligne séparée des balises.
+
+Tous les fichiers sont reformattés sur la sortie standard.
+L'option `-s' n'est honorée qu'en l'absence de `-m'.
+"""
+
+__metaclass__ = type
+import sys
+
+class Main:
+    codage = 'UTF-8'
+    par_niveau = '  '
+    minidom = False
+    separer = False
+
+    def main(self, *arguments):
+        if not arguments:
+            sys.stdout.write(__doc__)
+            return
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'i:ms')
+        for option, valeur in options:
+            if option == '-i':
+                self.par_niveau = ' ' * int(valeur)
+            elif option == '-m':
+                self.minidom = True
+            elif option == '-s':
+                self.separer = True
+        if self.minidom:
+            self.through_minidom(arguments)
+        else:
+            self.through_sax(arguments)
+
+    def through_minidom(self, arguments):
+        import xml.dom.minidom as dom
+        for argument in arguments:
+            xml = dom.parse(argument)
+            tampon = xml.toprettyxml(run.par_niveau, '\n', self.codage)
+            for ligne in tampon.splitlines():
+                ligne = ligne.rstrip()
+                if ligne:
+                    sys.stdout.write(ligne + '\n')
+
+    def through_sax(self, arguments):
+        handler = SaxWriter()
+        from xml.sax import parse
+        for argument in arguments:
+            parse(argument, handler)
+
+run = Main()
+main = run.main
+
+from xml.sax.saxutils import XMLGenerator
+
+class SaxWriter(XMLGenerator):
+
+    def setDocumentLocator(self, locator):
+        self.locator = locator
+        print dir(locator)
+
+    def startDocument(self):
+        XMLGenerator.startDocument(self)
+        self.niveau = 0
+        self.force_ligne = False
+
+    def endDocument(self):
+        assert self.niveau == 0, self.niveau
+        self._out.write('\n')
+
+    def startElement(self, name, attrs):
+        self._out.write('\n' + run.par_niveau * self.niveau)
+        XMLGenerator.startElement(self, name, attrs)
+        self.niveau += 1
+        self.force_ligne = False
+
+    def endElement(self, name):
+        self.niveau -= 1
+        if self.force_ligne:
+            self._out.write('\n' + run.par_niveau * self.niveau)
+        XMLGenerator.endElement(self, name)
+        self.force_ligne = True
+
+    def characters(self, content):
+        self._out.write(content.strip().encode(run.codage))
+
+    # Méthodes de service.
+
+    def reference(self):
+        assert self.locator.getPublicId() is None, self.locator.getPublicId()
+        return '%s:%s:%s' % (self.locator.getSystemId(),
+                             self.locator.getLineNumber(),
+                             self.locator.getColumnNumber())
+
+    # Interception des imprévus.
+
+    def startPrefixMapping(self, prefix, uri):
+        assert False, (prefix, uri)
+        XMLGenerator.startPrefixMapping(self, prefix, uri)
+
+    def endPrefixMapping(self, prefix):
+        assert False, prefix
+        XMLGenerator.endPrefixMapping(self, prefix)
+
+    def startElementNS(self, name, qname, attrs):
+        assert False, (name, qname, attrs)
+        XMLGenerator.startElementNS(self, name, qname, attrs)
+
+    def endElementNS(self, name, qname):
+        assert False, (name, qname)
+        XMLGenerator.endElementNS(self, name, qname)
+
+    def ignorable_Whitespace(self, whitespace):
+        assert False, whitespace
+        XMLGenerator.ignorable_Whitespace(self, whitespace)
+
+    def processingInstruction(self, target, data):
+        assert False, (target, data)
+        XMLGenerator.processingInstruction(self, target, data)
+
+    def skippedEntity(self, name):
+        assert False, name
+        XMLGenerator.skippedEntity(self, name)
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

@@ -1,0 +1,159 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 1997, 98, 99, 00, 01, 02, 03 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, janvier 1991.
+
+u"""\
+Replace identical duplicated files with links.
+
+All ordinary files in the current hierarchy are checksummed, then files
+having identical sums are compared.  Disk space is reclaimed by replacing
+identical files by links.
+
+Usage: link-dups [OPTION]... [PATH]...
+
+  -n  Dry run, do not touch file system
+  -v  Display groups of identical files
+  -s  First sort groups by lowest file name
+
+  -l  Best symbolic links instead of hard links
+  -a  Absolute symbolic links instead of best
+  -r  Relative symbolic links instead of best
+"""
+
+# Voir aussi: http://www.homepages.lu/pu/fdups.html
+
+__metaclass__ = type
+import os, stat, sys
+
+class Main:
+    dry = False
+    verbose = False
+    sort = False
+    absolute = False
+    symbolic = False
+    relative = False
+
+    def main(self, *arguments):
+        if not arguments:
+            sys.stdout.write(__doc__)
+            return
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'alnrsv')
+        for option, value in options:
+            if option == '-a':
+                self.absolute = True
+            elif option == '-l':
+                self.symbolic = True
+            elif option == '-n':
+                self.dry = True
+                self.verbose = True
+            elif option == '-r':
+                self.relative = True
+            elif option == '-s':
+                self.sort = True
+            elif option == '-v':
+                self.verbose = True
+        assert not (self.absolute and self.relative)
+        if self.absolute or self.relative:
+            self.symbolic = True
+        if self.sort:
+            generator = sorted_groups
+        else:
+            generator = all_groups
+        if self.symbolic:
+            linker = self.symlink
+        else:
+            linker = self.hardlink
+        for group in generator(arguments):
+            name0, dev0, ino0, nlink0, size0 = group[0]
+            if self.verbose:
+                sys.stdout.write('\n# %s %s\n' % (nlink0, name0))
+            for name, dev, ino, nlink, size in group[1:]:
+                if self.verbose:
+                    sys.stdout.write('# %s %s\n' % (nlink, name))
+                if size != 0 and not (dev == dev0 and ino == ino0):
+                    linker(name0, name)
+
+    def hardlink(self, origin, destination):
+        sys.stdout.write('ln -f %s %s\n' % (origin, destination))
+        if not self.dry:
+            os.remove(destination)
+            os.link(origin, destination)
+
+    def symlink(self, origin, destination):
+        assert os.path.exists(origin)
+        assert not os.path.islink(origin)
+        origin = nicest_path(destination, origin,
+                             absolute=self.absolute, relative=self.relative)
+        assert origin
+        # REVOIR!
+        assert not self.absolute
+        sys.stdout.write('ln -sf %s %s\n' % (origin, destination))
+        if not self.dry:
+            os.remove(destination)
+            os.symlink(origin, destination)
+
+main = Main().main
+
+def sorted_groups(arguments):
+    groups = list(all_groups(arguments))
+    groups.sort()
+    return iter(groups)
+
+def all_groups(arguments):
+    current_sum = current_name = None
+    current_dev = current_ino = 0
+    group = []
+    for line in os.popen('find %s -type f -print0 | xargs -r0 md5sum | sort'
+                         % ' '.join(arguments)):
+        sum, name = line[:-1].split(None, 1)
+        if name.startswith('./'):
+            name = name[2:]
+        info = os.stat(name)
+        dev = info[stat.ST_DEV]
+        ino = info[stat.ST_INO]
+        nlink = info[stat.ST_NLINK]
+        size = info[stat.ST_SIZE]
+        if (sum == current_sum
+            and ((dev == current_dev and ino == current_ino)
+                 or file(current_name).read() == file(name).read())):
+            group.append((name, dev, ino, nlink, size))
+        else:
+            if len(group) > 1:
+                group.sort()
+                yield group
+            group = [(name, dev, ino, nlink, size)]
+            current_sum, current_name = sum, name
+            current_dev, current_ino = dev, ino
+            continue
+    if len(group) > 1:
+        group.sort()
+        yield group
+
+def nicest_path(start, goal, absolute=False, relative=False):
+
+    def get_parts(path):
+        if path[0] == '~':
+            return os.path.expanduser(path).split('/')
+        if path[0] == '/':
+            return path.split('/')
+        return os.getcwd().split('/') + path.split('/')
+
+    if not absolute:
+        starts = get_parts(start)
+        goals = get_parts(goal)
+        maximum = min(len(starts), len(goals))
+        for counter in range(maximum):
+            if starts[counter] != goals[counter]:
+                break
+        else:
+            counter = maximum
+        if relative or len(starts) < 2*counter:
+            return '/'.join(['..']*(len(starts)-counter) + goals[counter:])
+    if goal[0] != '/':
+        return '%s/%s' % (os.getcwd(), goal)
+    return goal
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

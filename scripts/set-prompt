@@ -1,0 +1,181 @@
+# Changer l'invite (à exécuter dans le shell courant).  -*- shell-script -*-
+# Copyright © 1998, 2000, 2001, 2002 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 1998.
+
+usage="
+Ajuster l'invite du shell.
+
+Usage: . set-prompt [INDICE]...
+
+Le style de l'invite est choisi par zéro, un ou plusieurs indices, les
+indices manquants sont déterminés automatiquement autant que possible.
+
+Un INDICE «pale», «white», «w» ou «blanc» colore l'invite sur un
+fond d'écran pâle.  Un INDICE «dark», «black», «b» ou «noir», colore
+l'invite sur un fond d'écran foncé.  Un INDICE «simple» ou «unknown»
+empêche la coloration de l'invite, mais «simple» empêche aussi l'heure
+d'en faire partie.  Le fond des fenêtres sous X Windows est considéré pâle.
+Autrement, pour les terminaux «emacs», «eterm», «linux», «kermit»
+ou «screen», le fond est considéré foncé.  Pour un «vt100», indice
+probable d'un émulateur de terminal, «set-prompt» demande interactivement
+à l'usager d'indiquer si le fond est pâle ou non.
+
+Un INDICE «super», normalement réservé au super-usager, utilise des
+couleurs plus mordantes pour l'invite, alors qu'un INDICE «normal» utilise
+des couleurs un peu plus douces.  Un INDICE valant «sh», «bash» ou «zsh»
+indique le shell en usage.  La coloration et l'heure dans l'invite n'ont
+un sens que si le shell en usage est «bash» ou «zsh».
+"
+
+# Ce script fabriquait sur «stdout» des commandes shell à évaluer (via
+# "eval `set-prompt`").  Robert Lachance <rlachance@sram.qc.ca> l'a
+# modifié pour directement affecter «PS1» et «PS2» (via ". set-prompt").
+
+if [ -n "$BASH_VERSION" ]; then
+  shell=bash
+elif [ -n "$ZSH_VERSION" ]; then
+  shell=zsh
+else
+  shell=sh
+fi
+
+if [ $LOGNAME = root ]; then
+  user=super
+  if [ -n "$DOSWIN" ]; then
+    # Le bash de DJGPP ajoute plusieurs blancs suffixes à \h.
+    ident=$LOGNAME'@'$HOST':\w'
+  else
+    case $shell in
+      sh) ident=$LOGNAME'@'$HOST ;;
+      bash) ident='\u@\h:\W' ;;
+      zsh) ident='%n@%m:%/' ;;
+    esac
+  fi
+else
+  user=normal
+  if [ -n "$DOSWIN" ]; then
+    # Le bash de DJGPP ajoute plusieurs blancs suffixes à \h.
+    ident='$LOGNAME@$HOST:\W'
+  else
+    case $shell in
+      sh) ident=$LOGNAME'@'$HOST ;;
+      bash) ident='\u@\h:\W' ;;
+      zsh) ident='%n@%m:%2~' ;;
+    esac
+  fi
+fi
+
+fond=none
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    simple|unknown|pale|dark) fond=$1 ;;
+    white|w|blanc) fond=pale ;;
+    black|b|noir) fond=dark ;;
+    normal|super) user=$1 ;;
+    sh|bash|zsh) shell=$1 ;;
+    *) fond=break; break ;;
+  esac
+  shift
+done
+
+if [ $fond = none ]; then
+  if [ $shell = sh ]; then
+    fond=simple
+  elif [ -n "$DISPLAY" ]; then
+    fond=pale
+  elif [ "$TERM" = rxvt ]; then
+    fond=pale
+  elif [ "$TERM" = xterm ]; then
+    fond=pale
+  else
+    case $TERM in
+      cygwin|emacs|eterm|linux|kermit-*|screen)
+        fond=dark ;;
+      *)
+        echo 1>&2 -n "Est-ce que le fond est pâle (o/y/n)? [o] "
+        read answer
+        [ -z "$answer" ] && answer=y
+        case "$answer" in
+          o|y) fond=pale ;;
+          *) fond=dark ;;
+        esac
+        unset answer
+        ;;
+    esac
+  fi
+fi
+
+# Pour faciliter la vision sur cygwin, éviter le gras, et l'UTF-8.
+
+case $fond-$user-$shell in
+  simple-normal-sh)
+     PS1=$?' '$ident'$ '
+     PS2=$?' '$ident'+ '
+     ;;
+  simple-super-sh)
+     PS1=$?' '$ident'# '
+     PS2=$?' '$ident'+ '
+     ;;
+  unknown-normal-bash)
+     PS1='\t $? '$ident' $ '
+     PS2='\t $? '$ident' + '
+     ;;
+  unknown-normal-zsh)
+     PS1='%T %? '$ident' $ '
+     PS2='%T %? '$ident' + '
+     ;;
+  unknown-super-bash)
+     PS1='\t $? '$ident' # '
+     PS2='\t $? '$ident' + '
+     ;;
+  unknown-super-zsh)
+     PS1='%T %? '$ident' # '
+     PS2='%T %? '$ident' + '
+     ;;
+  dark-normal-bash)
+     PS1='\[[;32;40m\]\t $?\[[36m\] '$ident'\[[32m\] $\[[0m\] '
+     PS2='\[[;32;40m\]\t $?\[[37m\] '$ident'\[[32m\] +\[[0m\] '
+     ;;
+  dark-normal-zsh)
+     PS1='%{[;32;40m%}%T %?%{[36m%} '$ident'%{[32m%} $%{[0m%} '
+     PS2='%{[;32;40m%}%T %?%{[37m%} '$ident'%{[32m%} +%{[0m%} '
+     ;;
+  dark-super-bash)
+     PS1='\[[;32;40m\]\t $?\[[33m\] '$ident'\[[31m\] #\[[0m\] '
+     PS2='\[[;32;40m\]\t $?\[[37m\] '$ident'\[[31m\] +\[[0m\] '
+     ;;
+  dark-super-zsh)
+     PS1='%{[;32;40m%}%T %?%{[33m%} '$ident'%{[31m%} #%{[0m%} '
+     PS2='%{[;32;40m%}%T %?%{[37m%} '$ident'%{[31m%} +%{[0m%} '
+     ;;
+  pale-normal-bash)
+     PS1='\[[;30;42m\]\t $?\[[46m\] '$ident'\[[42m\] $\[[0m\] '
+     PS2='\[[;30;42m\]\t $?\[[47m\] '$ident'\[[42m\] +\[[0m\] '
+     ;;
+  pale-normal-zsh)
+     PS1='%{[;30;42m%}%T %?%{[46m%} '$ident'%{[42m%} $%{[0m%} '
+     PS2='%{[;30;42m%}%T %?%{[47m%} '$ident'%{[42m%} +%{[0m%} '
+     ;;
+  pale-super-bash)
+     PS1='\[[;30;42m\]\t $?\[[43m\] '$ident'\[[41m\] #\[[0m\] '
+     PS2='\[[;30;42m\]\t $?\[[47m\] '$ident'\[[41m\] +\[[0m\] '
+     ;;
+  pale-super-zsh)
+     PS1='%{[;30;42m%}%T %?%{[43m%} '$ident'%{[41m%} #%{[0m%} '
+     PS2='%{[;30;42m%}%T %?%{[47m%} '$ident'%{[41m%} +%{[0m%} '
+     ;;
+  *)
+     echo "$usage"
+     ;;
+esac
+
+unset fond
+unset ident
+unset shell
+unset user
+unset b
+
+# Faire un `cd' pour nettoyer l'invite dans `bash', lorsque `~'.
+# Il peut y avoir un "Permission denied" lors d'un `su' hors de `root'.
+[ "`ls -id . 2>/dev/null`" = "`cd && ls -id .`" ] && cd

@@ -1,0 +1,12 @@
+#!/bin/bash
+# u8 - Passer en mode UTF-8.
+# Faire ". u8" dans le terminal voulu.
+
+export LANG=fr_CA.UTF-8
+
+if [ -n "$DISPLAY" ]; then
+  echo -ne '\e]5379;encoding=UTF-8;bg_color=ivory\a'
+elif type 2>/dev/null unicode_start; then
+  unicode_start
+fi
+

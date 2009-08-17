@@ -1,0 +1,237 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2000, 2002 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2000.
+
+# The goal of this exercise was, for me, to evaluate if I could use `pygtk'
+# to produce a flicker-less animation of a possibly complex curve, and I
+# was pleasantly surprised.  By flicker, I mean seeing the lines, seeing the
+# background, seeing the lines, etc. in quick succession.  When the curves
+# go complex to compute, the animation gets jerky, but I expected this! :-)
+
+# A good way to update a display is to draw it into a memory pixmap instead
+# of in the real drawing area, and once done in memory, fastly transfer
+# the memory to the window.  Using a pixmap as an intermediate will only
+# hide the actual steps of redrawing, and show the result all at once.
+# Of course, using a pixmap as an intermediate will not make the overall
+# result to appear faster.  The pixmap is allocated every time within the
+# `update' function, and reclaimed by Python by falling to the end of the
+# function, as I keep no other reference to the variable.
+
+# As an exercise, in 2002, I converted this package to depend on Glade.
+# As another exercise, in 2009, I converted it to *not* depend on Glade!
+
+import math, sys
+
+import pygtk
+pygtk.require('2.0')
+import gobject, gtk
+
+def main(*arguments):
+    gui = Gui()
+    gtk.main()
+
+def compute_math(hfactor, vfactor, phase, xmax, ymax, point_count):
+    return [((int(xmax * math.sin(hfactor * counter)) + xmax) // 2,
+             (int(ymax * math.sin(vfactor * counter - phase)) + ymax) // 2)
+            for counter in range(point_count)]
+compute_math.package = 'math'
+
+def compute_Numeric(hfactor, vfactor, phase, xmax, ymax, point_count):
+    counter = Numeric.array(range(point_count), Numeric.Float)
+    xvalues = .5 * (xmax * Numeric.sin(hfactor * counter) + xmax)
+    yvalues = .5 * ((ymax * Numeric.sin(vfactor * counter - phase)) + ymax)
+    return zip(xvalues.astype(Numeric.Int), yvalues.astype(Numeric.Int))
+compute_Numeric.package = 'Numeric'
+
+def compute_numpy(hfactor, vfactor, phase, xmax, ymax, point_count):
+    counter = numpy.array(range(point_count), float)
+    xvalues = .5 * (xmax * numpy.sin(hfactor * counter) + xmax)
+    yvalues = .5 * ((ymax * numpy.sin(vfactor * counter - phase)) + ymax)
+    return zip(xvalues.astype(int), yvalues.astype(int))
+compute_numpy.package = 'numpy'
+
+try:
+    import numpy
+except ImportError:
+    try:
+        import Numeric
+    except:
+        compute = compute_math
+    else:
+        compute = compute_Numeric
+else:
+    compute = compute_numpy
+
+class Gui:
+    gc_inited = False
+    redraw_id = None
+
+    def __init__(self):
+        window = gtk.Window()
+        window.set_border_width(20)
+        window.set_title("Figures de Lissajou")
+        window.connect('destroy', gtk.main_quit)
+
+        vbox = gtk.VBox(False, 8)
+        window.add(vbox)
+
+        hbox = gtk.HBox(False, 20)
+        vbox.pack_start(hbox, False, False)
+
+        button = gtk.Button("Quitter")
+        button.set_flags(gtk.CAN_DEFAULT)
+        #button.grab_default()
+        button.connect('clicked', gtk.main_quit)
+        hbox.pack_start(button, False, False)
+
+        hbox.pack_end(gtk.Label(
+            'pygtk ' + '.'.join(map(str, gtk.gtk_version))), False, False)
+        hbox.pack_end(gtk.Label(compute.package), False, False)
+
+        frame = gtk.Frame()
+        frame.set_shadow_type(gtk.SHADOW_IN)
+        vbox.pack_start(frame)
+
+        drawingarea = gtk.DrawingArea()
+        drawingarea.set_size_request(400, 400)
+        frame.add(drawingarea)
+        self.drawingarea = drawingarea
+
+        table = gtk.Table(4, 3)
+        table.set_row_spacings(3)
+        table.set_col_spacings(5)
+        vbox.pack_start(table)
+
+        table.attach(gtk.Label("Fréq. hor."), 0,1, 0,1, 0, 0)
+        table.attach(gtk.Label("Fréq. ver."), 0,1, 1,2, 0, 0)
+        table.attach(gtk.Label("Phase"), 0,1, 2,3, 0, 0)
+        table.attach(gtk.Label("Densité"), 0,1, 3,4, 0, 0)
+
+        scale_horizontal = gtk.HScale()
+        scale_horizontal.set_digits(2)
+        adjustment = scale_horizontal.get_adjustment()
+        adjustment.set_all(1, 1, 25, .1, 1, 0)
+        adjustment.connect('value_changed', self.need_redraw)
+        table.attach(scale_horizontal, 1, 2, 0, 1, gtk.EXPAND | gtk.FILL, 0)
+        self.adjustment_horizontal_frequency = adjustment
+    
+        scale_vertical = gtk.HScale()
+        scale_vertical.set_digits(2)
+        adjustment = scale_vertical.get_adjustment()
+        adjustment.set_all(1, 1, 25, .1, 1, 0)
+        adjustment.connect('value_changed', self.need_redraw)
+        table.attach(scale_vertical, 1, 2, 1, 2, gtk.EXPAND | gtk.FILL, 0)
+        self.adjustment_vertical_frequency = adjustment
+
+        scale = gtk.HScale()
+        scale.set_digits(0)
+        adjustment = scale.get_adjustment()
+        adjustment.set_all(90, 0, 180, 1, 10, 0)
+        adjustment.connect('value_changed', self.need_redraw)
+        table.attach(scale, 1, 2, 2, 3, gtk.EXPAND | gtk.FILL, 0)
+        self.adjustment_phase = adjustment
+
+        scale = gtk.HScale()
+        scale.set_digits(0)
+        adjustment = scale.get_adjustment()
+        adjustment.set_all(26, 2, 50, 1, 5, 0)
+        adjustment.connect('value_changed', self.need_redraw)
+        table.attach(scale, 1, 2, 3, 4, gtk.EXPAND | gtk.FILL, 0)
+        self.adjustment_density = adjustment
+
+        button1 = gtk.CheckButton("Entiers")
+        button1.set_active(True)
+        button1.connect('toggled', self.checkbutton_integer, scale_horizontal)
+        table.attach(button1, 2, 3, 0, 1, 0, 0)
+
+        button2 = gtk.CheckButton("Entiers")
+        button2.set_active(True)
+        button2.connect('toggled', self.checkbutton_integer, scale_vertical)
+        table.attach(button2, 2, 3, 1, 2, 0, 0)
+
+        button = gtk.CheckButton("Remplir")
+        button.set_active(True)
+        button.connect('toggled', self.need_redraw)
+        table.attach(button, 2, 3, 2, 3, 0, 0)
+        self.checkbutton_fill = button
+
+        label = gtk.Label("99999 points")
+        width, height = label.size_request()
+        label.set_size_request(width, height)
+        table.attach(label, 2, 3, 3, 4, 0, 0)
+        self.label_point_count = label
+
+        window.show_all()
+        button1.emit('toggled')
+        button2.emit('toggled')
+        self.need_redraw(None)
+
+    def checkbutton_integer(self, widget, scale):
+        if widget.get_active():
+            scale.set_digits(0)
+            adjustment = scale.get_adjustment()
+            adjustment.set_value(int(adjustment.value + 0.5))
+            self.need_redraw(None)
+        else:
+            scale.set_digits(2)
+
+    def need_redraw(self, widget):
+        if self.redraw_id is None:
+            self.redraw_id = gobject.idle_add(self.compute_and_draw)
+
+    def compute_and_draw(self):
+        self.redraw_id = None
+        # Get computation parameters.
+        fillable = 1
+        horizontal_frequency = self.adjustment_horizontal_frequency.value
+        horizontal_count = int(horizontal_frequency)
+        if horizontal_frequency != horizontal_count:
+            horizontal_count = int(math.ceil(horizontal_frequency))
+            fillable = 0
+        vertical_frequency = self.adjustment_vertical_frequency.value
+        vertical_count = int(vertical_frequency)
+        if vertical_frequency != vertical_count:
+            vertical_count = int(math.ceil(vertical_frequency))
+            fillable = 0
+        divisor = gcd(horizontal_count, vertical_count)
+        point_count = (int(self.adjustment_density.value)
+                       * (horizontal_count * vertical_count)
+                       // (divisor * divisor))
+        # Generate data points.
+        window = self.drawingarea.window
+        width, height = window.get_size()
+        if not fillable:
+            point_count = point_count + 1
+        points = compute(
+                (2 * math.pi * horizontal_frequency) / (divisor * point_count),
+                (2 * math.pi * vertical_frequency) / (divisor * point_count),
+                math.pi * self.adjustment_phase.value / 180,
+                width - 1, height - 1, point_count)
+        # Redraw everything.
+        if not self.gc_inited:
+            self.black_gc = self.drawingarea.get_style().black_gc
+            self.white_gc = self.drawingarea.get_style().white_gc
+            self.cyan_gc = window.new_gc()
+            self.cyan_gc.set_foreground(
+                    self.drawingarea.get_colormap().alloc_color('cyan'))
+            self.gc_inited = True
+        pixmap = gtk.gdk.Pixmap(window, width, height)
+        self.label_point_count.set_text('%d points' % point_count)
+        pixmap.draw_rectangle(self.white_gc, True, 0,0, width,height)
+        if fillable:
+            if self.checkbutton_fill.get_active():
+                pixmap.draw_polygon(self.cyan_gc, 1, points)
+            pixmap.draw_polygon(self.black_gc, 0, points)
+        else:
+            pixmap.draw_lines(self.black_gc, points)
+        window.draw_drawable(self.white_gc, pixmap, 0,0, 0,0, width,height)
+
+def gcd(a, b):
+    while b:
+        a, b = b, a % b
+    return a
+
+if __name__ == '__main__':
+    import sys
+    main(*sys.argv[1:])

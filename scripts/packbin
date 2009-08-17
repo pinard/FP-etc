@@ -1,0 +1,167 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 1990, 98, 99, 00, 02, 03 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 1990-07.
+
+u"""\
+Plan how to best fill fixed size bins with variable size chunks.
+
+This tool, when used as a main program, reads a set of lines and ignores
+those who do not begin with a decimal number.  The decimal number represents
+the size of a chunk in some units.  The program merely re-outputs the
+exact input lines, but reordered in such a way that all chunks going to
+a single bin are grouped together.
+
+Usage: packbin [OPTION]... [FILE]
+
+  -s SIZE   capacity of each bin in units
+  -b SIZE   overhead units in each bin
+  -c SIZE   overhead units in each chunk
+  -o        allow overflow for one chunk per bin
+
+In some situations, a chunk is greater than a bin.  By default, the program
+issues a diagnostic and exits with status 1.  There is an overflow `-o'
+flag, introducing the concept of bin sets, with a single chunk per bin set
+allowed to overflow into as many bins as necessary.  Without the overflow
+flag, each bin set holds exactly one bin.
+
+One extra line is added before the start of each bin set, and so, unless
+the input does not contain any chunk line, one such line exists at the
+beginning of output, looking like ". A B C D" where A, B, C, D are decimal
+numbers.  As the dot is not a decimal number, it is easily sorted out of
+chunk lines, and easily handled in shell scripts as well.  A is the ordinal
+of the bin set counted from 1, B is the total number of bin sets, C is the
+number of bins in the set, and D is the number of chunks in the bin set.
+
+The listed order of chunks for a single bin is from the smallest to the
+tallest, and lexicographically by the chunk line in case of equality.
+
+Beside `-o' described above, the program accepts `-b SIZE' to tell the
+fixed size of all bins (adjust the bin size if any overall bin overhead),
+and `-c SIZE' to announce a per-chunk size overhead.  The program reads its
+single FILE argument, or stdin if none.  This could be changed: as `-s'
+is mandatory, the option could disappear and be replaced by a mandatory
+first non-option argument giving the size.  One might think that many
+input FILEs could be merely concatenated, but it might be convenient to
+keep aside the possibility of giving some semantics to multiple input files.
+
+-----
+
+J'ai assez souvent le problème informatique de mettre une bonne quantité de
+« choses » de grandeur variable dans autant des « contenants » que
+nécessaires, tous de grandeur fixe, en les remplissant au mieux de manière
+à utiliser le moins de contenants possibles.
+
+Par exemple, pour l'usine de fenêtres, ils avaient le problème d'optimiser
+la coupe de tronçons de plastique de grandeur variable pris sur des barres
+pré-manufacturées de longueur fixe, en minimisant la grandeur des
+retailles.
+
+Lorsque Laurent et moi organisons une distribution sur disquettes pour
+contenir un bon nombre de fichiers, nous cherchons à diminuer le nombre de
+disquettes en les remplissant au mieux.
+
+Plutôt que de reprogrammer la chose encore une fois, j'ai fait un outil
+général, d'abord en C, puis en Python, pour planifier la distribution de
+choses dans des contenants.  Par exemple, pour archiver mon code ~pinard
+sur disques Zip, j'ai utilisé cet outil comme coeur de ce qui n'est par
+la suite qu'un petit script shell, plutôt facile à programmer.
+"""
+
+__metaclass__ = type
+import sys
+
+def _(text): return text
+
+# Main program.
+
+def main(*arguments):
+    if not arguments:
+        sys.stdout.write(__doc__)
+        sys.exit(0)
+    # Decode options.
+    import getopt
+    bin_size = chunk_overhead = allow_overflow = 0
+    options, arguments = getopt.getopt(arguments, u"b:c:o")
+    for option, value in options:
+        if option == '-b':
+            bin_size = int(value)
+        elif option == '-c':
+            chunk_overhead = int(value)
+        elif option == '-o':
+            allow_overflow = 1
+    if len(arguments) == 0:
+        file = sys.stdin
+    elif len(arguments) == 1:
+        file = open(arguments[0])
+    else:
+        sys.stderr.write(_(u"Try `packbin' for more information.\n"))
+        sys.exit(1)
+    if bin_size == 0:
+        sys.stderr.write(_(u"Bin size has not been specified.\n"))
+        sys.exit(1)
+    # Read input data.
+    chunks = []
+    for line in file.readlines():
+        if line[0].isdigit():
+            fields = line.split(None, 1)
+            if len(fields) == 2:
+                chunks.append((int(fields[0]), fields[1]))
+    # Do the allocation.
+    binsets = allocate(chunks, bin_size, chunk_overhead, allow_overflow)
+    # Print the results.
+    binset_counter = 0
+    for bin_count, chunks in binsets:
+        binset_counter += 1
+        sys.stdout.write('. %d %d %d %d\n' % (binset_counter, len(binsets),
+                                              bin_count, len(chunks)))
+        for chunk in chunks:
+            sys.stdout.write(chunk[1])
+
+def allocate(chunks, bin_size, chunk_overhead=False, allow_overflow=False):
+    u"""\
+Allocate CHUNKS into bins, arranging so bins are maximally filled.  Each
+chunk is a sequence for which the first element is a number representing
+its size in some arbitrary units, while the rest may be anything.  Each
+bin has a maximum usable BIN_SIZE.  Each chunk consumes CHUNK_OVERHEAD
+units within a bin, besides its own size.
+
+It may happen that some chunks cannot fit alone in a single bin, in which
+case these chunks, and only these, may span more than one bin.  However,
+if ALLOW_OVERFLOW is not true, an exception is raised instead.
+
+The function return a list of binsets.  Each binset is a pair holding the
+number of bins in the binset (always 1 when ALLOW_OVERFLOW is false), and a
+list of chunks meant for that binset, sorted in increasing size.
+"""
+    chunks = sorted(chunks)
+    binsets = []
+    while chunks:
+        still_virgin = True
+        for counter in range(len(chunks)-1, -1, -1):
+            chunk = chunks[counter]
+            if still_virgin:
+                subset = []
+                if chunk_overhead + chunk[0] <= bin_size:
+                    bin_count = 1
+                    used_units = chunk_overhead + chunk[0]
+                elif allow_overflow:
+                    quotient, remainder = divmod(chunk_overhead + chunk[0],
+                                                 bin_size)
+                    bin_count = 1 + quotient
+                    used_units = chunk_overhead + remainder
+                else:
+                    raise 'Bin overflow'
+                subset.append(chunk)
+                del chunks[counter]
+                still_virgin = False
+            elif used_units + chunk_overhead + chunk[0] <= bin_size:
+                used_units += chunk_overhead + chunk[0]
+                subset.append(chunk)
+                del chunks[counter]
+                subset.reverse()
+        binsets.append((bin_count, subset))
+    return binsets
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

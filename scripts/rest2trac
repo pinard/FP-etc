@@ -1,0 +1,228 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+
+# Code adapté en partant de:
+#   http://joker.linuxstuff.pl/files/rest2trac-rev14.tar.gz
+#   Author: Michal Kwiatkowski
+#   Contact: ruby@joker.linuxstuff.pl
+
+u"""\
+A minimal front end to the Docutils Publisher, producing Trac Wiki output.
+"""
+
+try:
+    import locale
+    locale.setlocale(locale.LC_ALL, '')
+except:
+    pass
+
+from docutils import nodes, writers
+
+class TracWriter(writers.Writer):
+
+    def translate(self):
+        self.visitor = TracTranslator(self.document)
+        self.document.walkabout(self.visitor)
+        self.output = self.visitor.astext()
+
+class TracTranslator(nodes.NodeVisitor):
+    u"""\
+Write output in Trac Wiki format.
+
+References:
+* ReST: http://docutils.sourceforge.net/docs/ref/rst/restructuredtext.html
+* Trac Wiki: http://projects.edgewall.com/trac/wiki/WikiFormatting
+"""
+
+    empty_methods = [
+        'visit_document', 'depart_document',
+        'depart_Text',
+        'depart_list_item',
+        'visit_target', 'depart_target',
+        'depart_field_list',
+        'visit_field', 'depart_field',
+        'depart_field_body',
+        'visit_decoration', 'depart_decoration',
+        'depart_footer',
+        'visit_block_quote', 'depart_block_quote',
+    ]
+
+    def __init__(self, document):
+        nodes.NodeVisitor.__init__(self, document)
+        self.settings = document.settings
+        self.content = []
+
+        self.first = True
+        self.list_level = 0
+        self.section_level = 0
+        self.list_counter = -1
+        self.inside_literal_block = False
+
+        # For blocking all output
+        self.block = False
+
+        for method in self.empty_methods:
+            setattr(self, method, lambda n: None)
+
+    def _add(self, string):
+        if not self.block:
+            self.content.append(string)
+
+    def _indent(self):
+        self._add(' ' * self.list_level * 2)
+
+    def _newline(self, number=1):
+        self._add('\n'*number)
+
+    def astext(self):
+        return ''.join(self.content)
+
+    def unknown_visit(self, node):
+        raise Exception(u"Unknown visit on line %s: %s."
+                        % (node.line, repr(node)))
+
+    def unknown_departure(self, node):
+        raise Exception(u"Unknown departure on line %s: %s."
+                        % (node.line, repr(node)))
+
+    def visit_generated(self, node):
+        pass # REVOIR!
+
+    def depart_generated(self, node):
+        pass # REVOIR!
+
+    def visit_image(self, node):
+        pass # REVOIR!
+
+    def depart_image(self, node):
+        pass # REVOIR!
+
+    def visit_bullet_list(self, node):
+        self.list_level += 1
+
+    def depart_bullet_list(self, node):
+        self.list_level -= 1
+
+    def visit_list_item(self, node):
+        self._indent()
+        if self.list_counter == -1:
+            self._add('* ')
+        else:
+            self._add('%s%d%s '
+                      % (self.list_prefix, self.list_counter, self.list_suffix))
+            self.list_counter += 1
+        self.first = True
+
+    def visit_paragraph(self, node):
+        if not self.first:
+            self._newline()
+
+    def depart_paragraph(self, node):
+        self._newline()
+        self.first = False
+
+    def visit_Text(self, node):
+        string = node.astext()
+        if not self.inside_literal_block:
+            string = string.replace('\n', ' ')
+        self._add(string)
+
+    def visit_emphasis(self, node):
+        self._add('\'\'')
+
+    def depart_emphasis(self, node):
+        self._add('\'\'')
+
+    def visit_strong(self, node):
+        self._add('\'\'\'')
+
+    def depart_strong(self, node):
+        self._add('\'\'\'')
+
+    def visit_title(self, node):
+        if not self.first:
+            self._newline()
+        header = '=' * (self.section_level + 1)
+        self._add(header + ' ')
+
+    def depart_title(self, node):
+        header = '=' * (self.section_level + 1)
+        self._add(' ' + header)
+        self._newline(2)
+        self.first = True
+
+    def visit_section(self, node):
+        self.section_level += 1
+
+    def depart_section(self, node):
+        self.section_level -= 1
+
+    def visit_reference(self, node):
+        if node.has_key('name'):
+            self._add('[%s ' % node['refuri'])
+
+    def depart_reference(self, node):
+        if node.has_key('name'):
+            self._add(']')
+
+    def visit_literal_block(self, node):
+        self._add('{{{')
+        self._newline()
+        self.inside_literal_block = True
+
+    def depart_literal_block(self, node):
+        self._newline()
+        self._add('}}}')
+        self._newline()
+        self.inside_literal_block = False
+
+    def visit_literal(self, node):
+        self._add('`')
+
+    def depart_literal(self, node):
+        self._add('`')
+
+    def visit_field_list(self, node):
+        self._newline()
+
+    def visit_field_name(self, node):
+        self._add(' ' * 2)
+
+    def depart_field_name(self, node):
+        self._add('::')
+
+    def visit_field_body(self, node):
+        self._newline()
+        self._add(' ' * 4)
+        self.first = True
+
+    def visit_topic(self, node):
+        if 'contents' in node['classes']:
+            self._newline()
+            self._add('[[PageOutline]]')
+            self._newline()
+        self.block = True
+
+    def depart_topic(self, node):
+        self.block = False
+
+    def visit_footer(self, node):
+        self._add('----')
+        self._newline()
+
+    def visit_enumerated_list(self, node):
+        self.list_counter = 1
+        self.list_prefix = node['prefix']
+        self.list_suffix = node['suffix']
+        self.list_level += 1
+
+    def depart_enumerated_list(self, node):
+        self.list_counter = -1
+        self.list_level -= 1
+
+from docutils.core import publish_cmdline, default_description
+
+description = ('Generates documents in Trac Wiki format from standalone '
+               'reStructuredText sources.  ' + default_description)
+
+publish_cmdline(writer=TracWriter(), description=description)

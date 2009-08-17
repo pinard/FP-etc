@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2003 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2003-08.
+
+u"""\
+Trouver le nom d'une couleur peu éloignée d'un triplet RGB.
+
+Usages:
+  nom-couleur [OPTION]... NOM
+  nom-couleur [OPTION]... P1 P2 P3
+
+Options:
+  -g G   Pondérer Y avec l'entier G dans le calcul de proximité.
+  -l     Décoder et produire les coefficients dans le système HLS.
+  -v     Décoder et produire les coefficients dans le système HSV.
+  -y Y   Viser l'intensité Y fournie.
+
+Sans `-l' ni `-v', décoder et produire les coefficients dans le système RGB.
+P1, P2, P3 et Y sont chacun un nombre entier entre 0 et 255 ou un nombre
+flottant entre 0 et 1.  Si G n'est pas fourni, il est présumé valoir 0.  Le
+nom d'une couleur près de la couleur demandée, ainsi que ses coefficients et
+la valeur de Y, sont fournis sur la sortie standard.
+"""
+
+__metaclass__ = type
+import colorsys, sys
+
+def main(*arguments):
+    if not arguments:
+        sys.stdout.write(__doc__)
+        return
+    # Decoder les options.
+    systeme = 'rgb'
+    intensite = None
+    poids = 0
+    import getopt
+    options, arguments = getopt.getopt(arguments, 'g:lvy:')
+    for option, valeur in options:
+        if option == '-g':
+            poids = int(valeur)
+        elif option == '-l':
+            systeme = 'hls'
+        elif option == '-v':
+            systeme = 'hsv'
+        elif option == '-y':
+            intensite = decoder(valeur)
+    # Étudier la base des couleurs.
+    nom_selon_rgb = {}
+    rgb_selon_nom = {}
+    fouille = []
+    for ligne in file('/usr/lib/X11/rgb.txt'):
+        if ligne[0] in '!\n':
+            continue
+        champs = ligne.split()
+        nom = ' '.join(champs[3:])
+        r = int(champs[0]) / 256.
+        g = int(champs[1]) / 256.
+        b = int(champs[2]) / 256.
+        rgb_selon_nom[nom] = r, g, b
+        if (r, g, b) not in nom_selon_rgb:
+            y, i, q = colorsys.rgb_to_yiq(r, g, b)
+            fouille.append((r, g, b, y))
+            nom_selon_rgb[r, g, b] = nom
+        elif len(nom) < len(nom_selon_rgb[r, g, b]):
+            nom_selon_rgb[r, g, b] = nom
+    # Normaliser la couleur voulue.
+    if len(arguments) == 1:
+        rr, gg, bb = rgb_selon_nom[arguments[0]]
+    else:
+        assert len(arguments) == 3, arguments
+        argument1 = decoder(arguments[0])
+        argument2 = decoder(arguments[1])
+        argument3 = decoder(arguments[2])
+        if systeme == 'hls':
+            rr, gg, bb = colorsys.hls_to_rgb(argument1, argument2, argument3)
+        elif systeme == 'hsv':
+            rr, gg, bb = colorsys.hsv_to_rgb(argument1, argument2, argument3)
+        else:
+            rr, gg, bb = argument1, argument2, argument3
+    yy, ii, qq = colorsys.rgb_to_yiq(rr, gg, bb)
+    if intensite is None:
+        intensite = ii
+    else:
+        rr, gg, bb = colorsys.yiq_to_rgb(intensite, ii, qq)
+    # Trouver la couleur la plus près.
+    meilleur_nom = None
+    meilleur_score = None
+    for r, g, b, y in fouille:
+        score = ((r-rr)*(r-rr) + (g-gg)*(g-gg) + (b-bb)*(b-bb)
+                 + poids * ((y-yy)*(y-yy)))
+        if meilleur_nom is None or score < meilleur_score:
+            meilleur_nom = nom_selon_rgb[r, g, b]
+            meilleur_score = score
+    # Imprimer le résultat.
+    r, g, b = rgb_selon_nom[meilleur_nom]
+    y, i, q = colorsys.rgb_to_yiq(r, g, b)
+    sys.stdout.write(
+        '%s %s %s %s %s\n'
+        % (meilleur_nom, encoder(r), encoder(g), encoder(b), encoder(y)))
+
+def decoder(chaine):
+    if '.' in chaine:
+        return float(chaine)
+    return int(chaine) / 256.
+
+def encoder(valeur):
+    return str(int(valeur * 256))
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

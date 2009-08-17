@@ -1,0 +1,57 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2002, 2003, 2004 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, mai 2002.
+
+u"""\
+Usage: make-redirect URL
+
+Produit sur stdout une page (en anglais) capable de rediriger vers URL,
+qui est en général un script CGI qui fabriquera le contenu de la page.
+"""
+
+__metaclass__ = type
+import sys
+
+gabarit = u"""\
+<html>
+ <head>
+  <meta http-equiv=refresh content='0; url=%(url)s'>
+  <title>Redirection</title>
+  <meta charset="UTF-8">
+ </head>
+ <body>
+  <table align=center cellpadding=20>
+   <tr>
+
+    <td valign=top width=40%%>
+     <center><strong>Redirection de page HTML</strong></center>
+
+     <p>
+      Si votre fureteur traite les redirections, cette page-ci devrait
+      disparaître dans quelques secondes.  Sinon, vous pouvez toujours
+      <a href='%(url)s'>cliquer ici</a>
+      pour sortir la page HTML de son nouveau reposoir! :-)
+     </p>
+
+    </td>
+
+    <td valign=top width=40%%>
+     <center><strong>Redirecting an HTML page</strong></center>
+
+     <p>
+      If your browser supports page redirection, this page should disappear
+      within a few seconds.  Otherwise, you may
+      <a href='%(url)s'>click here</a>
+      to get the HTML page from its new location.
+     </p>
+
+    </td>
+   </tr>
+  </table>
+ </body>
+</html>
+"""
+
+assert len(sys.argv) == 2, len(sys.argv)
+sys.stdout.write((gabarit % {'url': sys.argv[1]}).replace('%', '%%'))

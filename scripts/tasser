@@ -1,0 +1,330 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 1990, 97, 98, 00, 02, 03 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, mai 1989.
+
+u"""\
+Tasser une liste sur plusieurs colonnes si possible.
+
+Usage: tasse [OPTION]... [FICHIER]...
+
+Ce programme essaie de tasser plusieurs pages lues sous la forme de
+plusieurs colonnes dans une seule page, en autant que cela soit possible.
+Un FF à la lecture provoquera la sortie immédiate du matériel accumulé et
+le démarrage d'une nouvelle page physique.  Les pages physiques résultantes
+seront séparées par des FF.
+
+Tous les fichiers seront lus et concaténés, un FF est présumé entre deux
+fichiers.  `-' signifie stdin.  Le résultat sera produit sur stdout.
+
+Options:
+  -p            ne pas couper un paragraphe sur deux pages
+  -c LARGEUR    donne la largeur maximale d'une page, en colonnes
+  -l LONGUEUR   donne la longueur maximale d'une page, en lignes
+  -s CHAÎNE     séparateur entre les colonnes, si non ` | '
+
+Les valeurs implicites pour LARGEUR et LONGUEUR proviennent de COLUMNS et
+LINES dans l'environnement, ou 80 et 60 si non définis.
+"""
+
+__metaclass__ = type
+import os, sys
+
+class run:
+    mode_paragraphe = False
+    largeur_page = int(os.environ.get('COLUMNS', 80)) - 1
+    longueur_page = int(os.environ.get('LINES', 60)) - 1
+    separateur = ' | '
+
+def main(*arguments):
+    if not arguments:
+        sys.stdout.write(__doc__)
+        sys.exit(0)
+    # Décoder les options.
+    import getopt
+    options, arguments = getopt.getopt(arguments, 'bc:l:s:')
+    for option, value in options:
+        if option == '-b':
+            run.mode_paragraphe = True
+        elif option == '-c':
+            run.largeur_page = int(value)
+        elif option == '-l':
+            run.longueur_page = int(value)
+        elif option == '-s':
+            run.separateur = value
+    # Traiter les fichiers indiqués.
+    sortie = Sortie()
+    if arguments:
+        for fichier in arguments:
+            if fichier == '-':
+                sortie.fichier(sys.stdin)
+            else:
+                sortie.fichier(file(fichier))
+    else:
+        sortie.fichier(sys.stdin)
+
+class Sortie:
+
+    def __init__(self):
+        self.page_initiale = 1
+        self.page = []
+        self.largeur_page = 0
+        self.colonne = []
+        self.largeur_colonne = 0
+
+    def fichier(self, lignes):
+        if run.mode_paragraphe:
+            self.fichier_mode_paragraphe(lignes)
+        else:
+            self.fichier_mode_ordinaire(lignes)
+        self.nouvelle_colonne()
+        self.nouvelle_page()
+
+    def fichier_mode_ordinaire(self, lignes):
+        for ligne in lignes:
+            ligne = ligne.rstrip()
+            if ligne.startswith('\f'):
+                ligne = ligne[1:]
+                self.nouvelle_colonne()
+                self.nouvelle_page()
+                sys.stdout.write('\f\n')
+                if ligne:
+                    self.nouvelle_ligne(ligne)
+            else:
+                self.nouvelle_ligne(ligne)
+
+    def nouvelle_ligne(self, ligne):
+        if len(self.colonne) + 1 > run.longueur_page:
+            self.nouvelle_colonne()
+        self.colonne.append(ligne)
+        self.largeur_colonne = max(self.largeur_colonne, len(ligne))
+
+    def fichier_mode_paragraphe(self, lignes):
+        paragraphe = []
+        largeur = 0
+        for ligne in lignes:
+            ligne = ligne.rstrip()
+            if ligne.startswith('\f'):
+                ligne = ligne[1:]
+                self.nouvelle_colonne()
+                self.nouvelle_page()
+                sys.stdout.write('\f\n')
+                if ligne:
+                    paragraphe = [ligne]
+                    largeur = len(ligne)
+                else:
+                    paragraphe = []
+                    largeur = 0
+            if ligne:
+                paragraphe.append(ligne)
+                largeur = max(largeur, len(ligne))
+            else:
+                # $PARAGRAPHE = "^ *[0-9]*-[)\]]";
+                self.nouveau_paragraphe(paragraphe, largeur)
+                cumul = [ligne]
+                largeur = len(ligne)
+        if paragraphe:
+            self.nouveau_paragraphe(paragraphe, largeur)
+
+    def nouveau_paragraphe(self, lignes, largeur):
+        if len(colonne) + len(lignes) > run.longueur_page:
+            self.nouvelle_colonne()
+        self.colonne += lignes
+        self.largeur_colonne = max(self.largeur_colonne, largeur)
+
+    def nouvelle_colonne(self):
+        if self.largeur_colonne > 0:
+            largeur_totale = self.largeur_page + self.largeur_colonne
+            if self.page:
+                largeur_totale += len(run.separateur)
+            if largeur_totale > run.largeur_page:
+                self.nouvelle_page()
+                self.largeur_page = self.largeur_colonne
+            else:
+                self.largeur_page = largeur_totale
+            self.page.append([self.largeur_colonne, self.colonne])
+        self.colonne = []
+        self.largeur_colonne = 0
+
+    def nouvelle_page(self):
+        if not self.page:
+            return
+        self.page[-1][0] = None         # FIXME: faire mieux que ça!
+        espacement = (run.largeur_page - self.largeur_page) / len(self.page)
+        longueur = 0
+        for largeur, colonne in self.page:
+            longueur = max(longueur, len(colonne))
+        write = sys.stdout.write
+        if self.page_initiale:
+            self.page_initiale = 0
+        else:
+            write('\f\n')
+        for compteur in range(longueur):
+            for largeur, colonne in self.page:
+                if compteur < len(colonne):
+                    ligne = colonne[compteur]
+                    write(ligne)
+                else:
+                    ligne = ''
+                if largeur is not None:
+                    write(' ' * (largeur + espacement - len(ligne)))
+                    write(run.separateur)
+            write('\n')
+        self.page = []
+        self.largeur_page = 0
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])
+
+# #!/usr/bin/perl -w
+# # Tasser une liste sur plusieurs colonnes si possible.
+# # Copyright © 1990, 1997, 1998 Progiciels Bourbeau-Pinard inc.
+# # François Pinard <pinard@iro.umontreal.ca>, mai 1989.
+
+# $usage = "tasse [-c LARGEUR] [-l LONGUEUR] [-b] [FICHIER]...";
+
+# # Ce programme essaie de tasser plusieurs pages lues sous la forme de
+# # plusieurs colonnes dans une seule page, en autant que cela soit
+# # possible.  Un FF à la lecture provoquera la sortie immédiate du
+# # matériel accumulé et le démarrage d'une nouvelle page physique.
+# # Les pages physiques résultantes seront séparées par des FF.
+# #
+# # Tous les fichiers seront lus et logiquement concaténés, mais si
+# # aucun n'est mentionné, le programme lira plutôt stdin.  Le
+# # résultat sera produit sur stdout.
+# #
+# # -b annonce une structure de blocs; le programme fera en sorte
+# # de ne pas couper un paragraphe sur deux pages.
+# #
+# # -c LARGEUR donne la largeur maximale d'une page, en colonnes;
+# #
+# # -l LONGUEUR donne la longueur maximale d'une page, en lignes;
+
+# #$PARAGRAPHE = "^ *[0-9]*-[)\]]";
+# $PARAGRAPHE = "^\$";
+
+# # Décoder les options.
+
+# while ($_ = $ARGV[0], /^-/) {
+#     shift;
+#     if (/^-b$/)       { $mode_bloc = 1; }
+#     elsif (/^-c$/) { $largeur_page = shift; }
+#     elsif (/^-l$/) { $longueur_page = shift; }
+#     else { die "Usage: $usage\n"; }
+# }
+# $largeur_page = 80 unless $largeur_page;
+# $longueur_page = 84 unless $longueur_page;
+
+# # Découper l'entrée en minipages.
+
+# while (<>) {
+#     s/ +$//;
+#     if (/^\f(.*\n)/) {
+#       $_ = $1;
+#       &chasser_mini_page ();
+#       &chasser_page ();
+#       print "\f\n";
+#       $bloc = "";
+#       $longueur = 0;
+#       $largeur = 0;
+#     }
+#     if ($mode_bloc && /$PARAGRAPHE/o) {
+#       &accumuler_bloc ($bloc, $longueur, $largeur) if $bloc;
+#       $bloc = $_;
+#       $longueur = 1;
+#       $largeur = length ($_) - 1;
+#     } else {
+#       $bloc .= $_;
+#       $longueur++;
+#       $largeur = length ($_) - 1 if length ($_) - 1 > $largeur;
+#     }
+# }
+
+# &accumuler_bloc ($bloc, $longueur, $largeur) if $bloc;
+# &chasser_mini_page ();
+# &chasser_page ();
+
+# exit 0;
+
+# # Accumuler un bloc de lignes.  Le premier paramètre contient les
+# # lignes, le second contient le nombre de lignes, le troisième
+# # contient la largeur du bloc.
+
+# sub accumuler_bloc {
+#     ($accum_bloc, $accum_longueur, $accum_largeur) = @_;
+
+#     if ($longueur_mini_page + $accum_longueur > $longueur_page) {
+#       &chasser_mini_page ();
+#     }
+
+#     if (!$mini_page) {
+#       while ($accum_bloc =~ /^\n/) {
+#           $accum_bloc =~ s/^\n//;
+#           $accum_longueur--;
+#       }
+#     }
+
+#     $mini_page .= $accum_bloc;
+#     $longueur_mini_page += $accum_longueur;
+#     $largeur_mini_page = $accum_largeur
+#       if $accum_largeur > $largeur_mini_page;
+# }
+
+# # Ajouter la mini-page à la liste des mini_pages, chasser la page
+# # complète au besoin.
+
+# sub chasser_mini_page {
+#     while ($mini_page =~ /\n\n$/) {
+#       $mini_page =~ s/\n$//;
+#       $longueur_mini_page--;
+#     }
+#     if ($longueur_mini_page > 0) {
+#       if (@mini_pages >= 0
+#           && ($largeur_accumulee + @mini_pages + $largeur_mini_page
+#               > $largeur_page)) {
+#           &chasser_page ();
+#           print "\f\n";
+#       }
+
+#       push (mini_pages, $mini_page);
+#       push (largeurs, $largeur_mini_page);
+#       $largeur_accumulee += $largeur_mini_page;
+
+#       $mini_page = "";
+#       $largeur_mini_page = 0;
+#       $longueur_mini_page = 0;
+#     }
+# }
+
+# # Produire la page remplie, en assemblant les mini_pages.
+
+# sub chasser_page {
+#     $espacement = (($largeur_page - $largeur_accumulee) / @mini_pages)
+#       if @mini_pages > 0;
+
+#     while (@mini_pages > 0) {
+#       $ligne = "";
+#       for ($no = 0; $no < @mini_pages - 1; $no++) {
+#           if ($mini_pages[$no] =~ /^(.*)\n/) {
+#               $ligne .= $1;
+#               $ligne .= ' ' x ($largeurs[$no] + $espacement - length ($1));
+#               $mini_pages[$no] =~ s/^.*\n//;
+#           } else {
+#               $ligne .= ' ' x ($largeurs[$no] + $espacement);
+#           }
+#       }
+#       if ($mini_pages[$#mini_pages] =~ /^(.*)\n/) {
+#           $ligne .= $1;
+#           $mini_pages[$#mini_pages] =~ s/^.*\n//;
+#       }
+#       $ligne =~ s/ +$//;
+#       print $ligne, "\n";
+
+#       for ($no = @mini_pages - 1; $no >= 0 && !$mini_pages[$no]; $no--) {
+#           pop @mini_pages;
+#           pop @largeurs;
+#       }
+#     }
+
+#     $largeur_accumulee = 0;
+# }

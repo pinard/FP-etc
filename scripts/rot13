@@ -1,0 +1,6 @@
+#!/bin/sh
+# Execute rot13 encryption or decryption.
+# Copyright © 1992 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 1992.
+
+tr a-zA-Z n-za-mN-ZA-M $*

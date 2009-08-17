@@ -1,0 +1,169 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2006 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2006-03.
+
+u"""\
+Préparer un source Python, pour travailler complètement en Unicode.
+
+Usage: unipy [OPTION]... [FICHIER]...
+
+Options:
+  -h   Imprimer cette aide, et ne rien faire.
+  -n   Ne modifier aucun fichier.
+  -q   Ne pas expliquer les changements faits.
+  -a   Ne conserver de préfixe `u' sur aucune chaîne.
+  -p   Ajouter un préfixe `u' à toutes les chaînes.
+
+Si un ou plusieurs FICHIERs, transforme chaque fichier sur place.
+Sinon, transforme l'entrée standard sur la sortie standard.  En
+l'absence de -ap, les chaînes utilisant des guillemets ou contenant des
+caractères non-ASCII reçoivent un préfixe `u', les chaînes ASCII
+utilisant des apostrophes les perdent.  Peu importe -ap, une chaîne
+précédée d'une chaîne vide ne gagne ni ne perd son préfixe `u',
+mais ce préfixe est rapporté avant la chaîne vide.
+"""
+
+__metaclass__ = type
+import os, sys
+
+class Main:
+    galop_essai = False
+    volubile = True
+    aucun = False
+    partout = False
+
+    def main(self, *arguments):
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'ahnpq')
+        for option, valeur in options:
+            if option == '-a':
+                self.aucun = True
+            elif option == '-h':
+                sys.stdout.write(__doc__)
+                return
+            elif option == '-n':
+                self.galop_essai = True
+            elif option == '-p':
+                self.partout = True
+            elif option == '-q':
+                self.volubile = False
+        if arguments:
+            import stat
+            for argument in arguments:
+                if self.galop_essai:
+                    self.transformer(file(argument), None, argument)
+                else:
+                    self.transformer(file(argument),
+                                      file(argument + '+', 'w'),
+                                      argument)
+                    mode = os.stat(argument)[stat.ST_MODE]
+                    os.remove(argument)
+                    os.rename(argument + '+', argument)
+                    os.chmod(argument, mode)
+        else:
+            if self.galop_essai:
+                self.transformer(sys.stdin, None, None)
+            else:
+                self.transformer(sys.stdin, sys.stdout, None)
+
+    def transformer(self, entree, sortie, nom):
+
+        def reconstruire_jeton(vide, chaine):
+            if chaine is None:
+                if vide is None:
+                    return ''
+                chaine = vide
+                vide = None
+            if vide is None:
+                prefixe1 = texte1 = ''
+            else:
+                prefixe1, texte1 = vide
+            prefixe2, texte2 = chaine
+            if texte1:
+                if 'u' not in prefixe1 and 'u' in prefixe2:
+                    prefixe1 = 'u'
+                    prefixe2 = prefixe2.replace('u', '')
+                if texte2.startswith('"'):
+                    texte1 = '\'\''
+                else:
+                    texte1 = '""'
+            else:
+                if not self.aucun:
+                    if self.partout or texte2.startswith('"'):
+                        prefixe1 = 'u'
+                    else:
+                        try:
+                            texte2.decode('ASCII')
+                        except UnicodeDecodeError:
+                            prefixe1 = 'u'
+                prefixe2 = prefixe2.replace('u', '')
+            return prefixe1 + texte1 + prefixe2 + texte2
+
+        # En mode volubile, il faut relire l'entrée deux fois.
+        if self.volubile:
+            from cStringIO import StringIO
+            entree = StringIO(entree.read())
+        # Transformer les chaînes.
+        fragments = []
+        write = fragments.append
+        import token, tokenize
+        row = 1
+        col = 0
+        vide = None
+        for (categ, jeton, (srow, scol), (erow, ecol), ligne
+                ) in tokenize.generate_tokens(entree.readline):
+            if vide is not None and categ != token.STRING:
+                write(reconstruire_jeton(vide, None))
+                vide = None
+            if row < srow:
+                write('\n' * (srow - row))
+                col = 0
+            if col < scol:
+                write(' ' * (scol - col))
+            if categ == token.STRING:
+                position = 0
+                while jeton[position].isalpha():
+                    position += 1
+                chaine = jeton[:position].lower(), jeton[position:]
+                if chaine[1] in ('\'\'', '""'):
+                    vide = chaine
+                    row = erow
+                    col = ecol
+                    continue
+                write(reconstruire_jeton(vide, chaine))
+                vide = None
+            else:
+                write(jeton)
+            if jeton.endswith('\n'):
+                row = erow + 1
+                col = 0
+            else:
+                row = erow
+                col = ecol
+        write(reconstruire_jeton(vide, None))
+        lignes = ''.join(fragments).splitlines(True)
+        # En mode volubile, produire une analyse des différences.
+        if self.volubile:
+            import difflib, time
+            originales = entree.getvalue().splitlines(True)
+            maintenant = time.ctime()
+            if nom:
+                sys.stdout.writelines(
+                    difflib.unified_diff(
+                        originales, lignes, nom, nom + '+',
+                        time.ctime(os.path.getmtime(nom)), maintenant))
+            else:
+                sys.stderr.writelines(
+                    difflib.unified_diff(
+                        originales, lignes, '<stdin>', '<stdout>',
+                        maintenant, maintenant))
+        # Produire le source ajusté.
+        if sortie is not None:
+            sortie.writelines(lignes)
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

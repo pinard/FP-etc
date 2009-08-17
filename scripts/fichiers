@@ -1,0 +1,161 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2005 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2005.
+
+u"""\
+Produire diverses listes de fichiers.
+
+Usage: fichiers [OPTION] [CHEMIN]...
+
+Options:
+    -a   Rendre tous les noms absolus.
+    -c   Condenser la liste en utilisant la notation ~/ ou ~USAGER/.
+    -r   Aussi lister les répertoires.
+    -g   Lister les fichiers sous le contrôle de git.
+    -s   Lister les fichiers sous le contrôle de Subversion.
+    -t   Lister les fichiers décrits dans un fichier "tags".
+
+Sans options, les fichiers existant dans chaque CHEMIN sont listés.
+Si aucun CHEMIN n'est fourni, le répertoire courant est présumé.
+"""
+
+__metaclass__ = type
+import os, sys
+
+class Main:
+    absolutiser = False
+    condenser = False
+    git = False
+    repertoires = False
+    subversion = False
+    tags = False
+    maisons = None
+    entrees = None
+
+    def main(self, *arguments):
+        # Décoder les options.
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'acgrst')
+        for option, valeur in options:
+            if option == '-a':
+                self.absolutiser = True
+            elif option == '-c':
+                self.condenser = True
+            elif option == '-g':
+                self.git = True
+            elif option == '-r':
+                self.repertoires = True
+            elif option == '-s':
+                self.subversion = True
+            elif option == '-t':
+                self.tags = True
+        # Préparations particulières.
+        if self.condenser:
+            self.absolutiser = True
+            maison = os.getenv('HOME')
+            self.maisons = [maison + '/']
+            sauve = os.getcwd()
+            os.chdir(maison)
+            maison = os.getcwd() + '/'
+            os.chdir(sauve)
+            if maison not in self.maisons:
+                self.maisons.append(maison)
+            import pwd
+            self.entrees = pwd.getpwall()
+        # Accumuler les fichiers.
+        self.noms = []
+        if self.git or self.subversion or self.tags:
+            if self.git:
+                self.utiliser_git(arguments)
+            if self.subversion:
+                self.utiliser_svn(arguments)
+            if self.tags:
+                self.utiliser_tags(arguments)
+        else:
+            self.utiliser_find(arguments)
+        # Lister ce qui a été trouvé.
+        self.noms.sort()
+        write = sys.stdout.write
+        precedent = None
+        for nom in self.noms:
+            if nom != precedent:
+                precedent = nom
+                write(nom + '\n')
+
+    def utiliser_find(self, arguments):
+        if arguments:
+            pile = list(arguments)
+        else:
+            pile = ['.']
+        while pile:
+            repertoire = pile.pop()
+            for base in os.listdir(repertoire):
+                fichier = os.path.join(repertoire, base)
+                if os.path.isdir(fichier):
+                    pile.append(fichier)
+                    if self.repertoires:
+                        self.accumuler(fichier)
+                else:
+                    self.accumuler(fichier)
+
+    def utiliser_git(self, arguments):
+        commande = 'git ls-files'
+        if arguments:
+            commande += ' ' + ' '.join(arguments)
+        for ligne in os.popen(commande):
+            nom = ligne.rstrip()
+            if nom[0] == '"':
+                nom = eval(nom, {}, {})
+            self.accumuler(nom)
+
+    def utiliser_svn(self, arguments):
+        commande = 'svn status --verbose'
+        if arguments:
+            commande += ' ' + ' '.join(arguments)
+        for ligne in os.popen(commande):
+            if ligne[0] in ' ACGMRX':
+                nom = ligne.split()[-1]
+                if self.repertoires or not os.path.isdir(nom):
+                    self.accumuler(nom)
+
+    def utiliser_tags(self, arguments):
+        if not arguments:
+            arguments = ['.']
+        for argument in arguments:
+            tags = os.path.join(argument, 'tags')
+            if os.path.exists(tags):
+                for ligne in file(tags):
+                    if not ligne.startswith('!'):
+                        champs = ligne.split(None, 2)
+                        assert len(champs) == 3, ligne
+                        self.accumuler(champs[1])
+            else:
+                sys.stderr.write(u"* %s/tags: n'existe pas.\n" % argument)
+
+    def accumuler(self, nom):
+        if nom.startswith('./'):
+            nom = nom[2:]
+        if self.absolutiser:
+            if nom.startswith('~'):
+                nom = os.path.expanduser('~')
+            elif not nom.startswith('/'):
+                nom = os.path.abspath(nom)
+        if self.condenser:
+            for maison in self.maisons:
+                if nom.startswith(maison):
+                    nom = '~/' + nom[len(maison):]
+                    break
+            else:
+                for entree in self.entrees:
+                    if (entree.pw_dir not in ('/bin', '/sbin')
+                          and nom.startswith(entree.pw_dir + '/')):
+                        nom = '~' + entree.pw_nom + nom[len(entree.pw_dir):]
+                        break
+        self.noms.append(nom)
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

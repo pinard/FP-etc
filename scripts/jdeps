@@ -1,0 +1,615 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+"""\
+Study dependencies between a group of Java sources.
+
+Usage: jdeps [OPTION]... [JAVA_SOURCE]...
+
+Options:
+  -c           Study class and interface dependencies on all sources
+  -p           Study package ("import") dependencies on all sources
+  -i           Retain class references inside given sources only
+  -n           Do not collect class or interface references
+  -k PATTERN   Keep item only if it matches (re) PATTERN
+  -x PATTERN   Exclude item if it matches (re) PATTERN
+
+Listing options:
+  -r   Produce a dependency report on standard output
+  -t   Show a topological rather than lexicographical ordering
+
+Graphic options:
+  -g FILE   Produce a dependency graph on FILE
+  -a        Do not show arrows for circular dependencies
+
+Special options:
+  -h   Print this help and exit
+  -v   Report source files as they get read
+
+If a JAVA_SOURCE begins with @, that file is read to provide a list of file
+names.  Moreover, @ or @- reads such a list from standard input.
+
+If none of -rg, then -r is implied.  If none of -cp, then -c is implied.
+For -g, FILE extension may be .dot for a dot-format graph description,
+or .ps for a PostScript file (the "dot" program is used to make it).
+"""
+
+__metaclass__ = type
+import sys
+from Etc import graph
+from Etc import spark
+
+# REVOIR, peut-être:
+# /tmp/servlets_2_3/javax/servlet ~/r-d/dev/modules/api/servlets/lib
+
+class Main:
+    verbose = False
+    report = False
+    graph_file = None
+    class_depend = False
+    package_depend = False
+    topological_order = False
+    no_collect = False
+    exclude_pattern = None
+    keep_pattern = None
+    avoid_circular = False
+    inside_only = False
+
+    def main(self, *arguments):
+        if not arguments:
+            sys.stdout.write(__doc__)
+            return
+
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'achg:ik:nprtvx:')
+        for option, value in options:
+            if option == '-a':
+                self.avoid_circular = True
+            elif option == '-c':
+                self.class_depend = True
+            elif option == '-g':
+                assert value.endswith('.dot') or value.endswith('.ps'), value
+                self.graph_file = value
+            elif option == '-h':
+                sys.stdout.write(__doc__)
+                return
+            elif option == '-i':
+                self.inside_only = True
+            elif option == '-k':
+                import re
+                self.keep_pattern = re.compile(value)
+            elif option == '-n':
+                self.no_collect = True
+            elif option == '-r':
+                self.report = True
+            elif option == '-t':
+                self.topological_order = True
+            elif option == '-p':
+                self.package_depend = True
+            elif option == '-v':
+                self.verbose = True
+            elif option == '-x':
+                import re
+                self.exclude_pattern = re.compile(value)
+
+        if not (self.report or self.graph_file):
+            self.report = True
+        if not (self.class_depend or self.package_depend):
+            self.class_depend = True
+
+        import time
+        now = time.time()
+        arguments2 = []
+        for argument in arguments:
+            if argument.startswith('@'):
+                if argument == '@' or argument == '@-':
+                    for line in sys.stdin:
+                        arguments2.append(line.strip())
+                else:
+                    for line in file(arguments[1:]):
+                        arguments2.append(line.strip())
+            else:
+                arguments2.append(argument)
+        self.study_sources(arguments2)
+        elapsed = time.time() - now
+        if self.report:
+            self.produce_report(arguments2, elapsed, sys.stdout.write)
+        if self.graph_file is not None:
+            if self.graph_file.endswith('.dot'):
+                handle = file(self.graph_file, 'w')
+            else:
+                import os
+                handle = os.popen('dot -Tps > %s' % self.graph_file, 'w')
+            self.produce_dot(handle.write)
+
+    def study_sources(self, arguments):
+        scanner = Scanner()
+        self.total_lines = 0
+        self.vertices = set()
+        self.arcs = set()
+        for self.pass_2 in False, True:
+            for (counter, argument) in enumerate(arguments):
+                if self.verbose:
+                    letter = 'ab'[self.pass_2]
+                    sys.stderr.write(
+                            '%d/%d%s. %s\n'
+                            % (counter + 1, len(arguments), letter, argument))
+                text = file(argument).read()
+                if not self.pass_2:
+                    self.total_lines += text.count('\n')
+                try:
+                    if argument.startswith('./'):
+                        argument = argument[2:]
+                    tokens = scanner.tokenize(argument, text)
+                except spark.Error, exception:
+                    if not self.pass_2:
+                        sys.stderr.write('%s: %s\n'
+                                         % (scanner.reference, exception))
+                    continue
+                if self.class_depend:
+                    self.study_class_depend(tokens)
+                if self.package_depend:
+                    self.study_package_depend(tokens)
+        self.vertices = sorted(self.vertices)
+        self.arcs = sorted(self.arcs)
+        self.ordered, self.cycle = graph.sort(self.vertices, self.arcs)
+        self.cycle = set(self.cycle)
+
+    def study_class_depend(self, tokens):
+        state = 0
+        within = None
+        for token in tokens:
+            if state == 0:
+                # Looking for class or interface.
+                if token.type == 'class':
+                    builder = Class
+                    state = 1
+                elif token.type == 'interface':
+                    builder = Interface
+                    state = 1
+                elif within is not None and token.type == 'IDENTIFIER':
+                    # This is pass 2, as WITHIN sticks to None in pass 1.
+                    if not (self.no_collect or self.is_external(token.name)):
+                        away = Item.registry.get(token.name)
+                        if away is not None and away is not within:
+                            self.arcs.add(Dynamic(within, away))
+            elif state == 1:
+                # Looking for the class or interface name.
+                if token.type == 'IDENTIFIER':
+                    if self.is_excluded(token.name):
+                        here = None
+                        if self.pass_2:
+                            within = None
+                    else:
+                        here = builder(token.name, token.reference.clone())
+                        if self.pass_2:
+                            self.vertices.add(here)
+                            within = here
+                    state = 2
+                else:
+                    state = 0
+            elif state == 2:
+                # Looking for extends or implements.
+                if token.type == 'extends':
+                    fragments = []
+                    state = 3
+                elif token.type == 'implements':
+                    fragments = []
+                    state = 4
+                else:
+                    state = 0
+            elif state == 3:
+                # Looking for the class name being extended.
+                if token.type == 'IDENTIFIER':
+                    fragments.append(token.name)
+                elif token.type != '.':
+                    if self.pass_2:
+                        name = '.'.join(fragments)
+                        if not self.is_external(name):
+                            away = Class(name)
+                            self.vertices.add(away)
+                            if here is not None:
+                                self.arcs.add(Structural(here, away))
+                    if token.type == 'implements':
+                        fragments = []
+                        state = 4
+                    else:
+                        state = 0
+            elif state == 4:
+                # Looking for all the interface names being implemented.
+                if token.type == 'IDENTIFIER':
+                    fragments.append(token.name)
+                elif token.type != '.':
+                    if self.pass_2:
+                        name = '.'.join(fragments)
+                        if not self.is_external(name):
+                            away = Interface(name)
+                            self.vertices.add(away)
+                            if here is not None:
+                                self.arcs.add(Structural(here, away))
+                    if token.type == 'extends':
+                        fragments = []
+                        state = 3
+                    elif token.type == ',':
+                        fragments = []
+                    else:
+                        state = 0
+
+    def study_package_depend(self, tokens):
+        here = None
+        reference = None
+        state = 0
+        for token in tokens:
+            if state == 0:
+                if token.type == 'package':
+                    state = 1
+                    fragments = []
+                elif token.type == 'import':
+                    state = 2
+                    fragments = []
+            elif state == 1:
+                if token.type == 'IDENTIFIER':
+                    if not fragments:
+                        reference = token.reference.clone()
+                    fragments.append(token.name)
+                elif token.type == ';':
+                    if fragments:
+                        name = '.'.join(fragments)
+                        if self.is_excluded(name):
+                            here = None
+                        else:
+                            here = Package(name, reference)
+                            if self.pass_2:
+                                self.vertices.add(here)
+                    state = 0
+            elif state == 2:
+                if token.type == ';':
+                    if self.pass_2:
+                        name = '.'.join(fragments)
+                        if not self.is_external(name):
+                            away = Package(name)
+                            self.vertices.add(away)
+                            if here is not None:
+                                self.arcs.add(Structural(here, away))
+                    state = 0
+                elif token.type == 'IDENTIFIER':
+                    fragments.append(token.name)
+                elif token.type == '*':
+                    fragments.append('*')
+
+    def is_external(self, name):
+        assert self.pass_2
+        if self.is_excluded(name):
+            return True
+        if not self.inside_only:
+            return False
+        item = Item.registry.get(name)
+        return item is None or item.reference is None
+
+    def is_excluded(self, name):
+        if self.exclude_pattern is not None:
+            if self.exclude_pattern.match(name):
+                return True
+        if self.keep_pattern is not None:
+            if not self.keep_pattern.match(name):
+                return True
+        return False
+
+    def produce_dot(self, write):
+        write('digraph jsynt {\n'
+              '  rankdir=LR;\n'
+              '  node [style=filled]\n')
+        for vertex in self.vertices:
+            write('  n%.3d [' % vertex.ordinal)
+            if vertex not in self.cycle:
+                write('color="%s", ' % vertex.color)
+            write('shape="%s", label="%s"' % (vertex.shape, vertex.name))
+            if vertex.reference is None:
+                write(', style=bold')
+            write('];\n')
+        for arc in self.arcs:
+            here, away = arc
+            if not (self.avoid_circular
+                    and (here in self.cycle or away in self.cycle)):
+                write('  n%.3d -> n%.3d%s;\n'
+                      % (here.ordinal, away.ordinal, arc.dot_text))
+        write('}\n')
+
+    def produce_report(self, arguments, elapsed, write):
+
+        def compute_left_cut(left, right, remaining_width):
+            if left + right > remaining_width:
+                return max(int(left / float(left + right) * remaining_width),
+                           remaining_width - right)
+            return left
+
+        if self.ordered:
+            for vertex in self.ordered:
+                vertex.before = []
+                vertex.after = []
+            for here, away in self.arcs:
+                if here not in self.cycle:
+                    here.after.append(away)
+                if away not in self.cycle:
+                    away.before.append(here)
+
+            for vertex in self.ordered:
+                vertex.early_position = 1
+            layer_count = 1
+            for vertex in self.ordered:
+                position = vertex.early_position
+                layer_count = max(layer_count, position)
+                for vertex2 in vertex.after:
+                    try:
+                        vertex2.early_position = max(vertex2.early_position,
+                                                     position + 1)
+                    except AttributeError:
+                        # TODO: How comes a vertex2 without early_position?
+                        vertex2.early_position = position + 1
+
+            for vertex in self.ordered:
+                vertex.late_position = layer_count
+            for vertex in reversed(self.ordered):
+                position = vertex.late_position
+                for vertex2 in vertex.before:
+                    vertex2.late_position = min(vertex2.late_position,
+                                                position - 1)
+        else:
+            layer_count = 0
+
+        write("\nStatistics\n")
+        write("    %d source files\n" % len(arguments))
+        write("    %d source lines\n" % self.total_lines)
+        write("    %d remaining items\n" % len(self.vertices))
+        write("    %d dependencies\n" % len(self.arcs))
+        if self.arcs:
+            if self.cycle:
+                write("    %d items caught in cycles\n" % len(self.cycle))
+            write("    %d dependency layers\n" % layer_count)
+        write("    %.1f seconds\n" % elapsed)
+
+        if self.vertices:
+            if self.topological_order:
+                write("\nItems in topological order:\n")
+                sequence = self.ordered + sorted(self.cycle)
+            else:
+                write("\nItems in lexicographical order:\n")
+                sequence = self.vertices
+            max_left = max_right = 0
+            for vertex in sequence:
+                max_left = max(max_left, len(str(vertex)))
+                if vertex.reference is not None:
+                    max_right = max(max_right, len(str(vertex.reference)))
+            left_cut = compute_left_cut(max_left, max_right,
+                                        80 - 8 - layer_count)
+            for vertex in sequence:
+                write('  ')
+                if vertex in self.cycle:
+                    write(' ' * (2 + layer_count))
+                else:
+                    write('[')
+                    for counter in range(1, layer_count + 1):
+                        if counter < vertex.early_position:
+                            write(' ')
+                        elif counter > vertex.late_position:
+                            write(' ')
+                        else:
+                            write('_')
+                    write(']')
+                write('  ')
+                if vertex.reference is None:
+                    write('%s\n' % vertex)
+                elif len(str(vertex)) > left_cut:
+                    write('%s\n%s%s\n'
+                          % (vertex,
+                             ' ' * (8 + layer_count + left_cut),
+                             vertex.reference))
+                else:
+                    write('%*s  %s\n' % (-left_cut, vertex, vertex.reference))
+
+        if self.arcs:
+            write("\nDetailed dependencies:\n")
+            max_left = max_right = 0
+            for here, away in self.arcs:
+                max_left = max(max_left, len(str(here)))
+                max_right = max(max_right, len(str(away)))
+            cut_column = compute_left_cut(max_left, max_right, 80 - 6)
+            previous = None
+            for here, away in self.arcs:
+                if previous is None or here != previous:
+                    previous = here
+                    if len(str(here)) > left_cut:
+                        write('    %s\n%s%s\n'
+                              % (here, ' ' * (6 + left_cut), away))
+                    else:
+                        write('    %*s  %s\n' % (-left_cut, here, away))
+                    previous = here
+                else:
+                    write('    %*s  %s\n' % (-left_cut, '', away))
+
+run = Main()
+main = run.main
+
+class Item:
+    registry = {}
+
+    def __new__(cls, name, reference=None):
+        self = Item.registry.get(name)
+        if self is None:
+            Item.registry[name] = self = object.__new__(cls)
+            self.ordinal = len(Item.registry)
+            self.name = name
+            self.reference = reference
+        else:
+            if reference is not None and self.reference is None:
+                self.reference = reference
+        return self
+
+    def __init__(self, name, reference=None):
+        pass
+
+    def __str__(self):
+        return self.name
+
+    def __hash__(self):
+        return hash(self.name)
+
+    def __cmp__(self, other):
+        return cmp(self.name, other.name)
+
+class Package(Item):
+    shape = 'box3d'
+    color = '#C0FFC0'
+
+class Class(Item):
+    shape = 'ellipse'
+    color = '#C0C0FF'
+
+class Interface(Item):
+    shape = 'rectangle'
+    color = '#FFC0C0'
+
+class Structural(graph.Arc):
+    dot_text = ''
+
+class Dynamic(graph.Arc):
+    dot_text = ' [color=brown, arrowhead=odiamond]'
+
+class Reference:
+
+    def __init__(self, filename, line, column):
+        self.filename = filename
+        self.line = line
+        self.column = column
+
+    def __str__(self):
+        return '%s:%d:%d' % (self.filename, self.line + 1, self.column + 1)
+
+    def clone(self):
+        return Reference(self.filename, self.line, self.column)
+
+### Java scanner.
+
+class Scanner(spark.Scanner):
+    # TODO: Handle \uWXYZ sequences on input.  Work in Unicode internally.
+
+    keywords = set([
+        'abstract', 'assert', 'boolean', 'break', 'byte', 'case', 'catch',
+        'char', 'class', 'const', 'continue' 'default', 'do', 'double',
+        'else', 'enum', 'extends', 'final', 'finally', 'float', 'for',
+        'if', 'goto', 'implements', 'import', 'instanceof', 'int',
+        'interface', 'long', 'native', 'new', 'package', 'private',
+        'protected' 'public', 'return', 'short', 'static', 'strictfp',
+        'super', 'switch', 'synchronized', 'this', 'throw', 'throws',
+        'transient', 'try', 'void', 'volatile', 'while',
+        ])
+
+    def tokenize(self, filename, text):
+        self.tokens = []
+        self.reference = Reference(filename, 0, 0)
+        spark.Scanner.tokenize(self, text)
+        return self.tokens
+
+    def t_whitespace(self, text):
+        r'\s+|//.*|/\*(.|\n)*?\*/'
+        position = text.rfind('\n')
+        if position < 0:
+            self.reference.column += len(text)
+        else:
+            self.reference.line += text.count('\n')
+            self.reference.column = len(text) - position - 1
+
+    def t_autres(self, text):
+        r'(>>>?|<<|\|\||&&|\+\+|--|[-+*/&|^%<>=!])=?|[\[\](){}.,:;~?@]'
+        self.tokens.append(Token(self.reference.clone(), text))
+        self.reference.column += len(text)
+
+    def t_identifier(self, text):
+        r'[A-Za-z_$][A-Za-z_$0-9]*'
+        if text in Scanner.keywords:
+            self.tokens.append(Token(self.reference.clone(), text))
+        else:
+            self.tokens.append(IDENTIFIER(self.reference.clone(), text))
+        self.reference.column += len(text)
+
+    def t_integer(self, text):
+        r"[0-9]+"
+        self.tokens.append(INTEGER(self.reference.clone(), int(text)))
+        self.reference.column += len(text)
+
+    def t_character(self, text):
+        r"'([^'\\]|\\[0-7]{1,3}|\\[uU][0-9A-Fa-f]{4}|\\.)'"
+        try:
+            value = eval(text, {}, {})
+        except SyntaxError:
+            print '**', self.reference, repr(text)
+            value = ''
+        self.tokens.append(CHARACTER(self.reference.clone(), value))
+        self.reference.column += len(text)
+
+    def t_string(self, text):
+        r'"([^"\\]|\\[0-7]{1,3}|\\[uU][0-9A-Fa-f]{4}|\\.)*"'
+        try:
+            value = eval(text, {}, {})
+        except SyntaxError:
+            print '**', self.reference, repr(text)
+            value = ''
+        self.tokens.append(STRING(self.reference.clone(), value))
+        self.reference.column += len(text)
+
+class Token:
+
+    def __init__(self, reference, type):
+        self.reference = reference
+        self.type = type
+
+    def __repr__(self):
+        return self.type
+
+    def __cmp__(self, other):
+        return cmp(self.type, other)
+
+    def __getitem__(self, ordinal):
+        raise IndexError, ordinal
+
+    def typestring(self):
+        return self.type
+
+class IDENTIFIER(Token):
+
+    def __init__(self, reference, name):
+        Token.__init__(self, reference, 'IDENTIFIER')
+        self.name = name
+
+    def __repr__(self):
+        return self.name
+
+class INTEGER(Token):
+
+    def __init__(self, reference, value):
+        Token.__init__(self, reference, 'STRING')
+        self.value = value
+
+    def __repr__(self):
+        return str(self.value)
+
+class CHARACTER(Token):
+
+    def __init__(self, reference, value):
+        Token.__init__(self, reference, 'CHARACTER')
+        self.value = value
+
+    def __repr__(self):
+        return self.value
+
+class STRING(Token):
+
+    def __init__(self, reference, value):
+        Token.__init__(self, reference, 'STRING')
+        self.value = value
+
+    def __repr__(self):
+        return self.value
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

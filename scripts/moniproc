@@ -1,0 +1,111 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2009 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2009.
+
+"""\
+Monitor a set of processes and produce a CSV file for later analysis.
+
+Usage: moniproc [Option]... [Pattern]...
+
+Options:
+  -h          Produce this help and exit.
+  -o OUTPUT   Output in CSV format (tab delimited).
+  -p PIDs     Pass this option to ps
+  -r SECONDS  Wait that number of seconds between repeats
+  -u USER     Pass this option to ps
+
+If no Pattern is given, all lines are retained, otherwise, the command
+must match one of the Pattern at its beginning.
+If -o is not given, output goes to standard output.  If -r is not given,
+execute the command only once.
+
+Example of usage:
+  moniproc -r 5 cvs git '.*git-' >moniproc.log &
+  echo $! > moniproc.pid
+  git >OUTPUT 2>&1 cvsimport -i -d /cvs/corporate -C /git/cvsimported -k r-d
+  kill `cat moniproc.pid`
+
+Example of analysis:
+  log = read.delim('mlog')
+  splits = strsplit(levels(log$cmd), ' ', fixed=TRUE)
+  log$base = as.factor(unlist(lapply(splits, '[', 1))[log$cmd])
+  rm(splits)
+  print(levels(log$base))
+  plot(log$base, log$vsize, las=2)
+  agg = aggregate(log[c('pcpu', 'rss', 'vsize', 'size')],
+                  list(log$date, log$time),
+                  sum)  
+"""
+
+__metaclass__ = type
+import csv, datetime, os, re, sys, time
+
+class Main:
+    output = None
+    pid = None
+    repeat = None
+    user = None
+
+    def main(self, *arguments):
+        # Decode options.
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'ho:p:r:u:')
+        for option, value in options:
+            if option == '-h':
+                sys.stdout.write(__doc__)
+                return
+            elif option == '-o':
+                self.output = value
+            elif option == '-p':
+                self.pid = value
+            elif option == '-r':
+                self.repeat = float(value)
+            elif option == '-u':
+                self.user = value
+        self.patterns = [re.compile(argument) for argument in arguments]
+        # Prepare a header.
+        if self.output is None:
+            output_file = sys.stdout
+        else:
+            output_file = file(self.output, 'wb')
+        self.writer = csv.writer(output_file, 'excel-tab')
+        self.columns = 'pid stat pcpu rss vsize size cmd'.split()
+        self.writer.writerow(['date', 'time'] + self.columns)
+        # Prepare the command to run.
+        self.command = 'ps'
+        if self.pid is not None:
+            self.command += ' -p ' + self.pid
+        if self.user is not None:
+            self.command += ' -u ' + self.user
+        self.command += ' xwh -o ' + ','.join(self.columns)
+        # Run the command.
+        if self.repeat is None:
+            self.run_ps()
+        else:
+            try:
+                while True:
+                    self.run_ps()
+                    output_file.flush()
+                    time.sleep(self.repeat)
+            except KeyboardInterrupt:
+                pass
+
+    def run_ps(self):
+        stamp = datetime.datetime.today().isoformat()[:19].split('T')
+        for line in os.popen(self.command):
+            fields = line.rstrip().split(None, len(self.columns) - 1)
+            if self.patterns:
+                cmd = fields[-1]
+                for pattern in self.patterns:
+                    if pattern.match(cmd):
+                        break
+                else:
+                    continue
+            self.writer.writerow(stamp + fields)
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

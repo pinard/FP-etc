@@ -1,0 +1,176 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 1992, 97, 98, 00, 02, 03, 05 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, janvier 1992.
+
+u"""\
+Remove backspaces from a text.
+
+Replace words underlined or overstroken with backspaces.
+
+Usage: unbs [OPTION] [FILE]...
+
+Output format selection:
+  -a   ANSI output, black/white
+  -c   ANSI output, colour
+  -d   dumb output (default)
+  -h   HTML output
+  -i   Info output
+  -r   ReST output
+  -t   Texinfo output
+
+Filter standard input if no FILE given.  Results always on standard output.
+"""
+
+__metaclass__ = type
+import sys
+
+# Aussi examiner ce qui suit, de http://arker.homelinux.org/~dcraven/vim-pager
+#cat $1 | col -b | vim -c 'se ft=man ro nomod nowrap ls=1 notitle ic' \
+#    -c 'nmap <Space> <C-F>' -c 'nmap b <C-B>' -c 'nmap q :q!<CR>' -c 'norm L' -
+
+class Main:
+
+    def main(self, *arguments):
+        if not arguments:
+            sys.stdout.write(__doc__)
+            sys.exit(0)
+        handler = None
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'acdhirt')
+        for option, value in options:
+            if option == '-a':
+                assert handler is None, handler
+                handler = Ansi()
+            elif option == '-c':
+                assert handler is None, handler
+                handler = Ansi_Colour()
+            elif option == '-d':
+                assert handler is None, handler
+                handler = Dumb()
+            elif option == '-h':
+                assert handler is None, handler
+                handler = Html()
+            elif option == '-i':
+                assert handler is None, handler
+                handler = Info()
+            elif option == '-r':
+                assert handler is None, handler
+                handler = Rest()
+            elif option == '-t':
+                assert handler is None, handler
+                handler = Texinfo()
+        if handler is None:
+            handler = Dumb()
+        if arguments:
+            for name in arguments:
+                handler.replace_backspaces(file(name).read(), sys.stdout.write)
+        else:
+            handler.replace_backspaces(sys.stdin.read(), sys.stdout.write)
+
+class Handler:
+
+    def replace_backspaces(self, text, write):
+        start = 0
+        limit = len(text)
+        while start < limit:
+            position = text.find('\b', start)
+            if position < 0:
+                write(text[start:])
+                start = limit
+            elif position > 0 and position < limit - 1:
+                if text[position-1] == text[position+1]:
+                    write(text[start:position-1])
+                    fragments = [text[position-1]]
+                    start = position + 2
+                    while (start + 3 < limit and text[start] == text[start+2]
+                           and text[start+1] == '\b'):
+                        fragments.append(text[start])
+                        start = start + 3
+                    self.bold(''.join(fragments), write)
+                elif text[position-1] == '_':
+                    write(text[start:position-1])
+                    fragments = [text[position+1]]
+                    start = position + 2
+                    while (start + 3 < limit and text[start] == '_'
+                           and text[start+1] == '\b'):
+                        fragments.append(text[start+2])
+                        start = start + 3
+                    self.underline(''.join(fragments), write)
+                elif text[position+1] == '_':
+                    write(text[start:position-1])
+                    fragments = [text[position-1]]
+                    start = position + 2
+                    while (start + 3 < limit and text[start+1] == '\b'
+                           and text[start+2] == '_'):
+                        fragments.append(text[start])
+                        start = start + 3
+                    self.underline(''.join(fragments), write)
+                else:
+                    write(text[start:position+1])
+                    start = position + 1
+            else:
+                write(text[start:position+1])
+                start = position + 1
+
+class Ansi(Handler):
+
+    def bold(self, text, write):
+        write('\033[1m%s\033[m' % text)
+
+    def underline(self, text, write):
+        write('\033[4m%s\033[m' % text)
+
+class Ansi_Colour(Handler):
+
+    def bold(self, text, write):
+        write('\033[1;31m%s\033[m' % text)
+
+    def underline(self, text, write):
+        write('\033[1;34m%s\033[m' % text)
+
+class Dumb(Handler):
+
+    def bold(self, text, write):
+        write(text)
+
+    def underline(self, text, write):
+        write(text)
+
+class Html(Handler):
+
+    def bold(self, text, write):
+        write('<strong>%s</strong>' % text)
+
+    def underline(self, text, write):
+        write('<emph>%s</emph>' % text)
+
+class Info(Handler):
+
+    def bold(self, text, write):
+        write('*%s*' % text)
+
+    def underline(self, text, write):
+        write('_%s_' % text)
+
+class Rest(Handler):
+
+    def bold(self, text, write):
+        write('**%s**' % text)
+
+    def underline(self, text, write):
+        write('*%s*' % text)
+
+class Texinfo(Handler):
+
+    def bold(self, text, write):
+        write('@strong{%s}' % text)
+
+    def underline(self, text, write):
+        write('@emph{%s}' % text)
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

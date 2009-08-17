@@ -1,0 +1,10 @@
+#!/bin/sh
+# Redimensionner un PostScript de A4 à lettre.
+# Copyright © 1999, 2002 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 1999.
+
+# Pris dans psutils.
+psresize -PA4 -pletter $1
+
+# Pris dans Ghostscript.
+#pstops -pletter 1:\(0,-0.9cm\) $1

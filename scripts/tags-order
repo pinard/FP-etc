@@ -1,0 +1,55 @@
+#!/usr/bin/perl -w
+# Given TAGS and source files, suggest an ordering.
+# Copyright © 1994, 1997, 1998 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 1994.
+
+$identifier = "[A-Za-z_][A-Za-z0-9_]*";
+$separator = "[^A-Za-z0-9_]+";
+
+open TAGS, "TAGS" or die "Cannot read TAGS\n";
+while (<TAGS>) {
+    if (/^\f$/) {
+        if (%function) {
+            &scan_module;
+            %function = ();
+        }
+
+        $_ = <TAGS>;
+        chop;
+        s/,[0-9]+$//;
+        if (/\.c$/) {
+            $module = $_;
+            print ">$module\n";
+        } else {
+            $module = "";
+        }
+    } elsif ($module) {
+        $function{$1} = 1 if /^($identifier)\s*\177/;
+    }
+}
+close TAGS;
+exit 0;
+
+sub scan_module {
+    $function = "";
+    open MODULE, $module or die "Cannot read $module\n";
+    while (<MODULE>) {
+        next if /^$/;
+        if (/^\/\*/) {
+            $_ = <MODULE> while ($_ && ! /\*\//);
+            last unless $_;
+            next;
+        }
+        chop;
+        @word = split (/$separator/o);
+        next unless @word;
+        $function = $word[0] if defined $function{$word[0]};
+        if ($function) {
+            while ($word = shift (@word)) {
+                next if $word eq $function;
+                print "$word $function\n" if defined $function{$word};
+            }
+        }
+    }
+    close MODULE;
+}

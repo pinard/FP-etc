@@ -1,0 +1,308 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2009 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2009.
+
+"""\
+Find clusters of similar tokens in a group of files.
+
+Usage: repeated-blocks [Option]... [File]...
+
+Options:
+  -m MINIMUM   Minimum number of tokens in a block (default 3)
+  -M MAXIMUM   Maximum number of tokens in a block (no default)
+  -f           Print output sorted by first file and position
+  -v           Entertain users about processing steps
+  -x           Also read a list of file names from standard nput
+
+Currently, a token is exactly a line, including its line ending.
+
+With -x, standard input holds one file name per line.  Without -x and
+without File arguments, read and process standard input contents.
+
+With -s, files are ordered as in argument list (so, sort the arguments for
+file lexicographical order).  Without -s, output is sorted by decreasing
+block length in tokens, and then, by decreasing number of occurrences.
+"""
+
+__metaclass__ = type
+import sys
+
+# How to print token.
+TOKEN = 'line'
+
+class Main:
+    verbose = False
+    minimum = 3
+    maximum = None
+    filesort = False
+    xargs = False
+
+    def main(self, *arguments):
+
+        # Decode options
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'fm:M:vx')
+        for option, value in options:
+            if option == '-f':
+                self.filesort = True
+            elif option == '-m':
+                self.minimum = int(value)
+            elif option == '-M':
+                self.maximum = int(value)
+            elif option == '-v':
+                self.verbose = True
+            elif option == '-x':
+                self.xargs = True
+
+        # Launch the work.
+        buffers = self.readin_files(arguments)
+        clusters = self.initialize_clusters(buffers)
+        clusters = self.grow_clusters(clusters)
+        clusters = self.delete_overlaps(clusters)
+        self.print_clusters(clusters)
+
+    def readin_files(self, arguments):
+        buffers = []
+        if arguments:
+            for argument in arguments:
+                buffers.append(Buffer(argument, file(argument)))
+        elif not self.xargs:
+            buffers.append(Buffer('<stdin>', sys.stdin))
+        if self.xargs:
+            for line in sys.stdin:
+                argument = line.rstrip()
+                buffers.append(Buffer(argument, file(argument)))
+        if self.verbose:
+            buffer_count = len(buffers)
+            token_count = 0
+            for buffer in buffers:
+                token_count += len(buffer.tokens)
+            sys.stderr.write("Read %d files and %d %ss\n"
+                             % (buffer_count, token_count, TOKEN))
+        return buffers
+
+    def initialize_clusters(self, buffers):
+        # Initialize clusters, which is a list.  Each cluster is a list of
+        # at least two blocks with identical string contents.
+
+        data = [] 
+        for buffer in buffers:
+            tokens = buffer.tokens[:len(buffer.tokens) + 1 - self.minimum]
+            for start, token in enumerate(tokens):
+                block = Block(buffer, start, start + self.minimum)
+                data.append((tuple(tokens[start:start + self.minimum]), block))
+        data.sort()
+        previous = None
+        clusters = []
+        cluster = []
+        for contents, block in data:
+            if contents == previous:
+                cluster.append(block)
+            else:
+                if len(cluster) >= 2:
+                    clusters.append(cluster)
+                cluster = [block]
+                previous = contents
+        if len(cluster) >= 2:
+            clusters.append(cluster)
+        if self.verbose:
+            if clusters:
+                block_count = 0
+                minimum = None
+                maximum = None
+                for cluster in clusters:
+                    if minimum is None or len(cluster) < minimum:
+                        minimum = len(cluster)
+                    if maximum is None or len(cluster) > maximum:
+                        maximum = len(cluster)
+                    block_count += len(cluster)
+                sys.stderr.write(
+                        "Initialized %d clusters using from %d to %d blocks"
+                        " (%.1f average)\n"
+                        % (len(clusters), minimum, maximum,
+                           float(block_count) / len(clusters)))
+            else:
+                sys.stderr.write("No cluster found\n")
+        return clusters
+
+    def grow_clusters(self, given_clusters):
+        # Extend each cluster as much as possible.
+
+        def grow_cluster(given_cluster):
+            while True:
+                map = {}
+                for block in given_cluster:
+                    tokens = block.buffer.tokens
+                    if block.end < len(tokens):
+                        token = tokens[block.end]
+                    else:
+                        token = None
+                    if block.start not in block.buffer.nested:
+                        if token in map:
+                            map[token].append(block)
+                        else:
+                            map[token] = [block]
+                for token, blocks in map.items():
+                    if len(blocks) == 1 and token is not None:
+                        if None in map:
+                            map[None] += blocks
+                        else:
+                            map[None] = blocks
+                        del map[token]
+                for token, blocks in map.items():
+                    if len(blocks) == 1:
+                        del map[token]
+                if len(map) < 2:
+                    # Simulate tail recursion in this case.
+                    if not map:
+                        break
+                    token, cluster = map.items()[0]
+                    if token is None:
+                        for block in cluster:
+                            block.mark_nested()
+                        cluster.sort()
+                        clusters.append(cluster)
+                        break
+                    for block in cluster:
+                        block.end += 1
+                    given_cluster = cluster
+                    continue
+                for token, cluster in map.iteritems():
+                    if len(cluster) >= 2:
+                        if token is None:
+                            for block in cluster:
+                                block.mark_nested()
+                            cluster.sort()
+                            clusters.append(cluster)
+                        else:
+                            for block in cluster:
+                                block.end += 1
+                            grow_cluster(cluster)
+                break
+
+        clusters = []
+        ends = set()
+        given_clusters.reverse()
+        while given_clusters:
+            grow_cluster(given_clusters.pop())
+        if self.verbose and clusters:
+            line_count = 0
+            minimum = None
+            maximum = None
+            for cluster in clusters:
+                length = cluster[0].end - cluster[0].start
+                if minimum is None or length < minimum:
+                    minimum = length
+                if maximum is None or length > maximum:
+                    maximum = length
+                line_count += length
+            sys.stderr.write(
+                    "Grown %d clusters having from %d to %d %ss"
+                    " (%.1f average)\n"
+                    % (len(clusters), minimum, maximum, TOKEN,
+                       float(line_count) / len(clusters)))
+        return clusters
+
+    def delete_overlaps(self, given_clusters):
+        data = []
+        for cluster in given_clusters:
+            for block in cluster:
+                data.append((block.buffer, -block.end, block.start, block))
+        data.sort()
+        previous = None
+        for datum in data:
+            block = datum[-1]
+            if (previous is not None
+                    and block.buffer == previous.buffer
+                    and block.end == previous.end):
+                assert block.start != previous.start
+                block.nested = True
+            previous = block
+        clusters = []
+        for cluster in given_clusters:
+            cluster = [block for block in cluster if not block.nested]
+            if len(cluster) >= 2:
+                clusters.append(cluster)
+        if self.verbose:
+            deleted = len(given_clusters) - len(clusters)
+            if deleted:
+                sys.stderr.write("Deleted %d more overlapping clusters\n"
+                                 % deleted)
+        return clusters
+
+    def print_clusters(self, clusters):
+        if self.filesort:
+            clusters.sort()
+        else:
+            data = [(-(cluster[0].end - cluster[0].start),
+                     len(cluster), cluster)
+                    for cluster in clusters]
+            data.sort()
+            clusters = [datum[-1] for datum in data]
+
+        write = sys.stdout.write
+        for counter, cluster in enumerate(clusters):
+            write('=' * 79 + '\n')
+            for counter2, block in enumerate(cluster):
+                write('%s:%s: %d %ss (cluster %d/%d, repeat %d/%d)\n'
+                      % (block.buffer.name, block.start + 1,
+                         block.end - block.start, TOKEN,
+                         counter + 1, len(clusters),
+                         counter2 + 1, len(cluster)))
+            write('\n')
+            write(str(cluster[0]))
+        if self.verbose and clusters:
+            block_count = 0
+            line_count = 0
+            for cluster in clusters:
+                block_count += len(cluster)
+                line_count += cluster[0].end - cluster[0].start
+            sys.stderr.write("Printed %d clusters, %d locations, %d %ss\n"
+                             % (len(clusters), block_count, line_count, TOKEN))
+
+class Buffer:
+    ordinal = 0
+
+    def __init__(self, name, handle):
+        self.name = name
+        self.tokens = list(handle)
+        Buffer.ordinal += 1
+        self.ordinal = Buffer.ordinal
+        self.nested = set()
+
+    def __repr__(self):
+        return 'Buffer-' + str(self.ordinal)
+
+    def __cmp__(self, other):
+        return cmp(self.ordinal, other.ordinal)
+
+class Block:
+    nested = False
+
+    def __init__(self, buffer, start, end):
+        self.buffer = buffer
+        self.start = start
+        self.end = end
+
+    def __str__(self):
+        return ''.join(self.buffer.tokens[self.start:self.end])
+
+    def __repr__(self):
+        return repr(self.buffer) + '<' + repr(str(self)) + '>'
+
+    def __cmp__(self, other):
+        return (cmp(self.buffer, other.buffer)
+                or cmp(self.start, other.start)
+                or cmp(other.end, self.end))
+
+    def mark_nested(self):
+        nested = self.buffer.nested
+        for index in range(self.start, self.end):
+            nested.add(index)
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

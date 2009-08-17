@@ -1,0 +1,82 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 1999, 2000, 2002, 2003 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 1999.
+
+u"""\
+Réajustement des estampilles d'une distribution.
+
+Usage: unskew [OPTION] [RÉPERTOIRE]...
+
+Ajuster les estampilles de tous les fichiers dans tous les RÉPERTOIREs en
+même temps, d'une valeur constante, de manière à ce qu'aucune date ne soit
+dans le futur.  Si aucun RËPERTOIRE, alors ajuste le répertoire courant.
+
+L'option `-n' ne fait que diagnostiquer un écart de temps, sans l'ajuster.
+L'option `-d DELTA' force l'usage d'un DELTA précis, en secondes.
+"""
+
+__metaclass__ = type
+import os, stat, sys, time
+
+def main(*arguments):
+    import getopt
+
+    delta = None
+    dryrun = False
+    options, arguments = getopt.getopt(arguments, 'd:n')
+    for option, value in options:
+        if option == '-d':
+            delta = int(value)
+        elif option == '-n':
+            dryrun = True
+
+    if not delta:
+        latest = [0]
+        if arguments:
+            for argument in arguments:
+                os.path.walk(argument, lurk_walker, latest)
+        else:
+            os.path.walk(os.getcwd(), lurk_walker, latest)
+        delta = int(time.time()) - latest[0]
+        if delta > 0:
+            delta = None
+
+    if delta:
+        sys.stderr.write(u"ATTENTION: Ajustement de %d secondes\n" % delta)
+        if not dryrun:
+            if arguments:
+                for argument in arguments:
+                    os.path.walk(argument, adjust_walker, delta)
+            else:
+                os.path.walk(os.getcwd(), adjust_walker, delta)
+    else:
+        sys.stderr.write(u"Aucun ajustement requis\n")
+
+def lurk_walker(latest, dirname, bases):
+    for base in bases:
+        path = os.path.join(dirname, base)
+        info = os.stat(path)
+        atime = info[stat.ST_ATIME]
+        mtime = info[stat.ST_MTIME]
+        if atime > latest[0]:
+            latest[0] = atime
+        if mtime > latest[0]:
+            latest[0] = mtime
+
+def adjust_walker(delta, dirname, bases):
+    for base in bases:
+        path = os.path.join(dirname, base)
+        info = os.stat(path)
+        atime = info[stat.ST_ATIME]
+        mtime = info[stat.ST_MTIME]
+        os.utime(path, (atime + delta, mtime + delta))
+
+# Appel principal.
+
+if __name__ == '__main__':
+    package = 'conf'
+    version = '?.?'
+    main(*sys.argv[1:])
+else:
+    from __main__ import package, version

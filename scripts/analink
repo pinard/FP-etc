@@ -1,0 +1,64 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 1990, 95, 97, 98, 00, 02, 03 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 1987-10.
+
+u"""\
+Trouver et expliquer les liens symboliques dans une liste de chamins.
+
+Usage: analink CHEMIN...
+
+Cet outil trouve tous les liens symboliques dans les CHEMINs donnés
+en arguments, en suivant pour chacun la succession des répertoires
+énumérés de gauche à droite.  Tout lien symbolique ainsi trouvé est
+lui-même étudié, et l'information redondante est éliminée.
+"""
+
+# FIXME: Voir classe NicePath dans oc/src/scripts.py.
+# FIXME: Examiner les permissions, tout en remontant.
+
+__metaclass__ = type
+import os, sys
+
+def main(*arguments):
+    if not arguments:
+        sys.stdout.write(__doc__)
+        return
+    # Nettoyer les arguments.
+    pile = []
+    for argument in arguments:
+        if argument.startswith('~/'):
+            argument = os.environ['HOME'] + '/' + argument[2:]
+        elif argument[0] != '/':
+            argument = os.getcwd() + '/' + argument
+        pile.append(allonger([], argument))
+    # Trouver tous les liens.
+    liens = {}
+    while pile:
+        fragments = pile.pop()
+        for compteur in range(len(fragments)):
+            nom = '/'.join(fragments[:1+compteur])
+            if nom not in liens and os.path.islink(nom):
+                valeur = os.readlink(nom)
+                liens[nom] = valeur
+                pile.append(allonger(fragments[:compteur], valeur))
+    # Produire le rapport.
+    items = liens.items()
+    items.sort()
+    for nom, valeur in items:
+        sys.stdout.write('%s -> %s\n' % (nom, valeur))
+
+def allonger(fragments, nom):
+    if nom.endswith('/'):
+        nom = nom[:-1]
+    for fragment in nom.split('/'):
+        if fragment == '':
+            fragments = ['']
+        elif fragment == '..':
+            fragments.pop()
+        elif fragment != '.':
+            fragments.append(fragment)
+    return fragments
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

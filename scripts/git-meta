@@ -1,0 +1,68 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2009 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2009.
+
+"""\
+Add metadata as a tagged isolated commit holding given files.
+
+Usage: git meta [OPTION]… TAG [FILE]...
+
+Option:
+  -m MESSAGE  Use this commit message, else same as TAG.
+
+If no FILEs, simulate a file named TAG with one line displaying TAG.
+"""
+
+__metaclass__ = type
+import os, sys, tempfile
+
+class Main:
+    message = None
+
+    def main(self, *arguments):
+        if not arguments:
+            sys.stdout.write(__doc__)
+            return
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'm:')
+        for option, value in options:
+            if option == '-m':
+                self.message = value
+        self.doit(arguments[0], arguments[1:])
+
+    def doit(self, tag, arguments):
+        tempname = tempfile.mktemp()
+        write = file(tempname, 'w').write
+        if arguments:
+            for argument in arguments:
+                base = os.path.basename(argument)
+                command = ('git hash-object -w --path=%s %s'
+                           % (shell_quoted(base), shell_quoted(argument)))
+                write('100644 blob %s\t%s\n'
+                      % (os.popen(command).read().rstrip(),
+                         lstree_quoted(base)))
+        else:
+            command = ('echo %s | git hash-object -w --path=%s --stdin'
+                       % (shell_quoted(tag), shell_quoted(tag)))
+            write('100644 blob %s\t%s\n'
+                  % (os.popen(command).read().rstrip(), lstree_quoted(tag)))
+        write = None
+        tree = os.popen('git mktree < %s' % tempname).read().rstrip()
+        os.remove(tempname)
+        commit = os.popen('echo %s | git commit-tree %s'
+                          % (shell_quoted(self.message or tag),
+                             tree)).read().rstrip()
+        os.system('git tag %s %s' % (shell_quoted(tag), commit))
+
+def lstree_quoted(text):
+    return text.replace('\\', '\\\\').replace('\t', '\\t').replace('\n', '\\n')
+
+def shell_quoted(text):
+    return '"' + text.replace('\\', '\\\\').replace('"', '\\"') + '"'
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

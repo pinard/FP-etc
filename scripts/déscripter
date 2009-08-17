@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8
+# Copyright © 2004 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2004.
+
+u"""\
+Épuration d'un fichier créé oar le programme `script'.
+"""
+
+__metaclass__ = type
+import re, sys
+
+class Main:
+    def __init__(self):
+        pass
+
+    def main(self, *arguments):
+        import getopt
+        options, arguments = getopt.getopt(arguments, '')
+        for option, valeur in options:
+             pass
+        if arguments:
+            for argument in arguments:
+                self.traiter(open(argument))
+        else:
+            self.traiter(sys.stdin)
+
+    def traiter(self, lignes):
+        write = sys.stdout.write
+        for ligne in lignes:
+            ligne = ligne.rstrip().split('\33[A\r')[0]
+            ligne = re.sub('\33[^\a]*\a', '', ligne)
+            ligne = re.sub('\33\\[[;0-9]*[Km]', '', ligne)
+            match = re.search('[^\b\r][\b\r]', ligne)
+            while match:
+                ligne = ligne[:match.start()] + ligne[match.end():]
+                match = re.search('[^\b\r][\b\r]', ligne)
+            ligne = re.sub('^[\b\r]+', '', ligne)
+            write(ligne + '\n')
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

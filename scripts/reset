@@ -1,0 +1,11 @@
+#!/bin/sh
+# Ramener le terminal dans un état agréable.
+# Copyright © 1990, 2001 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, août 1989.
+
+echo -ne \\33c
+if test -f /usr/bin/reset; then
+  /usr/bin/reset
+else
+  stty sane -parenb cs8 echoe intr \^c quit \^y erase \^? kill \^u
+fi

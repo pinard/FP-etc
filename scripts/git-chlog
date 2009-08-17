@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2007 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2007.
+
+"""\
+Approximate a ChangeLog from "git log".
+"""
+
+__metaclass__ = type
+import os, re, sys
+
+GET_AUTHOR, GET_EMAIL, GET_FIRST, WAS_NON_WHITE, WAS_WHITE = range(5)
+
+class Main:
+
+    def main(self, *arguments):
+        import getopt
+        options, arguments = getopt.getopt(arguments, '')
+        for option, value in options:
+            pass
+        write = sys.stdout.write
+        state = WAS_WHITE
+        for line in os.popen('git log'
+                             ' --pretty=format:\'%ai%n%an%n%ae%n%s%n%b\''):
+            if re.match('[0-9]{4}-[0-9]{2}-[0-9]{2}', line):
+                if state != WAS_WHITE:
+                    write('\n')
+                write(line[:10])
+                state = GET_AUTHOR
+            elif state == GET_AUTHOR:
+                write('  ' + line.rstrip())
+                state = GET_EMAIL
+            elif state == GET_EMAIL:
+                write('  <' + line.rstrip() + '>')
+                state = GET_FIRST
+            elif state == GET_FIRST:
+                write('\n\n\t* ' + line)
+                state = WAS_NON_WHITE
+            elif state == WAS_NON_WHITE:
+                if line == '\n':
+                    write('\n')
+                    state = WAS_WHITE
+                else:
+                    write('\t' + line)
+            elif state == WAS_WHITE:
+                if line != '\n':
+                    write('\t' + line)
+                    state = WAS_NON_WHITE
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

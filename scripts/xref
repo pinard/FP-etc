@@ -1,0 +1,462 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2002, 2003 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2002-12.
+
+u"""\
+Table de références pour les classes et méthodes Python d'une hiérarchie.
+
+Usage: xref [OPTION]... RÉPERTOIRE...
+
+Options textuelles:
+  -l LARGEUR     Largeur de la liste produite (79 implicitement).
+  -n             Rapporter classes et méthodes triées par le nom.
+  -p             Rapporter classes et méthodes triées par la position.
+  -r             Comme -p, mais avec la liste des références.
+
+Si aucun de `-n', `-p' ou `-r', alors tous sont présumés.
+
+Tous les fichiers `.py' sont lus et pour l'ensemble, en mode textuel, deux
+tables sont produites.
+
+Une table donne la liste des classes et méthodes en ordre alphabétique,
+ainsi que dans quel fichier et à quelle ligne chacune est définie.  Une
+classe est suffixée par la liste de ses super-classes entre parenthèses.
+Une méthode est suivie de la classe dont elle fait partie, entre crochets.
+Si un fichier est trouvé sur le chemin d'inclusion de Python, le nom du
+module sera présenté entre crochets angulaires, sinon, il s'agira d'une
+notation relative au RÉPERTOIRE tel que fourni en paramètre au programme.
+Les références sont données entre parenthèses.
+
+Une autre table donne la liste des fichiers en ordre alphabétique et,
+dans l'ordre textuel du module, les classes et méthodes.  Les parenthèses
+annoncent les super-classes, le point annonce les méthodes.
+
+La largeur choisie est approximative, et sert à calculer la position
+de la marge du centre.  Les lignes peuvent déborder cette largeur, il
+est donc préférable d'utiliser une grande marge.  On peut par exemple
+imprimer le résultat en format paysage, ainsi:
+
+    xref -l 120 ... > Tableau
+    enscript -rG Tableau
+
+Options graphiques:
+  -g   Produire un fichier en format DOT pour `graphviz'.
+  -C   Utiliser des couleurs de remplissage.
+  -M   Découper la sortie en une mosaïque de pages assemblables.
+  -R   Regrouper les modules, classes, etc. dans des  boîtes.
+
+Si `-C', `-M' ou `-R' est spécifié, alors `-g' est présumé.
+Si `-g' est spécifié ou présumé, alors `-n', `-p' et `-r' sont ignorés.
+"""
+
+__metaclass__ = type
+
+couleurs = 'lavenderblush2', 'lightyellow', 'ivory'
+MODULE, CLASS, DEF = range(3)
+
+class Main:
+
+    def main(self, *arguments):
+        # Décoder les options et lancer l'exécution.
+        import sys
+        if not arguments:
+            sys.stdout.write(__doc__)
+            raise SystemExit
+        self.option_largeur = 79
+        self.option_couleurs = False
+        self.option_mosaique = False
+        self.option_regroupement = False
+        self.option_graphviz = False
+        option_identificateur = False
+        option_position = False
+        option_reference = False
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'CI:MRigl:pr')
+        for option, valeur in options:
+            if option == '-C':
+                self.option_couleurs = self.option_graphviz = True
+            elif option == '-M':
+                self.option_mosaique = self.option_graphviz = True
+            elif option == '-R':
+                self.option_regroupement = self.option_graphviz = True
+            elif option == '-i':
+                option_identificateur = True
+            elif option == '-g':
+                self.option_graphviz = True
+            elif option == '-l':
+                self.option_largeur = int(valeur)
+            elif option == '-i':
+                option_identificateur = True
+            elif option == '-p':
+                option_position = True
+            elif option == '-r':
+                option_reference = option_position = True
+        if not (option_identificateur or option_position or option_reference):
+            option_identificateur = option_position = option_reference = True
+        self.declarations_selon_identificateur = {}
+        self.declarations_selon_position = {}
+        for argument in arguments:
+            self.etudier_declarations(argument)
+        if self.option_graphviz or option_reference:
+            for argument in arguments:
+                self.etudier_references(argument)
+        write = sys.stdout.write
+        if self.option_graphviz:
+            self.rapporter_format_dot(write)
+        else:
+            if option_identificateur:
+                self.rapporter_declarations_selon_identificateur(write)
+            if option_identificateur and option_position:
+                write('\f')
+            if option_position:
+                self.rapporter_declarations_selon_position(write)
+
+    def etudier_declarations(self, repertoire):
+        # Accumuler l'information.
+        selon_identificateur = self.declarations_selon_identificateur
+        selon_position = self.declarations_selon_position
+        for nom, module in self.tous_fichiers_analysables(repertoire):
+            fichier = trouver_fichier(nom)
+            Noeud(MODULE, (module,)).position = fichier, 0
+            for lineno, info in self.tous_identificateurs(nom, module):
+                if isinstance(info, tuple):
+                    qualite, fragments = info
+                    position = fichier, lineno
+                    noeud = Noeud.registre.get(fragments)
+                    if noeud is None:
+                        noeud = Noeud(qualite, fragments)
+                    assert noeud.position is None, fragments
+                    noeud.position = position
+                    selon_position[position] = noeud
+                    if fragments[-1] in selon_identificateur:
+                        selon_identificateur[fragments[-1]].append(noeud)
+                    else:
+                        selon_identificateur[fragments[-1]] = [noeud]
+
+    def etudier_references(self, repertoire):
+        import sys
+        write = sys.stdout.write
+        # Accumuler l'information.
+        selon_identificateur = self.declarations_selon_identificateur
+        selon_position = self.declarations_selon_position
+        for nom, module in self.tous_fichiers_analysables(repertoire):
+            fichier = trouver_fichier(nom)
+            source = None
+            for lineno, info in self.tous_identificateurs(nom, module):
+                if isinstance(info, tuple):
+                    qualite, fragments = info
+                    source = Noeud.registre[fragments]
+                else:
+                    liste = selon_identificateur.get(info)
+                    if liste is not None:
+                        if self.option_graphviz:
+                            liste[0].references.append((source, lineno))
+                        else:
+                            for noeud in liste:
+                                noeud.references.append((source, lineno))
+
+    def tous_fichiers_analysables(self, repertoire):
+        # Engendrer un doublet (NOM, MODULE) pour chaque fichier source
+        # analysable, donnant le nom du fichier et la notation du module.
+        import os
+        stack = [(os.path.expanduser(repertoire), None, None)]
+        while stack:
+            directory, path, prefix = stack.pop()
+            bases = os.listdir(directory)
+            ispackage = '__init__.py' in bases
+            for base in bases:
+                file_name = os.path.join(directory, base)
+                if os.path.isdir(file_name):
+                    if not (base == 'RCS' or base.startswith('build-')):
+                        if prefix is None or not ispackage:
+                            stack.append((file_name, directory, base))
+                        else:
+                            stack.append(
+                                (file_name, path, '%s.%s' % (prefix, base)))
+                else:
+                    module, extension = os.path.splitext(base)
+                    if extension == '.py' and os.path.isfile(file_name):
+                        if prefix is None or not ispackage:
+                            yield file_name, module
+                        else:
+                            yield file_name, '%s.%s' % (prefix, module)
+
+    def tous_identificateurs(self, nom, module):
+        from tokenize import generate_tokens, COMMENT, NL
+        from tokenize import NAME, NEWLINE, INDENT, DEDENT
+        #from token import tok_name
+        fragments = [module]
+        niveaux = [-1]
+        niveau = 0
+        declaration = None
+        for (code, texte, (lineno, colno), fin, ligne
+             ) in generate_tokens(file(nom).readline):
+            if code not in (COMMENT, NL):
+                #print '.', fragments, lineno, tok_name[code], repr(texte)
+                if code == NAME:
+                    if texte == 'class':
+                        declaration = CLASS
+                    elif texte == 'def':
+                        declaration = DEF
+                    elif declaration is None:
+                        yield lineno, texte
+                        action = None
+                    else:
+                        if niveau > niveaux[-1]:
+                            fragments.append(texte)
+                            niveaux.append(niveau)
+                        else:
+                            assert niveau == niveaux[-1], (niveau, niveaux)
+                            fragments[-1] == texte
+                        yield lineno, (declaration, tuple(fragments))
+                        action = declaration = None
+                else:
+                    if code == INDENT:
+                        niveau += 1
+                    elif code == DEDENT:
+                        niveau -= 1
+                        while niveau <= niveaux[-1]:
+                            fragments.pop()
+                            niveaux.pop()
+                    declaration = None
+
+    def rapporter_declarations_selon_identificateur(self, write):
+        # Rapport en ordre alphabétique.
+        table = self.declarations_selon_position
+        for (fichier, ligne), noeud in table.iteritems():
+            centre = len(fichier.nom) + len(str(ligne))
+        centre += 3
+        table = self.declarations_selon_identificateur
+        items = table.items()
+        items.sort()
+        fichier_precedent = None
+        write(u'\nClasses et méthodes en ordre alphabétique.\n\n')
+        for identificateur, liste in items:
+            liste.sort()
+            gauche = identificateur
+            premier = True
+            for noeud in liste:
+                fichier, ligne = noeud.position
+                if fichier != fichier_precedent:
+                    nom_fichier = fichier.nom
+                    fichier_precedent = fichier
+                else:
+                    nom_fichier = ' '*len(nom_fichier)
+                position = '%s%d' % (nom_fichier, ligne)
+                fragments = noeud.fragments
+                assert identificateur == fragments[-1], (
+                    identificateur, fragments)
+                fragments = fragments[1:-1]
+                if fragments:
+                    droite = ' [%s]' % '.'.join(fragments)
+                else:
+                    droite = ''
+                write('%*s%s%s\n' % (-centre, position, gauche, droite))
+                if premier:
+                    gauche = ' '*len(gauche)
+                    premier = False
+
+    def rapporter_declarations_selon_position(self, write):
+        # Rapport en ordre textuel.
+        table = self.declarations_selon_position
+        for (fichier, ligne), noeud in table.iteritems():
+            centre = len(fichier.nom) + len(str(ligne))
+        centre += 3
+        items = table.items()
+        items.sort()
+        fichier_precedent = None
+        fragments_precedent = []
+        write(u'\nClasses et méthodes en ordre textuel.\n\n')
+        for (fichier, ligne), noeud in items:
+            if fichier != fichier_precedent:
+                nom_fichier = fichier.nom
+                fichier_precedent = fichier
+            else:
+                nom_fichier = ' '*len(nom_fichier)
+            position = '%s%d' % (nom_fichier, ligne)
+            fragments = list(noeud.fragments[1:])
+            for index, fragment in enumerate(fragments_precedent):
+                if index < len(fragments) and fragment == fragments[index]:
+                    fragments[index] = ' ' * len(fragment)
+            fragments_precedent = noeud.fragments[1:]
+            texte = '%*s%s' % (-centre, position, '.'.join(fragments))
+            if noeud.references:
+                texte += ' '
+                write(texte)
+                separateur = '('
+                colonne = len(texte) + 1
+                marge = max(min(colonne, self.option_largeur - 20), 8)
+                for source, lineno in noeud.references:
+                    texte = '%s%s' % (separateur, lineno)
+                    separateur = ' '
+                    if colonne + len(texte) > self.option_largeur:
+                        write('\n' + ' ' * marge)
+                        colonne = marge
+                    else:
+                        colonne += len(texte)
+                    write(texte)
+                write(')')
+            else:
+                write(texte)
+            write('\n')
+
+    def rapporter_format_dot(self, write):
+        # Calculer l'imbrication des noeuds.
+        registre = Noeud.registre
+        modules = []
+        for fragments, noeud in registre.items():
+            while fragments:
+                fragments = fragments[:-1]
+                if fragments:
+                    super = registre[fragments]
+                    if super.imbrication is None:
+                        super.imbrication = [noeud]
+                    elif noeud not in super.imbrication:
+                        super.imbrication.append(noeud)
+                elif noeud not in modules:
+                    modules.append(noeud)
+                noeud = super
+        # Produire la sortie structurelle.
+        write('digraph Xref {\n')
+        write('  rankdir = LR;\n')
+        if self.option_mosaique:
+            write('  page = "8.5,11";\n')
+        if self.option_couleurs:
+            write('  node [shape=box, style=filled];\n')
+        else:
+            write('  node [shape=box];\n')
+        write('  ranksep = 1.20;\n')
+        #write('  concentrate = true;\n')
+        if not self.option_regroupement:
+            write('  clusterrank = none;\n')
+        #write('  compound = true;\n')
+        if self.option_couleurs:
+            write('  bgcolor = lightcyan;\n')
+        for noeud in modules:
+            noeud.produire_pour_graphviz(write)
+        # Produire les flèches de synonymie.
+        for liste in self.declarations_selon_identificateur.itervalues():
+            precedent = None
+            for noeud in liste:
+                if precedent is not None:
+                    write('  %s -> %s [style=dotted];\n' % (precedent, noeud))
+                precedent = noeud
+        # Produire les flèches de références.
+        for noeud in registre.itervalues():
+            sources = {}
+            for source, lineno in noeud.references:
+                if source is not None:
+                    if source in sources:
+                        sources[source].append(lineno)
+                    else:
+                        sources[source] = [lineno]
+            for source, linenos in sources.iteritems():
+                write('  %s -> %s [label="%s"];\n'
+                      % (source, noeud, ','.join(map(str, linenos))))
+        write('}\n')
+
+class Noeud:
+    registre = {}
+    ordinal = 0
+    imbrication = None
+
+    def __init__(self, qualite, fragments):
+        Noeud.registre[fragments] = self
+        Noeud.ordinal += 1
+        self.ordinal = Noeud.ordinal
+        self.qualite = qualite
+        self.fragments = fragments
+        self.position = None
+        self.references = []
+
+    def __repr__(self):
+        return '<Noeud %s>' % '.'.join(self.fragments)
+
+    def produire_pour_graphviz(self, write, niveau=1):
+        if self.position is None:
+            position = ''
+        else:
+            fichier, lineno = self.position
+            position = '%s%d\\n' % (fichier.nom, lineno)
+        if self.qualite == MODULE:
+            shape = 'hexagon'
+            couleur = 'plum'
+        elif self.qualite == CLASS:
+            shape = 'ellipse'
+            couleur = 'pink'
+        elif self.qualite == DEF:
+            shape = 'box'
+            couleur = 'lightgrey'
+        marge = '  ' * niveau
+        if run.option_regroupement:
+            label = position + self.fragments[-1]
+        else:
+            label = position + '\\n.'.join(self.fragments)
+        if self.imbrication is None:
+            if run.option_couleurs:
+                write('%snode_%d [shape=%s, fillcolor="%s", label="%s"];\n'
+                      % (marge, self.ordinal, shape, couleur, label))
+            else:
+                write('%snode_%d [shape=%s, label="%s"];\n'
+                      % (marge, self.ordinal, shape, label))
+        else:
+            if run.option_regroupement:
+                write('%ssubgraph cluster_%d {\n' % (marge, self.ordinal))
+                write('%s  label = "%s";\n' % (marge, label))
+                label = ' '
+            if run.option_couleurs:
+                write('%s  bgcolor = %s;\n'
+                      % (marge, couleurs[niveau % len(couleurs)]))
+                write('%snode_%d [shape=%s, fillcolor="%s", label="%s"];\n'
+                      % (marge, self.ordinal, shape, couleur, label))
+            else:
+                write('%snode_%d [shape=%s, label="%s"];\n'
+                      % (marge, self.ordinal, shape, label))
+            for noeud in self.imbrication:
+                noeud.produire_pour_graphviz(write, niveau + 1)
+            # Tenter de grouper les noeuds verticalement.
+            #precedent = None
+            #for noeud in self.imbrication:
+            #    write('  %s -> %s [style=invis];\n' % (self, noeud))
+            #    if precedent is not None:
+            #        write('  %s -> %s [style=invis];\n' % (precedent, noeud))
+            #    precedent = noeud
+            if run.option_regroupement:
+                write('%s}\n' % marge)
+
+    def __str__(self):
+        return 'node_%d' % self.ordinal
+
+def trouver_fichier(nom):
+    fichier = Fichier.registre.get(nom)
+    if fichier is None:
+        fichier = Fichier(nom)
+    return fichier
+
+class Fichier:
+    registre = {}
+    ordinal = 0
+
+    def __init__(self, nom):
+        Fichier.registre[nom] = self
+        Fichier.ordinal += 1
+        self.ordinal = Fichier.ordinal
+        import os, sys
+        if nom.startswith('./'):
+            nom = nom[2:]
+        repertoire = os.path.dirname(nom)
+        if repertoire:
+            for path in sys.path:
+                if repertoire.startswith(path + '/'):
+                    nom = '<%s>' % nom[len(path)+1:-3].replace('/', '.')
+                    break
+        nom += ':'
+        self.nom = nom
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    import sys
+    main(*sys.argv[1:])

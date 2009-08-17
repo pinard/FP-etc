@@ -1,0 +1,83 @@
+#!/usr/bin/perl -w
+# Merge two ChangeLogs (already having ISO dates).
+# Copyright © 1998 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 1998.
+
+use strict;
+
+@ARGV == 2 or die "Usage: $0 LEFT RIGHT\n";
+
+open LEFT, $ARGV[0] or die "$ARGV[0]: $!\n";
+my $left = <LEFT>;
+while ($left && $left !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}/) {
+    print $left;
+    $left = <LEFT>;
+}
+
+open RIGHT, $ARGV[1] or die "$ARGV[1]: $!\n";
+my $right = <RIGHT>;
+while ($right && $right !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}/) {
+    print $right;
+    $right = <RIGHT>;
+}
+
+my $force_white = 0;
+
+while ($left && $right) {
+    my $left_date = $1 if $left =~ /^([^ \n\t]*)/;
+    my $right_date = $1 if $right =~ /^([^ \n\t]*)/;
+    my $result = $left_date cmp $right_date;
+
+    if ($force_white) {
+        print "\n";
+        $force_white = 0;
+    }
+
+    if ($result > 0) {
+        print $left;
+        $left = <LEFT>;
+        $force_white = 1;
+        while ($left && $left !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}/) {
+            print $left;
+            $force_white = $left !~ /^$/;
+            $left = <LEFT>;
+        }
+    } else {
+        print $right;
+        $right = <RIGHT>;
+        $force_white = 1;
+        while ($right && $right !~ /^[0-9]{4}-[0-9]{2}-[0-9]{2}/) {
+            print $right;
+            $force_white = $right !~ /^$/;
+            $right = <RIGHT>;
+        }
+    }
+}
+
+if ($left) {
+    if ($force_white) {
+        print "\n";
+        $force_white = 0;
+    }
+    while ($left) {
+        print $left;
+        $force_white = $left !~ /^$/;
+        $left = <LEFT>;
+    }
+}
+close LEFT;
+
+if ($right) {
+    if ($force_white) {
+        print "\n";
+        $force_white = 0;
+    }
+    while ($right) {
+        print $right;
+        $force_white = $right !~ /^$/;
+        $right = <RIGHT>;
+    }
+}
+close RIGHT;
+
+exit 0;

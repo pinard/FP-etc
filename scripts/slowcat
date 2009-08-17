@@ -1,0 +1,50 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2004 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2004.
+
+u"""\
+Afficher un fichier au ralenti.
+
+Usage: slowcat [-s CPS] [FICHIER]...
+"""
+
+__metaclass__ = type
+import sys
+
+class Main:
+    delai = None
+
+    def main(self, *arguments):
+        import getopt
+        options, arguments = getopt.getopt(arguments, 's:')
+        for option, valeur in options:
+            if option == '-s':
+                self.delai = 1 / float(valeur)
+        if arguments:
+            for argument in arguments:
+                self.traiter(file(argument))
+        else:
+            self.traiter(sys.stdin)
+
+    def traiter(self, fichier):
+        from time import sleep
+        write = sys.stderr.write
+        delai = self.delai
+        for ligne in fichier:
+            for caractere in ligne:
+                write(caractere)
+                if delai is not None:
+                    sleep(self.delai)
+                #while longueur_queue(sys.stderr) != 0:
+                #    sleep(.1)
+
+def longueur_queue(sortie):
+    import fcntl, struct, termios
+    return struct.unpack('i', fcntl.ioctl(sortie, termios.TIOCOUTQ, u"    "))[0]
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

@@ -1,0 +1,299 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2005 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2005.
+
+u"""\
+Courriel-grep!
+
+Usage: cgrep [OPTION] [GABARIT] [CHEMIN]...
+
+Options:
+    -e   Éliminer les messages en duplicata
+    -m   Marquer les messages en duplicata
+    -s   Produire une ligne de statistiques par courriel.
+
+GABARIT est fourni uniquement en l'absence d'une option `-e', `-m' ou
+`-s'.  Si GABARIT est fourni, il est cherché dans tous les fichiers de
+courriel, et Mutt est appelé pour voir tous les courriels appariant.
+Si GABARIT vaut '.', il est remplacé par le nom du fichier visité.
+
+Les options `-m' et `-e' examinent le champ Message-ID pour déterminer
+les messages en duplicata.  Avec `-m', tous ces messages sont montrés
+dans Mutt avec l'indicateur "*".  Avec `-e', tous ces messages sauf un
+(le dernier rencontré) sont préparés dans Mutt pour l'élimination.
+
+Chaque CHEMIN peut être un répertoire, pour les fichiers simples
+qu'il contient, ou un fichier simple.  Il n'y a pas de récursion dans
+les répertoires.  Si CHEMIN est répété, les premières occurrences
+sont ignorées.  Si aucun CHEMIN, le répertoire courant est présumé.
+"""
+
+__metaclass__ = type
+import os, re, sys, time
+
+class Main:
+    eliminations = False
+    marques = False
+    statistiques = False
+    gabarit = None
+    fifo = None
+    sortie = None
+
+    def main(self, *arguments):
+        if not arguments:
+            sys.stdout.write(__doc__)
+            return
+        import getopt
+        options, arguments = getopt.getopt(arguments, 'ems')
+        for option, valeur in options:
+            if option == '-e':
+                self.eliminations = True
+                action = self.traiter_duplicats
+            elif option == '-m':
+                self.marques = True
+                action = self.traiter_duplicats
+            elif option == '-s':
+                self.statistiques = True
+                action = self.faire_statistiques
+        if not (self.eliminations or self.marques or self.statistiques):
+            assert len(arguments) >= 1, arguments
+            self.gabarit = arguments[0]
+            arguments = arguments[1:]
+            action = self.traiter_appariements
+        self.preparer_sortie()
+        try:
+            try:
+                if arguments:
+                    action(*arguments)
+                else:
+                    action('.')
+            except KeyboardInterrupt:
+                pass
+        finally:
+            self.nettoyer_sortie()
+
+    def preparer_sortie(self):
+        if not self.statistiques and os.getenv('DISPLAY'):
+            import tempfile
+            self.fifo = tempfile.mktemp()
+            os.mkfifo(self.fifo)
+            os.system('term -e cat %s &' % self.fifo)
+            self.sortie = open(self.fifo, 'a')
+        else:
+            self.fifo = None
+            self.sortie = sys.stderr
+
+    def nettoyer_sortie(self):
+        if self.fifo is not None:
+            self.sortie.close()
+            os.remove(self.fifo)
+
+    def faire_statistiques(self, *repertoires):
+        write = sys.stdout.write
+        write('fichier ordinal cars.total lignes.total'
+              ' cars.en.tete lignes.en.tete cars.quoted lignes.quoted\n')
+        for fichier, ordinal, en_tete, corps in self.chaque_message(
+                repertoires):
+            lignes_en_tete = en_tete.splitlines(True)
+            lignes_corps = corps.splitlines(True)
+            write('%s %d %d %d %d %d'
+                  % (fichier, ordinal, len(en_tete) + len(corps),
+                     len(lignes_en_tete) + len(lignes_corps),
+                     len(en_tete), len(lignes_en_tete)))
+            cars = 0
+            lignes = 0
+            for ligne in lignes_corps:
+                if ligne.rstrip().startswith('>'):
+                    cars += len(ligne)
+                    lignes += 1
+            write(' %d %d\n' % (cars, lignes))
+
+    def traiter_appariements(self, *repertoires):
+        gabarit = self.gabarit
+        if gabarit == '.':
+            modele = None
+        else:
+            if gabarit[0].isalpha():
+                gabarit = '\\b' + gabarit
+            if gabarit[-1].isalpha():
+                gabarit += '\\b'
+            if re.search('[A-Z]', gabarit):
+                modele = re.compile(gabarit)
+            else:
+                modele = re.compile(gabarit, re.I)
+        infos = []
+        for fichier in self.chaque_fichier(repertoires):
+            if modele is None:
+                gabarit = '\\b' + os.path.basename(fichier) + '\\b'
+                search = re.compile(gabarit, re.I).search
+            else:
+                search = modele.search
+            compteur = 0
+            messages = file(fichier).read().split(""'\nFrom ')
+            for message in messages:
+                if search(message):
+                    compteur += 1
+            if compteur > 0:
+                self.sortie.write('%5d   %s\n' % (compteur, fichier))
+                self.sortie.flush()
+                infos.append((fichier, compteur, len(messages)))
+        total = 0
+        for fichier, compteur, _ in infos:
+            total += compteur
+        self.sortie.write('------\n'
+                          '%5d   (%d fichiers)\n'
+                          % (total, len(infos)))
+        self.sortie.flush()
+        # Visiter tous les fichiers concernés.
+        time.sleep(2)
+        for progression, (fichier, compteur, total) in enumerate(infos):
+            self.sortie.write('[%d/%d] (%d / %d) %s\n'
+                              % (progression + 1, len(infos),
+                                 compteur, total, fichier))
+            self.sortie.flush()
+            time.sleep(1)
+            gabarit = self.gabarit
+            if gabarit == '.':
+                gabarit = os.path.basename(fichier)
+            if gabarit[0].isalpha():
+                gabarit = '\\<' + gabarit
+            if gabarit[-1].isalpha():
+                gabarit += '\\>'
+            gabarit = gabarit.replace('\\', '\\\\')
+            muttrc = None
+            try:
+                import tempfile
+                muttrc = tempfile.mktemp()
+                file(muttrc, 'w').write('source ~/.mutt/muttrc\n'
+                                        'color body black brightgreen "%s"\n'
+                                        'folder-hook . "push \'l%s^m \'"\n'
+                                        % (gabarit, gabarit))
+                os.system('mutt -F %s -f %s' % (muttrc, fichier))
+            finally:
+                if muttrc is not None:
+                    try:
+                        os.remove(muttrc)
+                    except IOError:
+                        pass
+
+    def traiter_duplicats(self, *repertoires):
+        selon_message_id = {}
+        for fichier, ordinal, en_tete, _ in self.chaque_message(repertoires):
+            lignes = en_tete.splitlines()
+            for compteur, ligne in enumerate(lignes):
+                if ligne[0] != ' \t' and ':' in ligne:
+                    champ, valeur = ligne.split(':', 1)
+                    if champ.lower() == 'message-id':
+                        valeur = valeur.strip()
+                        if not valeur:
+                            valeur = lignes[compteur+1].strip()
+                        if not (valeur.startswith('<')
+                                and valeur.endswith('>')):
+                            sys.stderr.write(u"%s:%d: Message-ID invalide\n"
+                                             % (fichier, ordinal))
+                            continue
+                        id = valeur[1:-1]
+                        if id not in selon_message_id:
+                            selon_message_id[id] = []
+                        selon_message_id[id].append((fichier, ordinal))
+                        break
+            else:
+                sys.stderr.write(u"%s:%d: Message-ID manquant\n"
+                                 % (fichier, ordinal))
+        selon_fichier = {}
+        for liste in selon_message_id.itervalues():
+            if len(liste) > 1:
+                for compteur, (fichier, ordinal) in enumerate(liste):
+                    if self.marques:
+                        copie = liste[:compteur] + liste[compteur+1:]
+                    elif compteur < len(liste) - 1:
+                        copie = liste[compteur+1:]
+                    else:
+                        continue
+                    if fichier not in selon_fichier:
+                        selon_fichier[fichier] = []
+                    selon_fichier[fichier].append((ordinal, copie))
+        del selon_message_id
+        infos = selon_fichier.items()
+        del selon_fichier
+        # Visiter tous les fichiers concernés.
+        time.sleep(2)
+        infos.sort()
+        for fichier, valeur in infos:
+            valeur.sort()
+            self.sortie.write(u"%s (%d messages)\n"
+                              % (fichier, self.nombre_selon_fichier[fichier]))
+            for ordinal, liste in valeur:
+                self.sortie.write('  %d ' % ordinal)
+                for paire in liste:
+                    self.sortie.write(' %s:%d' % paire)
+                self.sortie.write('\n')
+            self.sortie.flush()
+            time.sleep(1)
+            muttrc = None
+            try:
+                import tempfile
+                muttrc = tempfile.mktemp()
+                if self.marques:
+                    commande = 't'
+                else:
+                    commande = 'd'
+                file(muttrc, 'w').write(
+                        'source ~/.mutt/muttrc\n'
+                        'folder-hook . "push \'on%s%d^m\'"\n'
+                        % (''.join(['%d^m%s' % (ordinal, commande)
+                                    for ordinal, _ in valeur]),
+                           valeur[0][0]))
+                #sys.stdout.write(file(muttrc).read())
+                os.system('mutt -F %s -f %s' % (muttrc, fichier))
+            finally:
+                if muttrc is not None:
+                    try:
+                        os.remove(muttrc)
+                    except IOError:
+                        pass
+
+    def chaque_message(self, repertoires):
+        self.nombre_selon_fichier = {}
+        for fichier in self.chaque_fichier(repertoires):
+            messages = file(fichier).read().split('\nFrom ')
+            self.nombre_selon_fichier[fichier] = len(messages)
+            for compteur in range(2, len(messages)):
+                messages[compteur] = 'From ' + messages[compteur]
+            for compteur in range(len(messages) - 1):
+                messages[compteur] += '\n'
+            for compteur, message in enumerate(messages):
+                position = message.find('\n\n')
+                if position < 0:
+                    yield fichier, compteur + 1, message, ''
+                else:
+                    yield (fichier, compteur + 1,
+                           message[:position+1], message[position+1:])
+
+    def chaque_fichier(self, repertoires):
+        repertoires = list(repertoires)
+        repertoires.reverse()
+        uniques = []
+        for repertoire in repertoires:
+            if repertoire not in uniques:
+                uniques.append(repertoire)
+        uniques.reverse()
+        for repertoire in uniques:
+            if os.path.isdir(repertoire):
+                bases = os.listdir(repertoire)
+                bases.sort()
+                for base in bases:
+                    if not base.startswith('.'):
+                        if repertoire == '.':
+                            yield base
+                        else:
+                            yield os.path.join(repertoire, base)
+            else:
+                yield repertoire
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

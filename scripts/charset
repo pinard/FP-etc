@@ -1,0 +1,83 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2004 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2004.
+
+u"""\
+Tenter de deviner le jeu de caractères utilisé dans des fichiers.
+
+Usage: charset [OPTION]... [FICHIER]...
+
+Les jeux reconnus sont: ASCII, ISO-8859-1, UTF-8; sinon [Inconnu].
+Une surface Unix n'est pas notée, les autres surfaces reconnues sont
+/windows et /macintosh.  Autrement, la surface est notée [/inconnue].
+
+Si aucun FICHIER n'est fourni, étudier l'entrée standard.
+"""
+
+__metaclass__ = type
+import sys
+
+class Main:
+
+    def main(self, *arguments):
+        import getopt
+        options, arguments = getopt.getopt(arguments, '')
+        for option, valeur in options:
+            pass
+        write = sys.stdout.write
+        arguments = map(unicode, arguments)
+        if arguments:
+            largeur = max(map(len, arguments)) + 2
+            for argument in arguments:
+                try:
+                    tampon = file(argument).read()
+                except IOError, exception:
+                    write('%*s%s\n' % (-largeur, argument, exception))
+                else:
+                    write('%*s%s\n' % (-largeur, argument,
+                                       self.deviner(tampon)))
+        else:
+            tampon = sys.stdin.read()
+            sys.stdout.write('%s\n' % self.deviner(tampon))
+
+    def deviner(self, tampon):
+        return self.deviner_charset(tampon) + self.deviner_surface(tampon)
+
+    def deviner_charset(self, tampon):
+        for charset in 'ASCII', 'UTF-8':
+            try:
+                tampon.decode(charset)
+            except UnicodeDecodeError:
+                pass
+            else:
+                return charset
+        import re
+        if not re.search('[\x80-\x9f]', tampon):
+            return 'ISO-8859-1'
+        return '[Inconnu]'
+
+    def deviner_surface(self, tampon):
+        unix = False
+        macintosh = False
+        windows = False
+        if '\r\n' in tampon:
+            windows = True
+            tampon = tampon.replace('\r\n', '')
+        if '\r' in tampon:
+            macintosh = True
+        if '\n' in tampon:
+            unix = True
+        if unix + macintosh + windows != 1:
+            return '/[inconnu]'
+        if windows:
+            return '/windows'
+        if macintosh:
+            return '/macintosh'
+        return ''
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

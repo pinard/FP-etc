@@ -1,0 +1,45 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2009 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2009.
+
+"""\
+Make a trampoline script.
+
+Usage: make-trampoline FILE [OUTPUT]
+
+If OUTPUT is not given, it defaults to the base name of FILE
+in the current directory.
+"""
+
+__metaclass__ = type
+import os, sys
+
+class Main:
+
+    def main(self, *arguments):
+        import getopt
+        options, arguments = getopt.getopt(arguments, '')
+        for option, valeur in options:
+            pass
+        assert 1 <= len(arguments) <= 2, arguments
+        executable = arguments[0]
+        if len(arguments) == 2:
+            output = arguments[1]
+        else:
+            output = os.path.basename(executable)
+        assert not os.path.exists(output)
+
+        write = file(output, 'w').write
+        write('#!/bin/sh\n'
+              'exec %s "$@"\n'
+              % executable)
+        del write
+        os.chmod(output, 0755)
+
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

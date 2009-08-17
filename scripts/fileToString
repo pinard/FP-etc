@@ -1,0 +1,43 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2008 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2008.
+
+"""\
+Convert a textual file into a Java string.
+"""
+
+__metaclass__ = type
+import sys
+
+class Main:
+
+    def main(self, *arguments):
+        import getopt
+        options, arguments = getopt.getopt(arguments, '')
+        for option, valeur in options:
+            pass
+        if arguments:
+            for argument in arguments:
+                self.convert(file(argument))
+        else:
+            self.convert(sys.stdin)
+
+    def convert(self, lines):
+        write = sys.stdout.write
+        first = True
+        for line in lines:
+            if first:
+                first = False
+            else:
+                write('+ ')
+            write('"')
+            write(line.replace('"', '\\"').replace('\n', '\\n'))
+            write('"\n')
+
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

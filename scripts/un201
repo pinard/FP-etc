@@ -1,0 +1,88 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 2000, 2002, 2003 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2000.
+
+u"""\
+Remove all Mule-ish \201 characters, escaped from Mule, in given files.
+
+Usage: un201 [OPTION]... [FILE]...
+
+   -k  Keep the first \201 in a string of those
+   -v  Be verbose about deleted characters
+
+If no file is given, act as a filter.
+"""
+
+__metaclass__ = type
+import os, sys
+
+class run:
+    keep_one = 0
+    verbose = 0
+
+def main(*arguments):
+    if not arguments:
+        sys.stdout.write(__doc__)
+        sys.exit(0)
+    import getopt
+    options, arguments = getopt.getopt(arguments, 'kv')
+    for option, value in options:
+        if option == '-k':
+            run.keep_one = 1
+        elif option == '-v':
+            run.verbose = 1
+    if not arguments:
+        write = sys.stderr.write
+        input = sys.stdin.read()
+        output = process(input)
+        count = len(input) - len(output)
+        if run.verbose and count > 0:
+            write(u"Deleted %d Mule-ish \\201 characters\n" % count)
+        sys.stdout.write(output)
+    else:
+        write = sys.stdout.write
+        for argument in arguments:
+            if os.path.isdir(argument):
+                write(u"%s: Directory, skipped\n" % argument)
+                continue
+            if not os.path.isfile(argument):
+                write(u"%s: File does not exist, skipped\n" % argument)
+                continue
+            input = open(argument).read()
+            output = process(input)
+            count = len(input) - len(output)
+            if count > 0:
+                if run.verbose:
+                    write(u"%s: Deleted %d Mule-ish \\201 characters\n"
+                          % (argument, count))
+                backup = '%s~' % argument
+                work = '%s-tmp' % argument
+                open(work, 'w').write(output)
+                try:
+                    os.remove(backup)
+                except OSError:
+                    pass
+                os.rename(argument, backup)
+                os.rename(work, argument)
+
+def process(buffer):
+    fragments = []
+    start = 0
+    while start >= 0:
+        end = buffer.find('\201', start)
+        if end < 0:
+            if start == 0:
+                return buffer
+            fragments.append(buffer[start:])
+            break
+        if run.keep_one:
+            end += 1
+        fragments.append(buffer[start:end])
+        start = end
+        while start < len(buffer) and buffer[start] == '\201':
+            start += 1
+    return ''.join(fragments)
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

@@ -1,0 +1,44 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright © 2009 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2009.
+
+__metaclass__ = type
+import os, sys
+
+u"""\
+Usage: seeff [FILE_OR_URI]...
+"""
+
+class Main:
+
+    def main(self, *arguments):
+        if not arguments:
+            sys.stdout.write(__doc__)
+            return
+        import getopt
+        options, arguments = getopt.getopt(arguments, '')
+        for option, value in options:
+            pass
+        for argument in arguments:
+            #while argument.endswith('/'):
+            #    argument = argument[:-1]
+            if argument.startswith('/'):
+                argument = 'file:' + argument
+            elif argument.startswith('~'):
+                argument = 'file:' + os.path.expanduser(argument)
+            elif argument.startswith('file:/'):
+                argument = argument
+            elif argument.startswith('http://'):
+                argument = argument
+            elif argument.startswith('https://'):
+                argument = argument
+            else:
+                argument = 'file:' + os.path.join(os.getcwd(), argument)
+            os.execlp('firefox', 'firefox', '-new-tab', argument)
+
+run = Main()
+main = run.main
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])

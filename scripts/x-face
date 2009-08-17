@@ -1,0 +1,140 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright © 1996, 2002, 2003 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 1996.
+
+u"""\
+Handle X-Face conversions.
+
+Usage: x-face [OPTION]... IMAGE
+
+Compilation
+  -c OUTPUT   Compile IMAGE into an X-Face unto OUTPUT
+  -b LEVEL    Set black LEVEL, a number between 0.0 and 1.0 (for -c)
+  -t          Use threshold rather than Floyd-Steinberg dithering
+
+Decompilation
+  -d OUTPUT   Decompile IMAGE, which is an X-Face, unto OUTPUT
+  -s          Show IMAGE, which is an X-Face.
+
+Adapted from faces 1.6.1's filters/fstoikon.
+"""
+
+__metaclass__ = type
+import os, sys
+
+class run:
+    compile = None
+    black_level = 0.5
+    decompile = None
+    show = False
+    threshold = False
+
+def main(*arguments):
+    if not arguments:
+        sys.stdout.write(__doc__)
+        return
+    import getopt
+    options, arguments = getopt.getopt(arguments, 'b:c:d:st')
+    for option, value in options:
+        if option == '-b':
+            run.black_level = float(value)
+        elif option == '-c':
+            run.compile = value
+        elif option == '-d':
+            run.decompile = value
+        elif option == '-s':
+            run.show = True
+        elif option == '-t':
+            run.threshold = True
+    assert len(arguments) == 1, arguments
+    assert not (run.compile and run.decompile)
+    if run.compile:
+        compile(arguments[0], run.compile)
+    if run.decompile:
+        decompile(arguments[0], run.decompile)
+    if run.show:
+        if run.compile:
+            show(run.compile)
+        else:
+            show(arguments[0])
+
+def compile(input, output):
+    graymap='/tmp/%s.compxf.pgm' % os.getpid()
+    bitmap='/tmp/%s.compxf.pbm' % os.getpid()
+    os.system('convert %s %s' % (input, graymap))
+    #os.system('convert -geometry 48x48 %s %s' % (input, graymap))
+    x, y = dimensions(graymap)
+    if x < y:
+        option1 = '-height'
+    else:
+        option1 = '-width'
+    if run.threshold:
+        option2 = '-threshold'
+    else:
+        option2 = '-floyd'
+    command = ('pnmscale %s 48 %s '
+               '| ppmtopgm '
+               '| pgmtopbm %s -value %.2f > %s'
+               % (option1, graymap, option2, run.black_level, bitmap))
+    os.system(command)
+    x, y = dimensions(bitmap)
+    command = ('pbmmake 48 48 '
+               '| pnmpaste %s %d %d'
+               '| pbmtoicon'
+               % (bitmap, (48 - x) / 2, (48 - y) / 2))
+    write = os.popen('compface > %s' % output, 'w').write
+    column = 0
+    for line in os.popen(command).readlines()[2:]:
+        for field in line.strip().split(','):
+            if field:
+                if column == 3:
+                    write('\n')
+                    column = 0
+                write(field)
+                write(',')
+                column += 1
+    if column > 0:
+        write('\n')
+    os.remove(graymap)
+    os.remove(bitmap)
+
+def decompile(input, output):
+    image = icon_from(input)
+    os.popen('icontopbm > %s' % output, 'w').write(image)
+
+def show(input):
+    image = icon_from(input)
+    os.popen('icontopbm | xv -expand 3 -', 'w').write(image)
+
+def icon_from(input):
+    fragments = []
+    write = fragments.append
+    write(u"""\
+/* Format_version=1, Width=48, Height=48, Depth=1, Valid_bits_per_item=16
+ */
+""")
+    column = 0
+    for line in os.popen('uncompface %s' % input):
+        for field in line.strip().split(','):
+            if field:
+                if column == 10:
+                    write(',\n')
+                    column = 0
+                if column == 0:
+                    write('\t')
+                else:
+                    write(',')
+                write(field)
+                column += 1
+    if column > 0:
+        write('\n')
+    return ''.join(fragments)
+
+def dimensions(name):
+    for line in file(name):
+        if line[0] not in '#\n':
+            return map(int, line.split())
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])
