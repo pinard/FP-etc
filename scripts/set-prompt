@@ -82,15 +82,9 @@ done
 if [ $fond = none ]; then
   if [ $shell = sh ]; then
     fond=simple
-  elif [ -n "$DISPLAY" ]; then
-    fond=pale
-  elif [ "$TERM" = rxvt ]; then
-    fond=pale
-  elif [ "$TERM" = xterm ]; then
-    fond=pale
   else
     case $TERM in
-      cygwin|emacs|eterm|linux|kermit-*|screen)
+      cygwin|emacs|eterm|linux|kermit-*|screen|xterm)
         fond=dark ;;
       *)
         echo 1>&2 -n "Est-ce que le fond est pâle (o/y/n)? [o] "
