@@ -6,35 +6,43 @@
 """\
 Prendre copie d'un écran X.
 
-Usage: click [IMAGE]
+Usage: click [OPTION]... [IMAGE]
 
-Un click dans une fenêtre copie l'image de la fenêtre, alors que
-la sélection d'une région rectangulaire ne copie que le contenu de
-cette région.
+Options:
+  -d SECONDES   Attendre avant de prendre la photo (implicitement 3 secondes)
+  -w            Copie de la fenêtre courante, plutôt que tout l'écran.
 
 IMAGE est le nom du fichier qui recevra l'image de l'image copiée,
-le type de fichier produit est déterminé par l'extension.  Si IMAGE
-n'est pas fourni, alors l'image est immédiatement ré-affichée dans
-une autre fenêtre.
+le type de fichier produit est déterminé par l'extension.  S'il est
+fourni, -w est ignoré, et un click dans une fenêtre copie l'image
+de la fenêtre, alors que la sélection d'une région rectangulaire ne
+copie que le contenu de cette région.
+
+Si IMAGE n'est pas fourni, gnome-screenshot est utilisé plutôt que import.
 """
 
 __metaclass__ = type
 import os, sys, time
 
 class Main:
+    delay = 3
+    window = False
 
     def main(self, *arguments):
         import getopt
-        options, arguments = getopt.getopt(arguments, '')
-        for option, valeur in options:
-            pass
+        options, arguments = getopt.getopt(arguments, 'd:w')
+        for option, value in options:
+            if option == '-d':
+                self.delay = int(value)
+            elif option == '-w':
+                self.window = True
         if arguments:
             assert len(arguments) == 1, arguments
             image = arguments[0]
         else:
             image = None
-        time.sleep(3)
         if image:
+            time.sleep(self.delay)
             os.system('import -silent -descend -border '
                       + ' '.join(arguments))
             if image.endswith('.gif'):
@@ -42,10 +50,11 @@ class Main:
                 os.remove(image)
                 os.rename(image + '-tmp', image)
         else:
-            image = '/tmp/click-tmp.png'
-            os.system('import -silent -descend -border ' + image)
-            os.system('display ' + image)
-            os.remove(image)
+            if self.window:
+                window = ' -w'
+            else:
+                window = ''
+            os.system('gnome-screenshot -d %s%s' % (self.delay, window))
 
 run = Main()
 main = run.main
