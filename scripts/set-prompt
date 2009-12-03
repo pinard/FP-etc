@@ -167,6 +167,7 @@ esac
 unset fond
 unset ident
 unset shell
+unset usage
 unset user
 unset b
 
