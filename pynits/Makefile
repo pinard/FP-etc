@@ -12,7 +12,7 @@ all:
 	@echo "See the README file."
 
 install:
-	@echo "Choose either `install-user' or `install-root'; see README."
+	@echo "Choose either \`install-user' or \`install-root'; see README."
 
 install-user:
 	$(MAKE) install-common VIMFILES=$(HOME)/.vim
