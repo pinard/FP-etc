@@ -2328,8 +2328,6 @@ class Fichier_Vide(Broutille):
         vim.current.buffer[:] = [
             '#!/usr/bin/env python',
             '# -*- coding: utf-8 -*-',
-            '# Copyright © 2009 Progiciels Bourbeau-Pinard inc.',
-            '# François Pinard <pinard@iro.umontreal.ca>, 2009.',
             '',
             '"""\\',
             '',
@@ -2356,7 +2354,7 @@ class Fichier_Vide(Broutille):
 
     def repositionner(self):
         # Déclencher une insertion à l'intérieur du doc-string.
-        changer_curseur_courant(6, 0)
+        changer_curseur_courant(4, 0)
         vim.command('startinsert')
 
 class Double_LigneVide(Broutille):
