@@ -61,17 +61,17 @@ def declarer_ordinaux(*noms):
     # dont les variables juste créées sont les seuls éléments.  Lorsque
     # qu'imprimées, ces variables affichent leur nom plutôt que leur valeur.
     class Ordinal(int):
-        def __new__(cls, nom, valeur):
-            return int.__new__(cls, valeur)
-        def __init__(self, nom, valeur):
+        def __new__(cls, nom, value):
+            return int.__new__(cls, value)
+        def __init__(self, nom, value):
             self.nom = nom
         def __repr__(self):
             return self.nom
         def __str__(self):
             return self.nom
     locaux = sys._getframe(1).f_locals
-    for valeur, nom in enumerate(noms):
-        locaux[nom] = Ordinal(nom, valeur)
+    for value, nom in enumerate(noms):
+        locaux[nom] = Ordinal(nom, value)
     return Ordinal
 
 class Main:
@@ -82,7 +82,7 @@ class Main:
         profilage = False
         import getopt
         options, arguments = getopt.getopt(arguments, 'Pbcdhi:lpqw:')
-        for option, valeur in options:
+        for option, value in options:
             if option == '-P':
                 profilage = True
             elif option == '-b':
@@ -92,7 +92,7 @@ class Main:
             elif option == '-d':
                 Editeur.mise_au_point = True
             elif option == '-i':
-                Editeur.indentation = int(valeur)
+                Editeur.indentation = int(value)
             elif option == '-h':
                 sys.stdout.write(_(__doc__))
                 sys.exit(0)
@@ -103,7 +103,7 @@ class Main:
             elif option == '-q':
                 self.commande = disposeur.disposer_en_retrait_remplir
             elif option == '-w':
-                Editeur.limite = int(valeur)
+                Editeur.limite = int(value)
         assert len(arguments) < 2, arguments
         if arguments:
             fichier = file(arguments[0])
@@ -1066,9 +1066,9 @@ class Editeur:
         format = '%!%({%\\'
         arguments = [noeud.priorite, PRIORITE_TUPLE]
         separateur = ''
-        for cle, valeur in noeud.items:
+        for cle, value in noeud.items:
             format += separateur + '%^: %^'
-            arguments += [cle, valeur]
+            arguments += [cle, value]
             separateur = ', %|'
         format += '}%)%/'
         self.traiter(format, *arguments)
@@ -1115,9 +1115,9 @@ class Editeur:
             arguments += [ordinaire]
             separateur = ', %|'
         if noeud.defaults:
-            for cle, valeur in zip(cles, noeud.defaults):
+            for cle, value in zip(cles, noeud.defaults):
                 format += separateur + '%s=%^'
-                arguments += [cle, valeur]
+                arguments += [cle, value]
                 separateur = ', %|'
         if star_args is not None:
             format += separateur + '*%s'
@@ -1280,9 +1280,9 @@ class Editeur:
             arguments += [ordinaire]
             separateur = ', %|'
         if noeud.defaults:
-            for cle, valeur in zip(cles, noeud.defaults):
+            for cle, value in zip(cles, noeud.defaults):
                 format += separateur + '%s=%^'
-                arguments += [cle, valeur]
+                arguments += [cle, value]
                 separateur = ', %|'
         if star_args is not None:
             format += separateur + '*%s'
@@ -1725,13 +1725,13 @@ class Editeur:
             finally:
                 self.profondeur -= 1
 
-    def traiter_constante(self, valeur):
+    def traiter_constante(self, value):
         # Formatter la constante VALEUR, qui ne peut être une chaîne.
-        if isinstance(valeur, float):
+        if isinstance(value, float):
             sys.stderr.write(
                 _("WARNING: floating values are not dependable.\n"
                   "(There is a bug in `import compiler'.  Sigh!)"))
-        self.write(repr(valeur))
+        self.write(repr(value))
 
     def traiter(self, format, *arguments):
         # Produire FORMAT en sortie tout en interprétant les séquences
@@ -2107,21 +2107,21 @@ class Reprise(Editeur):
 
     def __init__(self, editeur):
         self.editeur = editeur
-        for nom, valeur in editeur.__dict__.iteritems():
-            if isinstance(valeur, list):
-                setattr(self, nom, valeur[:])
-            elif isinstance(valeur, int):
-                setattr(self, nom, valeur)
+        for nom, value in editeur.__dict__.iteritems():
+            if isinstance(value, list):
+                setattr(self, nom, value[:])
+            elif isinstance(value, int):
+                setattr(self, nom, value)
 
     def ramener(self):
         editeur = self.editeur
-        for nom, valeur in self.__dict__.iteritems():
+        for nom, value in self.__dict__.iteritems():
             if nom == 'editeur':
                 continue
-            if isinstance(valeur, list):
-                getattr(editeur, nom)[:] = valeur
-            elif isinstance(valeur, int):
-                setattr(editeur, nom, valeur)
+            if isinstance(value, list):
+                getattr(editeur, nom)[:] = value
+            elif isinstance(value, int):
+                setattr(editeur, nom, value)
 
     def __cmp__(self, other):
         return (cmp(self.ligne, other.ligne)
@@ -2343,7 +2343,7 @@ class Fichier_Vide(Broutille):
             '    def main(self, *arguments):',
             '        import getopt',
             '        options, arguments = getopt.getopt(arguments, \'\')',
-            '        for option, valeur in options:',
+            '        for option, value in options:',
             '            pass',
             '',
             'run = Main()',
@@ -2810,8 +2810,8 @@ def choisir_mise_au_point(mode):
         sys.stdout.write(_("Tracing disabled."))
 
 def choisir_remplisseur(mode):
-    def valeur_suivante(valeur, choix):
-        return choix[(list(choix).index(valeur) + 1) % len(choix)]
+    def valeur_suivante(value, choix):
+        return choix[(list(choix).index(value) + 1) % len(choix)]
     Disposeur.remplisseur = valeur_suivante(Disposeur.remplisseur,
                                             Disposeur.choix_remplisseurs)
     sys.stdout.write("Les commentaires seront remplis par `%s'."
@@ -2917,9 +2917,9 @@ try:
 except ImportError:
 
     def est_imprimable(caractere):
-        valeur = ord(caractere)
+        value = ord(caractere)
         # Retourner vrai si le caractère ISO 8859-1 est imprimable.
-        return not (0 <= valeur < 32 or 127 <= valeur < 160)
+        return not (0 <= value < 32 or 127 <= value < 160)
 else:
 
     def est_imprimable(caractere):
