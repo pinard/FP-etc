@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 # Copyright © 1996, 1999, 2000, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1996.
 
@@ -24,8 +24,6 @@ Option `-a' is useful to identify big hierarchies, especially with `-b', for
 when Emacs has `allout' pre-loaded to override the more standard `outline'.
 I also have some Emacs code to colorize each level differently.  One can hide
 a whole hierarchy with `C-c h', and reveal one level at a time with `C-c i'.
-
-Bug: PATH should currently be relative, absolute paths do not work.
 """
 
 __metaclass__ = type
@@ -70,10 +68,11 @@ class Main:
         # Get the data, properly filtered.
         pairs = []
         for line in os.popen('du %s' % ' '.join(arguments)):
+            line = line.rstrip("\n/")
             text, path = line.split('\t')
             size = int(text)
             if self.size is None or size >= self.size:
-                split = path[:-1].split('/')
+                split = path.split('/')
                 if self.level is None or len(split) <= self.level:
                     pairs.append([split, size])
         # Sort the information as wanted.
