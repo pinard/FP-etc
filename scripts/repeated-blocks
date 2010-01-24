@@ -20,8 +20,9 @@ Currently, a token is exactly a line, including its line ending.
 With -x, standard input holds one file name per line.  Without -x and
 without File arguments, read and process standard input contents.
 
-With -s, files are ordered as in argument list (so, sort the arguments for
-file lexicographical order).  Without -s, output is sorted by decreasing
+With -f, files in output are ordered the same as they appear in the
+argument list (so, to get lexicographical order, make sure the arguments
+given are already sorted).  Without -f, output is sorted by decreasing
 block length in tokens, and then, by decreasing number of occurrences.
 """
 
