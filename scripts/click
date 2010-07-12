@@ -50,12 +50,22 @@ class Main:
             image = arguments[0]
         else:
             image = None
+
         if image:
             time.sleep(self.delay)
             command = 'import -silent -descend'
             if self.border:
                 command += ' -border'
-            os.system(command + ' ' + ' '.join(arguments))
+            if image.endswith('.png'):
+                # Gimp reveals an offset bug between image layers, whenever
+                # a crop occurred.  Read and write the PNG to correct this.
+                work = image[:-4] + '-tmp.png'
+                os.system(command + ' ' + work)
+                from PIL import Image
+                Image.open(work).save(image)
+                os.remove(work)
+            else:
+                os.system(command + ' ' + image)
             if image.endswith('.gif'):
                 os.system('giftopnm %s | ppmtogif > %s-tmp' % (image, image))
                 os.remove(image)
