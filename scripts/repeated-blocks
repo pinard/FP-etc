@@ -9,6 +9,7 @@ Find clusters of similar tokens in a group of files.
 Usage: repeated-blocks [Option]... [File]...
 
 Options:
+  -h           Print this help, then exits
   -m MINIMUM   Minimum number of tokens in a block (default 3)
   -M MAXIMUM   Maximum number of tokens in a block (no default)
   -f           Print output sorted by first file and position
@@ -43,10 +44,13 @@ class Main:
 
         # Decode options
         import getopt
-        options, arguments = getopt.getopt(arguments, 'fm:M:vx')
+        options, arguments = getopt.getopt(arguments, 'fhm:M:vx')
         for option, value in options:
             if option == '-f':
                 self.filesort = True
+            elif option == '-h':
+                sys.stdout.write(__doc__)
+                return
             elif option == '-m':
                 self.minimum = int(value)
             elif option == '-M':
