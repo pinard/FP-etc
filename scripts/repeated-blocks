@@ -10,13 +10,16 @@ Usage: repeated-blocks [Option]... [File]...
 
 Options:
   -h           Print this help, then exits
+  -b           A token is a run of non-whitespace characters (blob)
+  -l           A token is exactly an input line (line)
+  -w           A token is a run of word constituent characters (word)
   -m MINIMUM   Minimum number of tokens in a block (default 3)
   -M MAXIMUM   Maximum number of tokens in a block (no default)
   -f           Print output sorted by first file and position
   -v           Entertain users about processing steps
-  -x           Also read a list of file names from standard nput
+  -x           Also read a list of file names from standard input
 
-Currently, a token is exactly a line, including its line ending.
+If none of -b, -l or -l, then -l is assumed.
 
 With -x, standard input holds one file name per line.  Without -x and
 without File arguments, read and process standard input contents.
@@ -28,10 +31,7 @@ block length in tokens, and then, by decreasing number of occurrences.
 """
 
 __metaclass__ = type
-import sys
-
-# How to print token.
-TOKEN = 'line'
+import re, sys
 
 class Main:
     verbose = False
@@ -39,18 +39,25 @@ class Main:
     maximum = None
     filesort = False
     xargs = False
+    token = None
 
     def main(self, *arguments):
 
         # Decode options
         import getopt
-        options, arguments = getopt.getopt(arguments, 'fhm:M:vx')
+        options, arguments = getopt.getopt(arguments, 'bfhlm:M:vxw')
         for option, value in options:
-            if option == '-f':
+            if option == '-b':
+                assert self.token is None, self.token
+                self.token = 'blob'
+            elif option == '-f':
                 self.filesort = True
             elif option == '-h':
                 sys.stdout.write(__doc__)
                 return
+            elif option == '-l':
+                assert self.token is None, self.token
+                self.token = 'line'
             elif option == '-m':
                 self.minimum = int(value)
             elif option == '-M':
@@ -59,6 +66,11 @@ class Main:
                 self.verbose = True
             elif option == '-x':
                 self.xargs = True
+            elif option == '-w':
+                assert self.token is None, self.token
+                self.token = 'word'
+        if self.token is None:
+            self.token = 'line'
 
         # Launch the work.
         buffers = self.readin_files(arguments)
@@ -82,21 +94,26 @@ class Main:
             buffer_count = len(buffers)
             token_count = 0
             for buffer in buffers:
-                token_count += len(buffer.tokens)
+                token_count += len(buffer)
             sys.stderr.write("Read %d files and %d %ss\n"
-                             % (buffer_count, token_count, TOKEN))
+                             % (buffer_count, token_count, self.token))
         return buffers
 
     def initialize_clusters(self, buffers):
         # Initialize clusters, which is a list.  Each cluster is a list of
         # at least two blocks with identical string contents.
 
-        data = [] 
+        data = []
         for buffer in buffers:
-            tokens = buffer.tokens[:len(buffer.tokens) + 1 - self.minimum]
-            for start, token in enumerate(tokens):
-                block = Block(buffer, start, start + self.minimum)
-                data.append((tuple(tokens[start:start + self.minimum]), block))
+            tokens = []
+            for index in range(len(buffer)):
+                token = buffer.get(index)
+                if len(tokens) == self.minimum:
+                    tokens.pop(0)
+                tokens.append(token)
+                if len(tokens) == self.minimum:
+                    block = Block(buffer, index + 1 - self.minimum, index + 1)
+                    data.append((tuple(tokens), block))
         data.sort()
         previous = None
         clusters = []
@@ -138,12 +155,11 @@ class Main:
             while True:
                 map = {}
                 for block in given_cluster:
-                    tokens = block.buffer.tokens
-                    if block.end < len(tokens):
-                        token = tokens[block.end]
+                    if block.limit < len(block.buffer):
+                        token = block.buffer.get(block.limit)
                     else:
                         token = None
-                    if block.start not in block.buffer.nested:
+                    if block.first not in block.buffer.nested:
                         if token in map:
                             map[token].append(block)
                         else:
@@ -159,9 +175,9 @@ class Main:
                     if len(blocks) == 1:
                         del map[token]
                 if len(map) < 2:
-                    # Simulate tail recursion in this case.
                     if not map:
                         break
+                    # Simulate tail recursion in this case.
                     token, cluster = map.items()[0]
                     if token is None:
                         for block in cluster:
@@ -170,7 +186,7 @@ class Main:
                         clusters.append(cluster)
                         break
                     for block in cluster:
-                        block.end += 1
+                        block.limit += 1
                     given_cluster = cluster
                     continue
                 for token, cluster in map.iteritems():
@@ -182,46 +198,44 @@ class Main:
                             clusters.append(cluster)
                         else:
                             for block in cluster:
-                                block.end += 1
+                                block.limit += 1
                             grow_cluster(cluster)
                 break
 
         clusters = []
-        ends = set()
-        given_clusters.reverse()
-        while given_clusters:
-            grow_cluster(given_clusters.pop())
+        for cluster in given_clusters:
+            grow_cluster(cluster)
         if self.verbose and clusters:
-            line_count = 0
+            token_count = 0
             minimum = None
             maximum = None
             for cluster in clusters:
-                length = cluster[0].end - cluster[0].start
+                length = cluster[0].limit - cluster[0].first
                 if minimum is None or length < minimum:
                     minimum = length
                 if maximum is None or length > maximum:
                     maximum = length
-                line_count += length
+                token_count += length
             sys.stderr.write(
                     "Grown %d clusters having from %d to %d %ss"
                     " (%.1f average)\n"
-                    % (len(clusters), minimum, maximum, TOKEN,
-                       float(line_count) / len(clusters)))
+                    % (len(clusters), minimum, maximum, self.token,
+                       float(token_count) / len(clusters)))
         return clusters
 
     def delete_overlaps(self, given_clusters):
         data = []
         for cluster in given_clusters:
             for block in cluster:
-                data.append((block.buffer, -block.end, block.start, block))
+                data.append((block.buffer, -block.limit, block.first, block))
         data.sort()
         previous = None
         for datum in data:
             block = datum[-1]
             if (previous is not None
                     and block.buffer == previous.buffer
-                    and block.end == previous.end):
-                assert block.start != previous.start
+                    and block.limit == previous.limit):
+                assert block.first != previous.first
                 block.nested = True
             previous = block
         clusters = []
@@ -240,7 +254,7 @@ class Main:
         if self.filesort:
             clusters.sort()
         else:
-            data = [(-(cluster[0].end - cluster[0].start),
+            data = [(-(cluster[0].limit - cluster[0].first),
                      len(cluster), cluster)
                     for cluster in clusters]
             data.sort()
@@ -248,12 +262,15 @@ class Main:
 
         write = sys.stdout.write
         for counter, cluster in enumerate(clusters):
-            write('=' * 79 + '\n')
+            block = cluster[0]
+            suffix = (" Cluster %d/%d (%d %ss)\n"
+                      % (counter + 1, len(clusters),
+                         block.limit - block.first, self.token))
+            write('=' * (80 - len(suffix)))
+            write(suffix)
             for counter2, block in enumerate(cluster):
-                write('%s:%s: %d %ss (cluster %d/%d, repeat %d/%d)\n'
-                      % (block.buffer.name, block.start + 1,
-                         block.end - block.start, TOKEN,
-                         counter + 1, len(clusters),
+                write('%s: Repeat %d/%d\n'
+                      % (block.reference(),
                          counter2 + 1, len(cluster)))
             write('\n')
             write(str(cluster[0]))
@@ -262,48 +279,83 @@ class Main:
             line_count = 0
             for cluster in clusters:
                 block_count += len(cluster)
-                line_count += cluster[0].end - cluster[0].start
+                line_count += cluster[0].limit - cluster[0].first
             sys.stderr.write("Printed %d clusters, %d locations, %d %ss\n"
-                             % (len(clusters), block_count, line_count, TOKEN))
+                             % (len(clusters), block_count, line_count,
+                                self.token))
 
 class Buffer:
     ordinal = 0
 
     def __init__(self, name, handle):
         self.name = name
-        self.tokens = list(handle)
+        if run.token == 'blob':
+            pattern = re.compile('\\S+')
+        elif run.token == 'line':
+            pattern = re.compile('.+')
+        elif run.token == 'word':
+            pattern = re.compile('\\w+')
+        self.text = handle.read()
+        self.start = []
+        self.end = []
+        for match in re.finditer(pattern, self.text):
+            self.start.append(match.start())
+            self.end.append(match.end())
         Buffer.ordinal += 1
         self.ordinal = Buffer.ordinal
         self.nested = set()
 
     def __repr__(self):
-        return 'Buffer-' + str(self.ordinal)
+        return 'Buffer-%d' % self.ordinal
 
     def __cmp__(self, other):
         return cmp(self.ordinal, other.ordinal)
 
+    def __len__(self):
+        return len(self.start)
+
+    def get(self, index):
+        return self.text[self.start[index]:self.end[index]]
+
 class Block:
     nested = False
 
-    def __init__(self, buffer, start, end):
+    def __init__(self, buffer, first, limit):
         self.buffer = buffer
-        self.start = start
-        self.end = end
-
-    def __str__(self):
-        return ''.join(self.buffer.tokens[self.start:self.end])
+        self.first = first
+        self.limit = limit
 
     def __repr__(self):
-        return repr(self.buffer) + '<' + repr(str(self)) + '>'
+        text = self.buffer.text
+        start = self.buffer.start[self.first]
+        end = self.buffer.end[self.limit-1]
+        return '%r<%r>' % (self.buffer, text[start:end])
+
+    def __str__(self):
+        text = self.buffer.text
+        start = self.buffer.start[self.first]
+        end = self.buffer.end[self.limit-1]
+        position = text.rfind('\n', 0, start)
+        if position > 0 and not text[position+1:start].strip():
+            start = position + 1
+        if end < len(text) and text[end] == '\n':
+            return text[start:end+1]
+        return text[start:end] + '\n'
 
     def __cmp__(self, other):
         return (cmp(self.buffer, other.buffer)
-                or cmp(self.start, other.start)
-                or cmp(other.end, self.end))
+                or cmp(self.first, other.first)
+                or cmp(other.limit, self.limit))
+
+    def reference(self):
+        name = self.buffer.name
+        line = (self.buffer.text.count('\n', 0, self.buffer.start[self.first])
+                + 1)
+        return '%s:%d' % (name, line)
 
     def mark_nested(self):
         nested = self.buffer.nested
-        for index in range(self.start, self.end):
+        for index in range(self.first, self.limit):
             nested.add(index)
 
 run = Main()
