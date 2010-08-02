@@ -135,7 +135,7 @@ class Main:
 
     def process_file(self, input_name):
         if self.verbose:
-            write('Reading %s: ' % input_name)
+            self.write('Reading %s: ' % input_name)
         for output in self.outputs:
             output.start_input_file(input_name)
         message_counter = 0
