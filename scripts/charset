@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 # Copyright © 2004 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2004.
 
@@ -7,6 +7,11 @@ u"""\
 Tenter de deviner le jeu de caractères utilisé dans des fichiers.
 
 Usage: charset [OPTION]... [FICHIER]...
+
+Options:
+  -h  Fournir cette aide et ne rien faire d'autre
+  -m  Ajouter /minus pour un fichier sans aucune majuscule
+  -M  Ajouter /majus pour un fichier sans aucune minuscule
 
 Les jeux reconnus sont: ASCII, ISO-8859-1, UTF-8; sinon [Inconnu].
 Une surface Unix n'est pas notée, les autres surfaces reconnues sont
@@ -19,12 +24,20 @@ __metaclass__ = type
 import sys
 
 class Main:
+    majus = False
+    minus = False
 
     def main(self, *arguments):
         import getopt
-        options, arguments = getopt.getopt(arguments, '')
+        options, arguments = getopt.getopt(arguments, 'hMm')
         for option, valeur in options:
-            pass
+            if option == '-h':
+                sys.stdout.write(__doc__)
+                return
+            elif option == '-M':
+                self.majus = True
+            elif option == '-m':
+                self.minus = True
         write = sys.stdout.write
         arguments = map(unicode, arguments)
         if arguments:
@@ -42,7 +55,9 @@ class Main:
             sys.stdout.write('%s\n' % self.deviner(tampon))
 
     def deviner(self, tampon):
-        return self.deviner_charset(tampon) + self.deviner_surface(tampon)
+        return (self.deviner_charset(tampon)
+                + self.deviner_capitalisation(tampon)
+                + self.deviner_surface(tampon))
 
     def deviner_charset(self, tampon):
         for charset in 'ASCII', 'UTF-8':
@@ -56,6 +71,14 @@ class Main:
         if not re.search('[\x80-\x9f]', tampon):
             return 'ISO-8859-1'
         return '[Inconnu]'
+
+    def deviner_capitalisation(self, tampon):
+        texte = ''
+        if self.majus and tampon == tampon.upper():
+            texte += '/majus'
+        if self.minus and tampon == tampon.lower():
+            texte += '/minus'
+        return texte
 
     def deviner_surface(self, tampon):
         unix = False
