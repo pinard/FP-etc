@@ -13,7 +13,6 @@ Options:
   -h            Fournir cette aide, et ne rien faire d'autre
   -d SECONDES   Attendre avant de prendre la photo (implicitement 3 secondes)
   -w            Copie de la fenêtre courante, plutôt que tout l'écran
-  -b            Inclure la bordure de la fenêtre
 
 IMAGE est le nom du fichier qui recevra l'image de l'image copiée,
 le type de fichier produit est déterminé par l'extension.  S'il est
@@ -28,17 +27,14 @@ __metaclass__ = type
 import os, sys, time
 
 class Main:
-    border = False
     delay = 3
     window = False
 
     def main(self, *arguments):
         import getopt
-        options, arguments = getopt.getopt(arguments, 'bd:hw')
+        options, arguments = getopt.getopt(arguments, 'd:hw')
         for option, value in options:
-            if option == '-b':
-                self.border = True
-            elif option == '-d':
+            if option == '-d':
                 self.delay = int(value)
             elif option == '-h':
                 sys.stdout.write(__doc__)
@@ -54,8 +50,6 @@ class Main:
         if image:
             time.sleep(self.delay)
             command = 'import -silent -descend'
-            if self.border:
-                command += ' -border'
             if image.endswith('.png'):
                 # Gimp reveals an offset bug between image layers, whenever
                 # a crop occurred.  Read and write the PNG to correct this.
@@ -64,18 +58,16 @@ class Main:
                 from PIL import Image
                 Image.open(work).save(image)
                 os.remove(work)
+            elif image.endswith('.gif'):
+                # ImageMagick does not compress, but PBMnet library does.
+                work = image[:-4] + '-tmp.gif'
+                os.system(command + ' ' + work)
+                os.system('giftopnm %s | ppmtogif > %s' % (work, image))
+                os.remove(work)
             else:
                 os.system(command + ' ' + image)
-            if image.endswith('.gif'):
-                os.system('giftopnm %s | ppmtogif > %s-tmp' % (image, image))
-                os.remove(image)
-                os.rename(image + '-tmp', image)
         else:
             command = 'gnome-screenshot -d %s' % self.delay
-            if self.border:
-                command += ' -b'
-            else:
-                command += ' -B'
             if self.window:
                 command += ' -w'
             os.system(command)
