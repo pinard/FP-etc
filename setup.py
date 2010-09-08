@@ -22,4 +22,6 @@ setup(name='etc', version='0.1',
       author_email='pinard@iro.umontreal.ca',
       url='http://www.iro.umontreal.ca/~pinard',
       scripts=scripts,
-      packages=['Etc', 'Etc.Allout', 'Etc.NoSpam', 'Etc.NoSpam.DNS'])
+      packages=['Etc', 'Etc.Allout',
+                'Etc.NoSpam', 'Etc.NoSpam.DNS',
+                'Etc.Tboy'])
