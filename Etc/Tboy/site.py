@@ -10,6 +10,7 @@ import convert, tools
 class Site:
     registry = {}
     styleurl = None
+    editor = None
 
     class __metaclass__(type):
 
@@ -37,6 +38,9 @@ class Site:
     def output_name(self, note):
         url, directory = self.url_directory(note.notebook)
         return directory + '/' + tools.clean_file_name(note.title) + '.html'
+
+    def is_kept(self, note):
+        return not tools.is_ignorable_title(note.title)
 
     def run_daemon(self):
         import pyinotify
@@ -161,6 +165,9 @@ class Site:
             if not self.run.dryrun:
                 codecs.open(name, 'w', tools.ENCODING).write(buffer)
 
+    def decorate_web_pages(self, output_name):
+        pass
+
     def mkdir_recursive(self, directory):
         if not os.path.isdir(directory):
             self.mkdir_recursive(os.path.dirname(directory))
@@ -170,6 +177,7 @@ class Site:
 
 class Site_Phenix(Site):
     host = 'phenix'
+    editor = '/tboy-pop.cgi'
     axiom = 'personnel:p'
     notebook_info = {
             None: (
@@ -217,18 +225,16 @@ class Site_Phenix(Site):
                     '~/entretien/xxml/web/notes')),
             }
 
-    def is_kept(self, note):
-        return not tools.is_ignorable_title(note.title)
-
     def decorate_web_pages(self, output_name):
         directory = os.path.dirname(output_name)
         os.system('make-web -t -C %s' % directory)
 
 class Site_Alcyon(Site_Phenix):
     host = 'alcyon'
+    editor = None
 
     def is_kept(self, note):
-        if tools.is_ignorable_title(note.title):
+        if not Site_Phenix.is_kept(self, note):
             return False
         for inhibit in ':b', ':n', ':p':
             if note.title.endswith(inhibit):

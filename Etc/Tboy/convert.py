@@ -1142,19 +1142,19 @@ class Note_content_node(Node):
                   '<tbody><tr><td class="caption"><h3>' + self.date_caption
                   + '</h3></td></tr></tbody>\n'
                   '</table>\n')
-        pretty = tools.pretty_title(self.note.title)
-        import socket
-        if socket.gethostname() == 'phenix':
-            write('<form method="get" action="/tboy-pop.cgi">\n'
+        pretty = tools.pretty_title(self.note.title.strip())
+        editor = self.note.run.site.editor
+        if editor is None:
+            write('<h1>' + converter.escape(pretty) + '</h1>\n')
+        else:
+            write('<form method="get" action="%s">\n'
                   '<h1>%s\n'
                   '<input type="submit" value="Edit"/>\n'
                   '<input type="hidden" name="note" value="%s"/>\n'
                   '</h1>\n'
                   '</form>\n'
-                  % (converter.escape(pretty),
+                  % (editor, converter.escape(pretty),
                      converter.escape(self.note.title)))
-        else:
-            write('<h1>' + converter.escape(pretty) + '</h1>\n')
         self.output_paragraphs(write, converter)
         if not self.note.making_blog:
             write('</body>\n')
