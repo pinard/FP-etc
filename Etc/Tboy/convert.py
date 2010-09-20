@@ -648,7 +648,7 @@ class Node(list):
                 converter.output(branch, write)
             else:
                 position = 0
-                for match in re.finditer('\n+', branch):
+                for match in re.finditer('\n\n+', branch):
                     line = branch[position:match.start()]
                     if line:
                         if not within_paragraph:
