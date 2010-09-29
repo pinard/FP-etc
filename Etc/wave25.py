@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+
+# Copied from `Issue 1483545: Wave.py support for ulaw and alaw audio -
+# Python tracker` http://bugs.python.org/issue1483546
+
 """ These changes allow .wav files containing u-law and a-law data to
 be read and written. The user visable changes are:
 
