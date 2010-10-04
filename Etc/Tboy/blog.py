@@ -66,14 +66,14 @@ class Blog_maker:
 
   <p>
    A <a href="#Contents">table of contents</a> appears at the end of
-   this page.  The blog entries are themselves selected from
-   <a href="/notes/index.html">my published notes</a>, for which there is
+   this page.  The blog entries are themselves selected from <a
+   href="/notes/index.html">my published notes</a>, for which there is
    also a table showing the <a href="/notes/recent.html">most recently
-   modified entries</a>.
-   In reverse chronological order as well, you may find some
-   <a href="/tweets.html">recent Twitter tweets</a>, and a diary of my
-   <a href="/notes/Journal_arts_t.html">humble explorations</a>
-   about images and sounds (in French mainly).
+   modified entries</a>.  Elsewhere, you may find some <a
+   href="/tweets.html">recent Twitter tweets</a>, and a diary of shorter
+   entries named <a href="/notes/Journal_arts_t.html">Journal arts</a>,
+   in French mainly, relating my humble explorations about images and
+   sounds.
   </p>
 
   <p>
