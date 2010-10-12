@@ -236,7 +236,7 @@ class Site_Alcyon(Site_Phenix):
     def is_kept(self, note):
         if not Site_Phenix.is_kept(self, note):
             return False
-        for inhibit in ':b', ':n', ':p':
+        for inhibit in ':b', ':p':
             if note.title.endswith(inhibit):
                 return False
         return True

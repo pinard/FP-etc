@@ -86,17 +86,17 @@ class Converter:
             text_sans = tools.pretty_title(text)
             if text.lower() in tools.Note.canonical:
                 text = tools.Note.canonical[text.lower()]
-            note = tools.Note.registry.get(text)
-            if note is None:
-                note.run.report_error(
-                        note.title, "Refers to missing \"%s\"" % text)
+            note2 = tools.Note.registry.get(text)
+            if note2 is None:
+                note2.run.report_error(
+                        note2.title, "Refers to missing \"%s\"" % text)
                 return replace(text_sans)
-            if not note.run.site.is_kept(note):
+            if not tools.is_linkable(note, note2):
                 note.run.report_error(
                         note.title, "Refers to restricted \"%s\"" % text)
                 return replace(text_sans)
-            url, directory = note.run.site.url_directory(note.notebook)
-            link = Link_node(note, [text_sans])
+            url, directory = note2.run.site.url_directory(note2.notebook)
+            link = Link_node(note2, [text_sans])
             link.url = url + '/' + tools.clean_file_name(text) + '.html'
             return replace(link)
         if tag == 'broken':
@@ -1204,8 +1204,8 @@ class Section_node(Node):
     title_prefix = ''
 
     def __init__(self, note, title, major):
-        if title == "Reclasser" and note.title[-2:] in (':t', ':n'):
-            note.run.report_error(note.title, "Reclasser section")
+        if title == "Reclasser" and note.title[-2:] == ':t':
+            note.run.report_error(note.title, "Public Reclasser section")
         self.title = title
         self.major = major
         Node.__init__(self, note)

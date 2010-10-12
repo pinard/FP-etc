@@ -35,8 +35,16 @@ def is_ignorable_title(title):
                      u"start here",
                      u"using links in tomboy")
 
+def is_linkable(outer, inner):
+    # May the outer note link to the inner note?
+    if not inner.run.site.is_kept(inner):
+        return False
+    priority = {':b': 1, ':p': 2, ':t': 0}
+    return (priority.get(outer.title[-2:], 0)
+            >= priority.get(inner.title[-2:], 0))
+
 def pretty_title(text):
-    suffix = {':b': u'⁻', ':n': u'ⁿ', ':p': u'⁺', ':t': ''}.get(text[-2:])
+    suffix = {':b': u'⁻', ':p': u'⁺', ':t': ''}.get(text[-2:])
     if suffix is None:
         return text
     return text[:-2] + suffix
