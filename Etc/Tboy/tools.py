@@ -122,8 +122,8 @@ class Sweeper:
             self.arrows[title].append((internal, location))
 
     def mark(self, ancestor):
-        self.marked.add(ancestor)
-        for child, location in self.arrows[ancestor]:
+        self.marked.add(ancestor.lower())
+        for child, location in self.arrows[ancestor.lower()]:
             if child in self.arrows:
                 if not child in self.marked:
                     self.mark(child)

@@ -254,7 +254,8 @@ class Main:
         self.tomboy.DisplayNote(self.tomboy.FindNote(title))
 
     def extract_path(self, goal):
-        path = handler.sweeper.find_path(self.site.axiom, goal)
+        sweeper = self.build_sweeper()
+        path = sweeper.find_path(self.site.axiom, goal)
         if path is None:
             sys.stdout.write("(No path found)\n")
         else:
@@ -295,11 +296,14 @@ class Main:
             codecs.open(title + '.txt', 'w', tools.ENCODING).write(contents)
 
     def diagnose_notes(self):
-        sweeper = tools.Sweeper(self, self.each_note())
-        sweeper.mark(u'démarrer ici')
-        sweeper.mark(u'start here')
+        sweeper = self.build_sweeper()
         sweeper.report_errors()
         return bool(sweeper.errors)
+
+    def build_sweeper(self):
+        sweeper = tools.Sweeper(self, self.each_note())
+        sweeper.mark(self.site.axiom)
+        return sweeper
 
     def each_public_note(self):
         for note in self.each_note():

@@ -178,7 +178,7 @@ class Site:
 class Site_Phenix(Site):
     host = 'phenix'
     editor = '/tboy-pop.cgi'
-    axiom = 'personnel:p'
+    axiom = 'Semainier:p'
     notebook_info = {
             None: (
                 'http://pinard.progiciels-bpi.ca/notes',
