@@ -1,114 +1,126 @@
-* README file for Allout-Vim
+.. role:: file(literal)
 
-  Allout files are a handy synoptic (or tree-like) representation of a
-  document.  Such files were originally introduced as a GNU Emacs mode.
-  Vim offers tools and help for browsing or editing these Allout files.
+==========================
+README file for Allout-Vim
+==========================
 
-  This `README' file itself a simple example of the Allout file format,
-  which you may use for experimenting.  (If you are currently looking at
-  the Web page, the Allout file has been already transformed into HTML
-  and the Allout topics are not visible.)  The real documentation is
-  kept in file "vim/doc.txt", which you may browse or print.  But note,
-  this text file is <i>not</i> an Allout file as it is intended for
-  the use of the Vim help system.  Once the installation is completed
-  following the instructions below, and from within Vim, you may quickly
-  get back to the documentation through the command:
+.. contents::
 
-      :help allout
+Allout files are a handy synoptic (or tree-like) representation of a
+document.  Such files were originally introduced as a GNU Emacs mode.
+Vim offers tools and help for browsing or editing these Allout files.
 
-.. On Windows or other non-Unix systems
+The real documentation is kept in file `vim/doc.txt`__, which you may
+browse or print.  Once the installation is completed following the
+instructions below, and from within Vim, you may quickly get back to the
+documentation through the command::
 
-   You likeley have fetched a recent `.zip' archive from:
-       http://fp-etc.progiciels-bpi.ca/showfile.html?mode=archives
+    :help allout
 
-   Choose the directory where you want the files installed.  This is
-   normally one of the directories listed by VIM command:
+__ /allout-vim-doc.html
 
-       :set runtimepath
+On Windows or other non-Unix systems
+====================================
 
-   Let's call it DIRECTORY.  Create DIRECTORY if it does not exist and
-   unzip the distribution file you obtained into DIRECTORY.  To make the
-   documentation available to VIM, execute the VIM command:
+You likeley have fetched:
 
-       :helptags DIRECTORY/doc
+    http://fp-etc.progiciels-bpi.ca/archives/allout-vim.zip
 
-   replacing `DIRECTORY' in the command above, of course.
+Choose the directory where you want the files installed.  This is
+normally one of the directories listed by VIM command::
 
-   You have to manage in such a way that Python will successfully
-   import file "python/allout.py".  One way is changing your
-   Python installation so it will look in that directory.  See
-   your Python documentation to determine where the directory
-   `site-packages/' is, then add these lines to the file
-   ".../site-packages/sitecustomize.py":
+    :set runtimepath
 
-       import sys
-       sys.path.append("DIRECTORY/python")
+Let's call it :file:`DIRECTORY`.  Create :file:`DIRECTORY` if it does
+not exist and unzip the distribution you got into :file:`DIRECTORY`.
+For making the documentation available to VIM, execute VIM commands::
 
-   once again replacing `DIRECTORY' with the path of the directory
-   where you put the Allout-Vim files.  Another way is to move the just
-   installed file "python/allout.py" into another directory on the
-   Python import search path.  Pick a directory among those Python lists
-   when you execute the following at the Python interactive prompt:
+    :helptags DIRECTORY/doc
 
-       import sys
-       print sys.path
+replacing :file:``DIRECTORY`` in the command above, of course.
 
-   A third way might be to preset `PYTHONPATH' in the environment so
-   this variable points to "DIRECTORY/python".
+You have to manage in such a way that Python will successfully
+import file :file:`python/allout.py`.  One way is changing your
+Python installation so it will look in that directory.  See
+your Python documentation to determine where the directory
+:file:`site-packages/` is, then add these lines to the file
+:file:`.../site-packages/sitecustomize.py`::
 
-.. On Unix or Linux systems
+    import sys
+    sys.path.append('DIRECTORY/python')
 
-   On Linux or other Unix systems, you might follow the instructions
-   above, meant for non-Unix systems; they should work for Unix systems
-   as well.  Or else, you may fetch a recent `.tgz' archive from:
-   http://fp-etc.progiciels-bpi.ca/showfile.html?mode=archives
+once again replacing ``DIRECTORY`` with the path of the directory
+where you put the Allout-Vim files.  Another way is to move the just
+installed file :file:`python/allout.py` into another directory on the
+Python import search path.  Pick a directory among those Python lists
+when you execute the following at the Python interactive prompt::
 
-   You may either install this tool for your user account only, or for
-   all users in your system.
+    import sys
+    print sys.path
 
-. : Personal installation
+A third way might be to preset ``PYTHONPATH`` in the environment so
+this variable points to :file:`DIRECTORY/python`.
 
-    This tool may be installed for your user account only, and this
-    might be your only choice if you do not have super-user privileges.
-    Merely type `make install-user' from the unpacked `allout-vim'
-    distribution.  Your `~/.vimrc' file should be modified, or created
-    if necessary, to contain the following lines:
+On Unix or Linux systems
+========================
 
-        if has('python')
-          python <<EOF
-        import os, sys
-        sys.path.append(os.path.expanduser('~/.vim/python'))
-        EOF
-        endif
+On Linux or other Unix systems, you might follow the instructions
+above, meant for non-Unix systems; they should work for Unix systems
+as well.  Or else, you may fetch:
 
-. : System wide installation
+    http://fp-etc.progiciels-bpi.ca/archives/allout-vim.tgz
 
-    If you have super-user privileges, this tool may be installed
-    system-wide, for all users.  Before doing so, you have to find out
-    what is the `$VIM' value for your installation.  Within Vim, ask:
+You may either install this tool for your user account only, or for
+all users in your system.
 
-        :echo $VIM
+Personal installation
+---------------------
 
-    Let's presume the listed value is VIMDIRECTORY.  Then within a
-    shell, execute the following command:
+This tool may be installed for your user account only, and this
+might be your only choice if you do not have super-user privileges.
+Merely type ``make install-user`` from the unpacked ``allout-vim``
+distribution.  Your ``~/.vimrc`` file should be modified, or created
+if necessary, to contain the following lines::
 
-        make install-root VIM=VIMDIRECTORY
+    if has('python')
+      python <<EOF
+    import os, sys
+    sys.path.append(os.path.expanduser('~/.vim/python'))
+    EOF
+    endif
 
-    This will use "$VIM/vimfiles/", which is the standard location for
-    local site additions.  If you do not like this choice, then modify
-    file "Makefile" as you see fit.
+System wide installation
+------------------------
 
-    You also have to manage so Python will know how to import modules
-    from the "$VIM/vimfiles/python/" subdirectory.  You may find a
-    few hints about how to do this by looking at the last half of the
-    section "On Windows and other non-Unix systems", above.
+If you have super-user privileges, this tool may be installed
+system-wide, for all users.  Before doing so, you have to find out
+what is the ``$VIM`` value for your installation.  Within Vim, ask::
 
-    If the whole `Allout' package has been installed, and not only
-    `allout-vim', Python should find the proper module in the installed
-    Allout package rather than within "$VIM/vimfiles/python/".  So in
-    this particular case, this should be less of a concern.
+    :echo $VIM
 
-.. Reporting problems
+Let's presume the listed value is :file:`VIMDIRECTORY`.  Then within a
+shell, execute the following command::
 
-   Email to mailto:pinard@iro.umontreal.ca for reporting documentation
-   or execution bugs, or for sharing suggestions.
+    make install-root VIM=VIMDIRECTORY
+
+This will use :file:`$VIM/vimfiles/`, which is the standard location for
+local site additions.  If you do not like this choice, then modify
+file :file:`Makefile` as you see fit.
+
+You also have to manage so Python will know how to import modules from
+the :file:`$VIM/vimfiles/python/` subdirectory.  You may find a few
+hints about how to do this by looking at the last half of the section
+`On Windows and other non-Unix systems`, above.
+
+If the whole Allout package has been installed, and not only
+``allout-vim``, Python should find the proper module in the installed
+Allout package rather than within :file:`$VIM/vimfiles/python/`.  So in
+this particular case, this should be less of a concern.
+
+Reporting problems
+==================
+
+Email to mailto:pinard@iro.umontreal.ca for reporting documentation
+or execution bugs, or for sharing suggestions.
+
+.. sectnum::
