@@ -18,12 +18,15 @@ long or complex expressions.  This tool requires a Python-enabled Vim.
 6. Other commands                       |pynits-miscellaneous|
 7. Caveats and future                   |pynits-caveats|
 
-The Pynits tool may be downloaded from:
-    http://fp-etc.progiciels-bpi.ca/showfile.html?mode=archives
-while installation directions may be found at:
-    http://fp-etc.progiciels-bpi.ca/showfile.html?name=pynits/README
-This file you are reading is also available on the Web as:
-    http://fp-etc.progiciels-bpi.ca/showfile.html?name=pynits/pynits.txt
+The file you are now reading is also available on the Web as:
+    http://fp-etc.progiciels-bpi.ca/pynits-doc.html
+The Pynits tool may be downloaded from either:
+    http://fp-etc.progiciels-bpi.ca/archives/pynits.tgz
+    http://fp-etc.progiciels-bpi.ca/archives/pynits.zip
+Installation directives may be found at:
+    http://fp-etc.progiciels-bpi.ca/pynits.html
+Source files for Pynits are available as:
+    http://github.com/pinard/FP-etc/blob/master/pynits/
 
 WARNING: This tool is in alpha state, its specifications may change.
 Write to the author for corrections, suggestions or bug reports.

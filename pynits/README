@@ -10,7 +10,7 @@ Pynits is a tool which I find useful while editing Python source code
 with Vim, for tidying up individual sources lines.  It is particularily
 helpful when formatting lines holding long or complex expressions.
 
-The documentation is kept in file `"pynits.txt"`__, which you may browse or
+The documentation is kept in file `pynits.txt`__, which you may browse or
 print, yet it is meant for the Vim help system.  Once the installation
 is completed as per the steps described below, and from within Vim, you
 may quickly get back to the documentation through the command::
@@ -21,13 +21,14 @@ Pynits messages are also available in French, given the ``LANG``
 environment variable is ``fr`` or a variant of ``fr``, before you call
 Vim.
 
-__ /pynits/pynits.txt
+__ /pynits-doc.html
 
 On Windows or other non-Unix systems
 ====================================
 
 You likeley have fetched a recent ``.zip`` archive from:
-http://fp-etc.progiciels-bpi.ca/archives
+
+    http://fp-etc.progiciels-bpi.ca/archives
 
 Choose the directory where you want the files installed.  This is
 normally one of the directories listed by VIM command::
@@ -43,16 +44,16 @@ For making the documentation available to VIM, execute VIM commands::
 replacing ``DIRECTORY`` in the command above, of course.
 
 You have to manage in such a way that Python will successfully import
-file "python/pynits.py".  One way is changing your Python installation
-so it will look in that directory.  See your Python documentation for
-knowing where the directory ``site-packages/`` is, then add these lines
-to file ".../site-packages/sitecustomize.py"::
+file :file:`python/pynits.py`.  One way is changing your Python
+installation so it will look in that directory.  See your Python
+documentation for knowing where the directory :file:`site-packages/` is,
+then add these lines to file file:`.../site-packages/sitecustomize.py`::
 
     import sys
-    sys.path.append("DIRECTORY/python")
+    sys.path.append('DIRECTORY/python')
 
 once again replacing ``DIRECTORY`` as appropriate, above.  Another way
-is to move the just installed file "python/pynits.py" into another
+is to move the just installed file :file:`python/pynits.py` into another
 directory on the Python import search path.  Pick a directory among
 those Python lists when you interactively execute::
 
@@ -71,10 +72,11 @@ holds at least the following line::
 On Unix or Linux systems
 ========================
 
-On Linux or other Unix systems, you might follow the instructions
-above, meant for non-Unix systems, they should work as
-well.  Or else, you may fetch a recent ``.tgz`` archive from:
-http://fp-etc.progiciels-bpi.ca/archives
+On Linux or other Unix systems, you might follow the instructions above,
+meant for non-Unix systems, they should work as well.  Or else, you may
+fetch a recent ``.tgz`` archive from:
+
+    http://fp-etc.progiciels-bpi.ca/archives
 
 You may either install this tool for yourself only, or for all users in
 your system.
@@ -111,12 +113,12 @@ execute the following command::
 
 This will use :file:`$VIM/vimfiles/`, which is the standard location for
 local site additions.  If you do not like this choice, then modify
-file "Makefile" as you see fit.
+file :file:`Makefile` as you see fit.
 
 You also have to manage so Python will know how to import modules from
 the :file:`$VIM/vimfiles/python/` subdirectory.  You may find a few
 hints about how to do this by looking at the last half of the section
-"On Windows and other non-Unix systems", above.
+`On Windows and other non-Unix systems`, above.
 
 Reporting problems
 ==================
