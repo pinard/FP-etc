@@ -88,8 +88,8 @@ class Converter:
                 text = tools.Note.canonical[text.lower()]
             note2 = tools.Note.registry.get(text)
             if note2 is None:
-                note2.run.report_error(
-                        note2.title, "Refers to missing \"%s\"" % text)
+                note.run.report_error(
+                        note.title, "Refers to missing \"%s\"" % text)
                 return replace(text_sans)
             if not tools.is_linkable(note, note2):
                 note.run.report_error(
