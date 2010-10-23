@@ -1,22 +1,28 @@
-* TODO items for Allout support in Vim
+TODO items for Allout support in Vim
+====================================
 
-.. Improve existing commands.
-. : Renumber subsequent bullets when creating or deleting headings.
++ Improve existing commands
 
-.. Implement \@ to support link bullets.
-. : Open files in Vim.
-. : Send URLs to external browsers.
-. : `Ex'ecute lines starting with `:'.
+  + Renumber subsequent bullets when creating or deleting headings.
 
-.. Visual mode (but how?)
-. : Navigation commands should extend/shrink the region.
++ Implement \\@ to support link bullets.
 
-.. Insert mode (but how?)
-. : Automatically adding a margin for text after a heading.
-. : Shifting an explicit heading back to the left margin.
-. : Allow navigation commands without leaving mode.
-. : Allow heading creation splitting at point, not doing \$ first.
+  + Open files in Vim.
+  + Send URLs to external browsers.
+  + **Ex**\_ecute lines starting with ``:``.
 
-.. Refilling.
-. : Paragraph boundaries should exclude headings.
-. : Refilling might optionally occur while shifting text.
++ Visual mode (but how?)
+
+  + Navigation commands should extend/shrink the region.
+
++ Insert mode (but how?)
+
+  + Automatically adding a margin for text after a heading.
+  + Shifting an explicit heading back to the left margin.
+  + Allow navigation commands without leaving mode.
+  + Allow heading creation splitting at point, not doing \\$ first.
+
++ Refilling.
+
+  + Paragraph boundaries should exclude headings.
+  + Refilling might optionally occur while shifting text.

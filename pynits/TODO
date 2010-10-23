@@ -1,3 +1,5 @@
-* TODO items for Python editing support in Vim
+============================================
+TODO items for Python editing support in Vim
+============================================
 
-.. Handle all `REVOIR:' items within `vim.py'.
+Handle all ``REVOIR:`` items within ``vim.py``.
