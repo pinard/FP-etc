@@ -121,7 +121,8 @@ class Site:
         # Create a blog page.
         if self.host in ('alcyon', 'phenix'):
             import blog
-            self.maybe_replace(blog.Blog_maker(self.run).apply(converter),
+            blog_converter = convert.Blog_converter()
+            self.maybe_replace(blog.Blog_maker(self.run).apply(blog_converter),
                                directory + '/blog.html')
 
         # Clean up.

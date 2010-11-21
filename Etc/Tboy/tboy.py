@@ -34,8 +34,9 @@ Options pour un site Web de notes:
   -X   Afficher l'arbre XML digéré (avec l'un de -dhpw)
 
 Si -o est utilisée, NOTE doit donner le titre d'une seule note, et OUTPUT
-doit alors se terminer par .html, .pdf, .rst, .wiki ou .xml.  Si OUTPUT
-se termine par .pdf, le .xml correspondant est aussi produit.
+doit alors se terminer par .html, .mt, .pdf, .rst, .wiki ou .xml.
+Si OUTPUT se termine par .pdf, le .xml correspondant est aussi produit.
+L'extension .mt indique le format Movable Type (étape vers Blogger).
 Si aucun argument NOTE n'est donné, alors TOMBOY_DIR/*.note est présumé.
 """
 
@@ -129,6 +130,9 @@ class Main:
                 if output.endswith('.html'):
                     file(output, 'w').write(
                             self.convert(title, convert.Html_converter))
+                elif output.endswith('.mt'):
+                    file(output, 'w').write(
+                            self.convert(title, convert.MT_converter))
                 elif output.endswith('.pdf'):
                     xml = output[:-4] + '.xml'
                     file(xml, 'w').write(

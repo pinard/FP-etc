@@ -115,7 +115,7 @@ class Blog_maker:
     def convert_from_title(self, title, converter):
         note = tools.Note.registry.get(title)
         if note is not None:
-            return converter.convert(note, blog=True)
+            return converter.convert(note)
         self.run.report_error(title, "Not found")
 
     def blog_section(self, title, text):
