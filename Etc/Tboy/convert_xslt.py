@@ -114,9 +114,6 @@ class Fixup(Traversal):
             if match:
                 element.set('date-caption', match.group(1))
                 element.text = element.text[match.end():]
-                #if not run.making_blog:
-                #    run.site.blog_entries.append(
-                #            (self.title, self.date_caption))
 
         def fixup_sections():
             # A section is either major or minor.  In a Tomboy note, a

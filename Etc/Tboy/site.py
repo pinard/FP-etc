@@ -25,7 +25,6 @@ class Site:
         self.run = run
         self.host = socket.gethostname()
         self.number_by_math = {}
-        self.blog_entries = []
         # Fill in the note registry.
         for note in self.run.each_public_note():
             pass
@@ -117,13 +116,6 @@ class Site:
             self.maybe_replace(
                     self.create_through_xslt(entries, 'recent-index.xsl'),
                     directory + '/recent.html')
-
-        # Create a blog page.
-        if self.host in ('alcyon', 'phenix'):
-            import blog
-            blog_converter = convert.Blog_converter()
-            self.maybe_replace(blog.Blog_maker(self.run).apply(blog_converter),
-                               directory + '/blog.html')
 
         # Clean up.
         for name in sorted(self.output_names):

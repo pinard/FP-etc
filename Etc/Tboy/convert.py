@@ -206,7 +206,7 @@ class Docbook_converter(Converter):
 class Html_converter(Converter):
 
     def convert(self, note):
-        blog = isinstance(self, Blog_converter)
+        movable_type = isinstance(self, MT_converter)
         self.note = note
         if note.run.xslt:
 
@@ -214,13 +214,13 @@ class Html_converter(Converter):
             document = note.get_fixed_document()
             xslt = xsl_transformer('html.xsl')
             xml = xslt(xml,
-                       blog=xsl_boolean(blog),
+                       blog=xsl_boolean(movable_type),
                        styleurl=xsl_string(note.run.site.styleurl))
             buffer = etree.tostring(xml.getroot()) + '\n'
             # Éliminer les déclarations de namespace.  (Tidy les oublie?)
             buffer = re.sub(r'(<[^>\s]*)(\s*xmlns(:[^>=]*)?\s*=\s*"[^>"]*")*',
                             r'\1', buffer)
-            if note.run.reformat and not blog:
+            if note.run.reformat and not movable_type:
                 work = tempfile.mktemp('-tboy-for-tidy')
                 file(work, 'w').write(buffer.encode(tools.ENCODING))
                 # FIXME: Enlever le /dev/null
@@ -233,13 +233,13 @@ class Html_converter(Converter):
 
         else:
 
-            if isinstance(self, Blog_converter):
+            if isinstance(self, MT_converter):
                 document = self.document_from_note(note)
             else:
                 self.last_modified = note.date
                 document = self.document_from_note(note)
                 self.last_modified = None
-            if note.run.reformat and not blog:
+            if note.run.reformat and not movable_type:
                 work = tempfile.mktemp('-tboy-for-tidy')
                 document.html_output(
                         codecs.open(work, 'w', tools.ENCODING).write, self)
@@ -326,10 +326,7 @@ class Html_converter(Converter):
     def break_line(self, write):
         write('<br />\n')
 
-class Blog_converter(Html_converter):
-    pass
-
-class MT_converter(Blog_converter):
+class MT_converter(Html_converter):
 
     def convert(self, note):
         self.note = note
@@ -1000,14 +997,12 @@ class Monospace_node(Node):
         converter.literally = False
 
 class Note_content_node(Node):
-    date_caption = None
 
     def node_repr(self):
         return Node.node_repr(self) + ' ' + self.note.title
 
     def fixup(self, converter):
         self.fixup_title_line()
-        self.fixup_date_line(converter)
         self.fixup_sections()
         Node.fixup(self, converter)
         Node.fixup_hide_links(self)
@@ -1026,19 +1021,6 @@ class Note_content_node(Node):
         if not self:
             # DocBook requires at least one paragraph.
             self.append('')
-
-    def fixup_date_line(self, converter):
-        text = self[0]
-        if not isinstance(text, Node):
-            match = re.match(
-                    '\n*([12][901]\\d\\d-[0-2]\\d(-[0-3]\\d)?)\n*',
-                    text)
-            if match:
-                self.date_caption = match.group(1)
-                self[0] = text[match.end():]
-                if not isinstance(converter, Blog_converter):
-                    self.note.run.site.blog_entries.append(
-                            (self.note.title, self.date_caption))
 
     def fixup_sections(self):
         # A section is either major or minor.  In a Tomboy note, a section is
@@ -1176,34 +1158,8 @@ class Note_content_node(Node):
         self.output_paragraphs(write, converter)
 
     def html_output(self, write, converter):
-        if isinstance(converter, MT_converter):
-            if self.date_caption is not None:
-                match = re.match('([12]\\d\\d\\d)-(\\d\\d)-(\\d\\d)$',
-                                 self.date_caption)
-                if match:
-                    date = '%s/%s/%s 09:00:00 AM' % match.group(2, 3, 1)
-                else:
-                    match = re.match('([12]\\d\\d\\d)-(\\d\\d)$',
-                                     self.date_caption)
-                    if match:
-                        date = '%s/15/%s 09:00:00 AM' % match.group(2, 1)
-                    else:
-                        assert False, self.date_caption
-            else:
-                date = ''
-            pretty = tools.pretty_title(self.note.title.strip())
-            write(converter.movable_prefix(pretty, date))
-            self.output_paragraphs(write, converter)
-            write(converter.movable_suffix())
-            return
-
-        if not isinstance(converter, Blog_converter):
+        if not isinstance(converter, MT_converter):
             write('<body>\n')
-        if self.date_caption is not None:
-            write('<table align="right">\n'
-                  '<tbody><tr><td class="caption"><h3>' + self.date_caption
-                  + '</h3></td></tr></tbody>\n'
-                  '</table>\n')
         pretty = tools.pretty_title(self.note.title.strip())
         if isinstance(converter, MT_converter):
             editor = None
@@ -1221,7 +1177,7 @@ class Note_content_node(Node):
                   % (editor, converter.escape(pretty),
                      converter.escape(self.note.title)))
         self.output_paragraphs(write, converter)
-        if not isinstance(converter, Blog_converter):
+        if not isinstance(converter, MT_converter):
             write('</body>\n')
 
     def rest_output(self, write, converter):
@@ -1250,7 +1206,7 @@ class Note_node(Node):
                 '</article>\n')
 
     def html_output(self, write, converter):
-        if isinstance(converter, Blog_converter):
+        if isinstance(converter, MT_converter):
             self.output_branches(write, converter)
         else:
             write(tools.HTML_DOCTYPE)
@@ -1291,14 +1247,6 @@ class Section_node(Node):
         write(('</sect2>', '</sect1>')[self.major] + '\n')
 
     def html_output(self, write, converter):
-        if isinstance(converter, MT_converter):
-            match = re.match('([12]\\d\\d\\d)-(\\d\\d)-(\\d\\d)$', self.title)
-            if match:
-                date = '%s/%s/%s 09:00:00 AM' % match.group(2, 3, 1)
-                write(converter.movable_prefix(self.title, date))
-                self.output_paragraphs(write, converter)
-                write(converter.movable_suffix())
-                return
         title = converter.escape(self.title_prefix + self.title)
         if self.numbers:
             write(('<h3>', '<h2>')[self.major]
@@ -1350,7 +1298,7 @@ class Title_node(Node):
         write('</title>')
 
     def html_output(self, write, converter):
-        if not isinstance(converter, Blog_converter):
+        if not isinstance(converter, MT_converter):
             write('<head>\n' 
                   '<meta http-equiv="Content-Type"'
                   ' content="text/html; charset=utf-8" />\n')
