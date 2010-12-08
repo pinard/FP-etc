@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 # Copyright © 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2001.
 
@@ -61,7 +61,8 @@ Here is a simplistic example.  Suppose `cliff' is an Internet host for
 which we already have immediate SSH access through the proper key setup.
 To get `cliff' to compute `2 + 3', a Python expression, one uses this:
 
-    from Local import remote
+    # The "from Etc" only if "fp-etc" has been installed, adapt as needed.
+    from Etc import remote
     server = remote.Server('cliff')
     print server.eval('2 + 3')
     server.close()
@@ -414,8 +415,6 @@ def make_telnet_server(path, trace, insist=False):
         password = getpass.getpass("Password: ")
     else:
         return None
-    if host == 'production':
-        return Prod_Server(host, trace, login, password)
     return Telnet_Server(host, trace, login, password)
 
 class Telnet_Server(Remote_Server):
@@ -558,15 +557,6 @@ class Telnet_Server(Remote_Server):
                 elif text.endswith('\n'):
                     text = text[:-1]
                 assert line == text, (line, text)
-
-class Prod_Server(Telnet_Server):
-
-    def open_connection_chat(self):
-        import telnetlib
-        self.telnet = telnetlib.Telnet('gduc')
-        self.perform_chat(('ogin:', 'prod\r'),
-                          ('ogin:', self.login + '\r'),
-                          ('word:', self.password + '\r'))
 
 def split_path(path):
     """\
