@@ -1,0 +1,22 @@
+# Configuration personnelle pour NoSpam.
+# Copyright © 2001, 2002, 2003, 2004, 2007 Progiciels Bourbeau-Pinard inc.
+# François Pinard <pinard@iro.umontreal.ca>, 2001.
+
+here            alcyon.progiciels-bpi.ca phenix.progiciels-bpi.ca \
+                progiciels-bpi.ca
+check           body
+locals          file:~/.poste/locals file:~/.poste/listes
+#locals          hash:~/.poste/locals
+#domains         hash:~/.poste/domains
+check           date from received to_cc subject
+#check           charset message_id precedence
+mailers         file:~/.poste/mailers
+extensions      hash:~/.poste/extensions
+mimetypes       file:~/.poste/mimetypes
+#words           hash:~/.poste/words
+#locutions       hash:~/.poste/locutions
+languages       English French
+#spambayes       0.90 1.00
+#check          viruses
+#check           spambayes
+#blacklists      dialups relays blackholes
