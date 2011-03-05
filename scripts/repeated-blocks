@@ -13,13 +13,15 @@ Options:
   -b           A token is a run of non-whitespace characters (blob)
   -l           A token is exactly an input line (line)
   -w           A token is a run of word constituent characters (word)
+  -i PATTERN   Any token matching this regexp pattern gets ignored
   -m MINIMUM   Minimum number of tokens in a block (default 3)
   -M MAXIMUM   Maximum number of tokens in a block (no default)
   -f           Print output sorted by first file and position
   -v           Entertain users about processing steps
   -x           Also read a list of file names from standard input
+  -p           Print files, replacing repeated contents with references
 
-If none of -b, -l or -l, then -l is assumed.
+If none of -b, -l or -w, then -l is assumed.
 
 With -x, standard input holds one file name per line.  Without -x and
 without File arguments, read and process standard input contents.
@@ -37,15 +39,17 @@ class Main:
     verbose = False
     minimum = 3
     maximum = None
+    ignore = None
     filesort = False
     xargs = False
     token = None
+    printall = False
 
     def main(self, *arguments):
 
         # Decode options
         import getopt
-        options, arguments = getopt.getopt(arguments, 'bfhlm:M:vxw')
+        options, arguments = getopt.getopt(arguments, 'bfhi:lm:M:pvxw')
         for option, value in options:
             if option == '-b':
                 assert self.token is None, self.token
@@ -55,6 +59,8 @@ class Main:
             elif option == '-h':
                 sys.stdout.write(__doc__)
                 return
+            elif option == '-i':
+                self.ignore = re.compile(value)
             elif option == '-l':
                 assert self.token is None, self.token
                 self.token = 'line'
@@ -62,6 +68,8 @@ class Main:
                 self.minimum = int(value)
             elif option == '-M':
                 self.maximum = int(value)
+            elif option == '-p':
+                self.printall = True
             elif option == '-v':
                 self.verbose = True
             elif option == '-x':
@@ -77,7 +85,10 @@ class Main:
         clusters = self.initialize_clusters(buffers)
         clusters = self.grow_clusters(clusters)
         clusters = self.delete_overlaps(clusters)
-        self.print_clusters(clusters)
+        if self.printall:
+            self.print_everything(clusters)
+        else:
+            self.print_clusters(clusters)
 
     def readin_files(self, arguments):
         buffers = []
@@ -284,6 +295,19 @@ class Main:
                              % (len(clusters), block_count, line_count,
                                 self.token))
 
+    def print_everything(self, clusters):
+        pairs = []
+        for cluster in clusters:
+            for counter, block in enumerate(cluster):
+                if counter == 0:
+                    pairs.append((block, None))
+                    reference = block
+                else:
+                    pairs.append((block, reference))
+        pairs.sort()
+        for block, reference in pairs:
+            print block.buffer.name, block.first, block.limit, bool(reference)
+
 class Buffer:
     ordinal = 0
 
@@ -299,6 +323,8 @@ class Buffer:
         self.start = []
         self.end = []
         for match in re.finditer(pattern, self.text):
+            if run.ignore is not None and run.ignore.match(match.group()):
+                continue
             self.start.append(match.start())
             self.end.append(match.end())
         Buffer.ordinal += 1
