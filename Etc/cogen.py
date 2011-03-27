@@ -91,9 +91,9 @@ product is a list containing an element taken from each original sequence.
             yield []
     else:
         head, tail = sequences[:-1], sequences[-1]
-	for result in cartesian(*head):
+        for result in cartesian(*head):
             for last in tail:
-		yield result + [tail]
+                yield result + [tail]
 
 def subsets(sequence):
     """\
@@ -163,18 +163,18 @@ Generate all combinations of NUMBER elements from list SEQUENCE.
     # Adapted from Python 2.2 `test/test_generators.py'.
     length = len(sequence)
     if number > length:
-	return
+        return
     if number == 0:
-	yield []
+        yield []
     else:
-	head, tail = sequence[0], sequence[1:]
-	# Some combinations retain HEAD.
-	for result in combinations(tail, number-1):
-	    result.insert(0, head)
-	    yield result
-	# Some combinations do not retain HEAD.
-	for result in combinations(tail, number):
-	    yield result
+        head, tail = sequence[0], sequence[1:]
+        # Some combinations retain HEAD.
+        for result in combinations(tail, number-1):
+            result.insert(0, head)
+            yield result
+        # Some combinations do not retain HEAD.
+        for result in combinations(tail, number):
+            yield result
 
 def arrangements(sequence, number):
     """\
@@ -183,17 +183,17 @@ Generate all arrangements of NUMBER elements from list SEQUENCE.
     # Adapted from PERMUTATIONS below.
     length = len(sequence)
     if number > length:
-	return
+        return
     if number == 0:
-	yield []
+        yield []
     else:
-	cut = 0
-	for element in sequence:
-	    for result in arrangements(sequence[:cut] + sequence[cut+1:],
-				       number-1):
-		result.insert(0, element)
-		yield result
-	    cut += 1
+        cut = 0
+        for element in sequence:
+            for result in arrangements(sequence[:cut] + sequence[cut+1:],
+                                       number-1):
+                result.insert(0, element)
+                yield result
+            cut += 1
 
 def permutations(sequence):
     """\
@@ -223,42 +223,42 @@ Generate all permutations from list SEQUENCE.
         else:
             yield []
     else:
-	cut = 0
-	for element in sequence:
-	    for result in permutations(sequence[:cut] + sequence[cut+1:]):
-		result.insert(0, element)
-		yield result
-	    cut += 1
+        cut = 0
+        for element in sequence:
+            for result in permutations(sequence[:cut] + sequence[cut+1:]):
+                result.insert(0, element)
+                yield result
+            cut += 1
 
 def test():
     if False:
-	print '\nTesting CARTESIAN.'
-	for result in cartesian((5, 7), [8, 9], 'abc'):
-	    print result
+        print '\nTesting CARTESIAN.'
+        for result in cartesian((5, 7), [8, 9], 'abc'):
+            print result
     if True:
         print '\nTesting SUBSETS.'
         for result in subsets(range(1, 5)):
             print result
     if False:
-	print '\nTesting COMBINATIONS.'
-	sequence = range(1, 5)
+        print '\nTesting COMBINATIONS.'
+        sequence = range(1, 5)
         length = len(sequence)
-	for counter in range(length + 2):
-	    print "%d-combs of %s:" % (counter, sequence)
-	    for result in combinations(sequence, counter):
-		print "   ", result
+        for counter in range(length + 2):
+            print "%d-combs of %s:" % (counter, sequence)
+            for result in combinations(sequence, counter):
+                print "   ", result
     if False:
-	print '\nTesting ARRANGEMENTS.'
-	sequence = range(1, 5)
+        print '\nTesting ARRANGEMENTS.'
+        sequence = range(1, 5)
         length = len(sequence)
-	for counter in range(length + 2):
-	    print "%d-arrs of %s:" % (counter, sequence)
-	    for result in arrangements(sequence, counter):
-		print "   ", result
+        for counter in range(length + 2):
+            print "%d-arrs of %s:" % (counter, sequence)
+            for result in arrangements(sequence, counter):
+                print "   ", result
     if False:
-	print '\nTesting PERMUTATIONS.'
-	for permutation in permutations(range(1, 5)):
-	    print permutation
+        print '\nTesting PERMUTATIONS.'
+        for permutation in permutations(range(1, 5)):
+            print permutation
 
 if __name__ == '__main__':
     test()

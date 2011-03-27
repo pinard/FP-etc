@@ -18,7 +18,7 @@ class Main:
         import getopt
         options, arguments = getopt.getopt(arguments, '')
         for option, valeur in options:
-             pass
+            pass
         if arguments:
             for argument in arguments:
                 self.traiter(open(argument))
