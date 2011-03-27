@@ -30,13 +30,14 @@ and disabled, the enabled status is restored to what it was.
                 (time.time() - wall_start) / repeat - calibration[1])
     # Is it the first time?
     if not calibration:
-        # Find the overhead coming from the measurement mechanics,
+        # Find the overhead coming from the measurement mechanics.
+        loops = 100000
         wall_start = time.time()
         cpu_start = time.clock()
-        for counter in xrange(1e4):
+        for counter in xrange(loops):
             calibrate()
-        calibration.append((time.clock() - cpu_start) / 1e4)
-        calibration.append((time.time() - wall_start) / 1e4)
+        calibration.append((time.clock() - cpu_start) / loops)
+        calibration.append((time.time() - wall_start) / loops)
         # Produce column headings.
         write('    GC enabled          GC disabled    Ratio  Function Name\n')
         write('   CPU      wall       CPU      wall  ena/dis\n')
