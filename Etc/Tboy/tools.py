@@ -74,7 +74,7 @@ def xsl_transformer(name, cache={}):
     xslt = cache.get(name)
     if xslt is None:
         filename = os.path.join(os.path.dirname(sys.argv[0]),
-                                '../share/tboy', name) 
+                                '../share/tboy', name)
         xslt = cache[name] = etree.XSLT(etree.parse(filename))
     return xslt
 
@@ -150,7 +150,7 @@ class Sweeper:
                 self.errors.append((title, u"Unreachable", None))
         for title, diagnostic, location in sorted(self.errors):
             if location is not None:
-                diagnostic += ' (' + location.context() + ')' 
+                diagnostic += ' (' + location.context() + ')'
             self.run.report_error(self.realtitle[title], diagnostic)
 
 class Location:
@@ -198,6 +198,19 @@ class Note:
         if self.template:
             return
         self.notebook = note.get('notebook')
+        if self.notebook == 'Entretien':
+            if self.title == 'FP etc.:t':
+                self.notebook = 'FP etc.'
+            elif self.title == 'Paxutils:t':
+                self.notebook = 'Paxutils'
+            elif self.title in ('dkuug:t', 'Recode and thread-safety:t'):
+                self.notebook = 'Recode'
+            elif self.title in ('python-twyt:t', 'TweeTabs as a project:t',
+                                'TweeTabs Reference:t', 'TweeTabs Tutorial:t',
+                                'TweeTabs:t'):
+                self.notebook = 'TweeTabs'
+            elif self.title == 'xxml:t':
+                self.notebook = 'xxml'
         if self.notebook is None:
             self.run.report_error(self.title, "Unknown notebook")
 
