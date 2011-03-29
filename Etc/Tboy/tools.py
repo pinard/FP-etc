@@ -89,6 +89,7 @@ def xsl_string(value):
     return '""'
 
 class Sweeper:
+    todo_file = os.path.expanduser('~/fp/WorkFlowy.dump')
 
     def __init__(self, run, notes):
         self.run = run
@@ -145,9 +146,17 @@ class Sweeper:
                         return path
 
     def report_errors(self):
+        todo_buffer = None
         for title in set(self.arrows) - self.marked:
             if not is_ignorable_title(title):
-                self.errors.append((title, u"Unreachable", None))
+                if todo_buffer is None:
+                    if os.path.exists(self.todo_file):
+                        todo_buffer = (open(self.todo_file).read()
+                                       .decode('UTF-8').lower())
+                    else:
+                        todo_buffer = ''
+                if title.lower() not in todo_buffer:
+                    self.errors.append((title, u"Unreachable", None))
         for title, diagnostic, location in sorted(self.errors):
             if location is not None:
                 diagnostic += ' (' + location.context() + ')'
