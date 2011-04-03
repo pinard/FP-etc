@@ -249,7 +249,7 @@ class Main:
     def convert(self, title, factory):
         converter = factory()
         for note in self.each_note():
-            if note.title.lower() == title.lower():
+            if note.title == title:
                 return converter.convert(note)
         raise self.Fatal("Not found: " + title)
 
@@ -268,7 +268,7 @@ class Main:
 
     def find_file(self, title):
         for note in self.each_note():
-            if note.title.lower() == title.lower():
+            if note.title == title:
                 sys.stdout.write(note.input_name + '\n')
 
     def grep_notes(self, pattern):

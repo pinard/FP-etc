@@ -62,8 +62,6 @@ class Fixup(Traversal):
             print '** internal = None'
             return
         text_sans = pretty_title(text)
-        if text.lower() in Note.canonical:
-            text = Note.canonical[text.lower()]
         note = Note.registry.get(text)
         if note is None:
             self.run.report_error(

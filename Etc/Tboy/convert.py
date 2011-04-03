@@ -84,8 +84,6 @@ class Converter:
                 print '** internal = None'
                 return ''
             text_sans = tools.pretty_title(text)
-            if text.lower() in tools.Note.canonical:
-                text = tools.Note.canonical[text.lower()]
             note2 = tools.Note.registry.get(text)
             if note2 is None:
                 note.run.report_error(

@@ -23,17 +23,16 @@ def clean_file_name(name):
     return re.sub('[ :/\\\\?\']{1,}', ' ', name).replace(' ', '_')
 
 def is_ignorable_title(title):
-    title = title.lower()
-    if title.startswith(u"modèle de bloc-notes "):
+    if title.startswith(u"Modèle de bloc-notes "):
         return True
-    if title.endswith(u" notebook template"):
+    if title.endswith(u" Notebook Template"):
         return True
-    return title in (u"nouveau modèle de note",
-                     u"démarrer ici",
-                     u"utilisation des liens dans tomboy",
-                     u"new note template",
-                     u"start here",
-                     u"using links in tomboy")
+    return title in (u"Nouveau modèle de note",
+                     u"Démarrer ici",
+                     u"Utilisation des liens dans Tomboy",
+                     u"New Note Template",
+                     u"Start Here",
+                     u"Using Links in Tomboy")
 
 def is_linkable(outer, inner):
     # May the outer note link to the inner note?
@@ -95,7 +94,6 @@ class Sweeper:
     def __init__(self, run, notes):
         self.run = run
         self.arrows = {}
-        self.realtitle = {}
         self.errors = []
         for note in notes:
             self.digest(codecs.open(note.input_name, 'r', ENCODING).read(),
@@ -103,29 +101,26 @@ class Sweeper:
         self.marked = set()
 
     def digest(self, buffer, name):
-        for fragment, location in each_xml_tag('title', buffer, name):
+        for title, location in each_xml_tag('title', buffer, name):
             break
         else:
             self.run.report_error(name, "No title")
             return
-        title = fragment.lower()
         if title not in self.arrows:
-            self.realtitle[title] = fragment
             self.arrows[title] = []
         for fragment, location in each_regexp(' \t', buffer, name):
             self.errors.append((title, u"Space then tab", location))
         for fragment, location in each_xml_tag('link:broken', buffer, name):
             self.errors.append((title, u"Broken link", location))
-        for fragment, location in each_xml_tag('link:internal', buffer, name):
-            internal = fragment.lower()
+        for internal, location in each_xml_tag('link:internal', buffer, name):
             for fragment, _ in each_xml_tag('monospace', internal, None):
                 internal = fragment
                 break
             self.arrows[title].append((internal, location))
 
     def mark(self, ancestor):
-        self.marked.add(ancestor.lower())
-        for child, location in self.arrows[ancestor.lower()]:
+        self.marked.add(ancestor)
+        for child, location in self.arrows[ancestor]:
             if child in self.arrows:
                 if not child in self.marked:
                     self.mark(child)
@@ -133,7 +128,7 @@ class Sweeper:
                 self.errors.append((ancestor, u"Dangling link", location))
 
     def find_path(self, start, goal):
-        return self.find_path_recursive(start.lower(), goal.lower(), [])
+        return self.find_path_recursive(start, goal, [])
 
     def find_path_recursive(self, start, goal, seen):
         seen = seen + [start]
@@ -153,16 +148,15 @@ class Sweeper:
                 if todo_buffer is None:
                     if os.path.exists(self.todo_file):
                         todo_buffer = (open(self.todo_file).read()
-                                       .decode('UTF-8').lower())
+                                       .decode('UTF-8'))
                     else:
                         todo_buffer = ''
-                if title.lower() not in todo_buffer:
+                if title not in todo_buffer:
                     self.errors.append((title, u"Unreachable", None))
         if os.path.exists(self.todo_file):
             pattern = re.compile(
                 ('\\b(%s)$'
-                 % '|'.join([re.escape(title)
-                            for title in self.realtitle.itervalues()])),
+                 % '|'.join([re.escape(title) for title in self.arrows])),
                 re.UNICODE)
             for line in codecs.open(self.todo_file, encoding=ENCODING):
                 line2 = line.strip()
@@ -175,7 +169,7 @@ class Sweeper:
         for title, diagnostic, location in sorted(self.errors):
             if location is not None:
                 diagnostic += ' (' + location.context() + ')'
-            self.run.report_error(self.realtitle[title], diagnostic)
+            self.run.report_error(title, diagnostic)
 
 class Location:
 
@@ -200,7 +194,6 @@ class Location:
 
 class Note:
     registry = {}
-    canonical = {}
 
     def __init__(self, run, input_name):
         self.run = run
@@ -212,10 +205,8 @@ class Note:
 
         # Once in daemon mode, the same note may be re-digested many times.
         #assert self.title not in Note.registry
-        #assert self.title.lower() not in Note.canonical
 
         Note.registry[self.title] = self
-        Note.canonical[self.title.lower()] = self.title
 
         self.date = note.get('date')
         self.template = bool(note.get('template'))
