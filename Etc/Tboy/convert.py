@@ -625,7 +625,7 @@ class Node(list):
                             link.append(match.group(2)[:-2])
                         else:
                             # The beginning backquote is in self[start], the
-                            # end backquote is in self[counter-1].  
+                            # end backquote is in self[counter-1].
                             self[start] = match.group(1)
                             self[counter-1] = self[counter-1][:-2]
                             link.append(match.group(2))
@@ -792,7 +792,7 @@ class Image_node(Node):
 
     def docbook_output(self, write, converter):
         pass
-    
+
     def html_output(self, write, converter):
         if self.link:
             write('<a href="%s">' % converter.escape_link(self.link))
@@ -940,7 +940,7 @@ class List_node(Node):
 
 class Monospace_node(Node):
     inline_markup = True
-                
+
     def docbook_output(self, write, converter):
         for branch in self:
             if isinstance(branch, Node):
@@ -972,7 +972,7 @@ class Monospace_node(Node):
         if converter.literally:
             write('</literal>')
             converter.literally = False
-                
+
     def html_output(self, write, converter):
         write('<tt class="file docutils literal"><span class="pre">')
         converter.literally = True
@@ -1297,7 +1297,7 @@ class Title_node(Node):
 
     def html_output(self, write, converter):
         if not isinstance(converter, MT_converter):
-            write('<head>\n' 
+            write('<head>\n'
                   '<meta http-equiv="Content-Type"'
                   ' content="text/html; charset=utf-8" />\n')
             styleurl = self.note.run.site.styleurl

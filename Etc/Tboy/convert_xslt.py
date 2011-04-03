@@ -287,7 +287,7 @@ class Fixup(Traversal):
                             link.append(match.group(2)[:-2])
                         else:
                             # The beginning backquote is in self[start], the
-                            # end backquote is in self[counter-1].  
+                            # end backquote is in self[counter-1].
                             self[start] = match.group(1)
                             self[counter-1] = self[counter-1][:-2]
                             link.append(match.group(2))

@@ -296,7 +296,7 @@ class Main:
             title = title.replace(':', '')
             if self.verbose:
                 sys.stdout.write(title + '\n')
-            contents = self.tomboy.GetNoteContents(note) 
+            contents = self.tomboy.GetNoteContents(note)
             codecs.open(title + '.txt', 'w', tools.ENCODING).write(contents)
 
     def diagnose_notes(self):
