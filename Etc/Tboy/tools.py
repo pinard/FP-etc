@@ -67,7 +67,8 @@ def each_xml_tag(tag, buffer, name):
         end = buffer.find(end_tag, start)
         if end < 0:
             break
-        yield buffer[start:end], Location(name, start, end)
+        yield (buffer[start:end].replace('&amp;', '&'),
+               Location(name, start, end))
         end += 3 + len(tag)
 
 def xsl_transformer(name, cache={}):
