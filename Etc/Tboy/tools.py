@@ -158,6 +158,20 @@ class Sweeper:
                         todo_buffer = ''
                 if title.lower() not in todo_buffer:
                     self.errors.append((title, u"Unreachable", None))
+        if os.path.exists(self.todo_file):
+            pattern = re.compile(
+                ('\\b(%s)$'
+                 % '|'.join([re.escape(title)
+                            for title in self.realtitle.itervalues()])),
+                re.UNICODE)
+            for line in codecs.open(self.todo_file, encoding=ENCODING):
+                line2 = line.strip()
+                if line2.startswith('- '):
+                    line2 = line2[2:]
+                for match in re.finditer('[^ ]:[bnpt]\\b', line2):
+                    if not pattern.search(line2, endpos=match.end()):
+                        self.run.report_error(
+                            'WorkFlowy', u"Unknown (%s)" % line2[:match.end()])
         for title, diagnostic, location in sorted(self.errors):
             if location is not None:
                 diagnostic += ' (' + location.context() + ')'
