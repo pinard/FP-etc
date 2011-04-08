@@ -39,11 +39,20 @@ else
   shell=sh
 fi
 
-if [ $LOGNAME = root ]; then
-  user=super
-else
-  user=normal
-fi
+case "$LOGNAME" in
+  root)
+    user=super
+    name=root
+    ;;
+  pinard|fpinard)
+    user=normal
+    name=
+    ;;
+  *)
+    user=normal
+    name=$LOGNAME
+    ;;
+esac
 
 if [ -n "$DOSWIN" ]; then
   # Le bash de DJGPP ajoute plusieurs blancs suffixes à \h.
@@ -51,21 +60,21 @@ if [ -n "$DOSWIN" ]; then
 else
   case $shell in
     sh)
-      ident=$LOGNAME'@'$HOST
+      ident=$name'@'$HOST
       ;;
     bash)
       if [ "$COLORTERM" = gnome-terminal ]; then
-        ident='\u@\h'
+        ident=$name'@\h'
         PROMPT_COMMAND='echo -e "\e]2;`pwd`\007\e]1;\007"'
-        PROMPT_DIRTRIM=2
       else
-        ident='\u@\h:\w'
+        ident=$name'@\h:\w'
+        PROMPT_DIRTRIM=2
       fi
       ;;
     zsh)
-      case $user in
-        root) ident='%n@%m:%/' ;;
-        normal) ident='%n@%m:%2~' ;;
+      case "$user" in
+        super) ident='%n@%m:%/' ;;
+        normal) ident=$name'@%m:%2~' ;;
       esac
       ;;
   esac
@@ -172,6 +181,7 @@ esac
 
 unset fond
 unset ident
+unset name
 unset shell
 unset usage
 unset user
