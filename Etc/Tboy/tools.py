@@ -90,6 +90,11 @@ def xsl_string(value):
 
 class Sweeper:
     todo_file = os.path.expanduser('~/fp/WorkFlowy.dump')
+    note_count = 0
+    character_count = 0
+    from_tomboy_count = 0
+    from_todo_count = 0
+    url_count = 0
 
     def __init__(self, run, notes):
         self.run = run
@@ -101,6 +106,8 @@ class Sweeper:
         self.marked = set()
 
     def digest(self, buffer, name):
+        self.note_count += 1
+        self.character_count += len(buffer)
         for title, location in each_xml_tag('title', buffer, name):
             break
         else:
@@ -113,10 +120,13 @@ class Sweeper:
         for fragment, location in each_xml_tag('link:broken', buffer, name):
             self.errors.append((title, u"Broken link", location))
         for internal, location in each_xml_tag('link:internal', buffer, name):
+            self.from_tomboy_count += 1
             for fragment, _ in each_xml_tag('monospace', internal, None):
                 internal = fragment
                 break
             self.arrows[title].append((internal, location))
+        for external, location in each_xml_tag('link:url', buffer, name):
+            self.url_count += 1
 
     def mark(self, ancestor):
         self.marked.add(ancestor)
@@ -163,13 +173,31 @@ class Sweeper:
                 if line2.startswith('- '):
                     line2 = line2[2:]
                 for match in re.finditer('[^ ]:[bnpt]\\b', line2):
-                    if not pattern.search(line2, endpos=match.end()):
+                    if pattern.search(line2, endpos=match.end()):
+                        self.from_todo_count += 1
+                    else:
                         self.run.report_error(
                             'WorkFlowy', u"Unknown (%s)" % line2[:match.end()])
         for title, diagnostic, location in sorted(self.errors):
             if location is not None:
                 diagnostic += ' (' + location.context() + ')'
             self.run.report_error(title, diagnostic)
+
+    def display_stats(self):
+        write = sys.stdout.write
+        write("%5d scanned Tomboy notes\n"
+              % self.note_count)
+        write("%5d K chars (Unicode), including XML\n"
+              % (self.character_count // 1000))
+        if self.from_tomboy_count:
+            write("%5d internal links from within Tomboy\n"
+                  % self.from_tomboy_count)
+        if self.from_todo_count:
+            write("%5d internal links from within WorkFlowy\n"
+                  % self.from_todo_count)
+        if self.url_count:
+            write("%5d contained URLs in Tomboy notes\n"
+                  % self.url_count)
 
 class Location:
 

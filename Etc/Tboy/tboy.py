@@ -21,9 +21,9 @@ Options pour une seule note:
 
 Options pour toutes les notes:
   -a              Donner le titre des notes, un par ligne
-  -s RÉPERTOIRE   Sauver les notes dans ce répertoire
+  -z RÉPERTOIRE   Sauver les notes dans ce répertoire
   -y              Auto-comparaison des notes et de leurs '(ancien)'
-  -z              Autre passe pour vérifier la santé des notes fournies
+  -s              Statistiques (et santé) pour les notes fournies
   -g GABARIT      Chercher dans les notes pour ce gabarit
 
 Options pour un site Web de notes:
@@ -65,18 +65,18 @@ class Main:
         auto_old = False
         create = None
         daemon = False
-        diagnose = False
         display = None
         extract = None
         find = None
         grep = None
         output = None
         save = None
+        stats = False
         web = False
 
         import getopt
         options, arguments = getopt.getopt(arguments,
-                                           'ab:c:de:f:g:no:rs:vwXxyz')
+                                           'ab:c:de:f:g:no:rsvwXxyz:')
         for option, value in options:
             if option == '-a':
                 all = True
@@ -99,7 +99,7 @@ class Main:
             elif option == '-r':
                 self.reformat = True
             elif option == '-s':
-                save = value
+                stats = True
             elif option == '-v':
                 self.verbose = True
             elif option == '-w':
@@ -111,7 +111,7 @@ class Main:
             elif option == '-y':
                 auto_old = True
             elif option == '-z':
-                diagnose = True
+                save = value
         self.arguments = list(arguments)
         if output:
             title = self.arguments.pop(0)
@@ -120,7 +120,7 @@ class Main:
         locale.setlocale(locale.LC_COLLATE, 'fr_CA.UTF-8')
 
         try:
-            if daemon or diagnose or extract or output or web:
+            if daemon or extract or output or stats or web:
                 import socket
                 host = socket.gethostname()
                 if host not in site.Site.registry:
@@ -149,7 +149,7 @@ class Main:
                             self.convert(title, convert.Wiki_converter))
                 else:
                     raise self.Fatal("Option -o not using a valid extension")
-            if diagnose:
+            if stats:
                 if self.diagnose_notes():
                     raise self.Fatal("Errors while sweeping notes")
             if all:
@@ -302,6 +302,7 @@ class Main:
     def diagnose_notes(self):
         sweeper = self.build_sweeper()
         sweeper.report_errors()
+        sweeper.display_stats()
         return bool(sweeper.errors)
 
     def build_sweeper(self):
