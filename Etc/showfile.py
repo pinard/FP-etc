@@ -12,7 +12,7 @@ import cPickle as pickle
 
 class error(Exception): pass
 
-#def generate(top, name, index, mode):
+#def generate(base, top, name, index, mode):
 #    if name is not None:
 #        # Jail NAME below the top directory.
 #        fragments = name.split('/')
@@ -36,43 +36,43 @@ class error(Exception): pass
 #    # Dispatch to the appropriate formatting class.
 #    if name is None:
 #        if mode == 'archives':
-#            html = Html_Archives(top)
+#            html = Html_Archives(base, top)
 #        elif mode == 'folders':
-#            html = Html_Folders(top)
+#            html = Html_Folders(base, top)
 #        else:
-#            html = Html_File_List(top)
+#            html = Html_File_List(base, top)
 #    elif os.path.isdir(os.path.join(top, name)):
-#        html = Html_File_List(top, name)
+#        html = Html_File_List(base, top, name)
 #    elif os.path.isfile(os.path.join(top, name)):
 #        if mode == 'folders':
 #            if index is None:
-#                html = Html_Summary(top, name)
+#                html = Html_Summary(base, top, name)
 #            else:
-#                html = Html_Message(top, name, index)
+#                html = Html_Message(base, top, name, index)
 #        else:
 #            base = os.path.basename(name)
 #            if base == 'NEWS':
-#                html = Html_Verbatim(top, name,
+#                html = Html_Verbatim(base, top, name,
 #                        u"NEWS - History of user-visible changes")
 #            #elif base == 'README':
-#            #    html = Html_Allout(top, name,
+#            #    html = Html_Allout(base, top, name,
 #            #            "README - Introductory notes")
 #            elif base == 'THANKS':
-#                html = Html_Thanks(top, name,
+#                html = Html_Thanks(base, top, name,
 #                        u"THANKS - People who have contributed")
 #            elif base == 'TODO':
-#                html = Html_Verbatim(top, name,
+#                html = Html_Verbatim(base, top, name,
 #                        u"TODO - Things still to be done")
 #            else:
 #                extension = os.path.splitext(base)[1]
 #                if extension == '.all':
-#                    html = Html_Allout(top, name)
+#                    html = Html_Allout(base, top, name)
 #                elif extension == '.html':
-#                    html = Html_Html(top, name)
+#                    html = Html_Html(base, top, name)
 #                else:
-#                    html = Html_File(top, name, mode)
+#                    html = Html_File(base, top, name, mode)
 #    else:
-#        html = Html_Buffer(top, name)
+#        html = Html_Buffer(base, top, name)
 #    return (html.html_title(), html.html_body(), html.html_buttons())
 
 # Base classes.
@@ -85,13 +85,12 @@ class Html:
     left = None
     right = None
 
-    def __init__(self, top, name):
+    def __init__(self, base, top, name):
+        self.base = base
         self.top = top
         self.name = name
         if name:
-            up = os.path.dirname(self.name)
-            if up != name:
-                self.up = up
+            self.up = '%s/%s.html' % (self.base, self.name)
 
     def __str__(self):
         return self.html_prefixe() + self.html_body() + self.html_suffixe()
@@ -140,20 +139,18 @@ class Html:
         write = fragments.append
         write('  <table class="navigation">\n'
               '   <tr>\n')
-        write('    <td class="left">\n')
+        write('    <td class="arrow">\n')
         if self.left is not None:
-            write(u'  <a href="/%s">←</a>\n' % self.left)
+            write(u'  <a href="%s">←</a>\n' % self.left)
         if self.up is not None:
-            write(u'  <a href="/%s">↑</a>\n' % self.up)
+            write(u'  <a href="%s">↑</a>\n' % self.up)
+        if self.right is not None:
+            write('  <a href="%s">→</a>\n' % self.right)
         write('    </td>\n')
         write('    <td class="title">')
         if title is not None:
             write(enhanced(title))
         write('</td>\n')
-        write('    <td class="right">\n')
-        if self.right is not None:
-            write('  <a href="/%s">→</a>\n' % self.right)
-        write('    </td>\n')
         write('   </tr>\n'
               '  </table>\n')
         write('\n')
@@ -179,8 +176,8 @@ class Html:
 
 class Html_lines_read(Html):
 
-    def __init__(self, top, name, title=None, buffer=None):
-        Html.__init__(self, top, name)
+    def __init__(self, base, top, name, title=None, buffer=None):
+        Html.__init__(self, base, top, name)
         if buffer is None:
             try:
                 self.lines = unicode_readlines(os.path.join(top, name))
@@ -204,8 +201,8 @@ class Html_lines_read(Html):
 class Html_Error(Html):
     title = u"Error report"
 
-    def __init__(self, top, name, diagnostic):
-        Html.__init__(self, top, name)
+    def __init__(self, base, top, name, diagnostic):
+        Html.__init__(self, base, top, name)
         self.diagnostic = diagnostic
 
     def html_body(self):
@@ -215,15 +212,16 @@ class Html_Error(Html):
 
 class Html_Buffer(Html_lines_read):
 
-    def __init__(self, top, buffer, title=None):
-        Html_lines_read.__init__(self, top, None, title=title, buffer=buffer)
+    def __init__(self, base, top, buffer, title=None):
+        Html_lines_read.__init__(self, base, top, None,
+                                 title=title, buffer=buffer)
 
 # Make HTML listing all existing archives.
 
 class Html_Archives(Html):
 
-    def __init__(self, top, name='archives'):
-        Html.__init__(self, top, name)
+    def __init__(self, base, top, name='archives'):
+        Html.__init__(self, base, top, name)
 
     def html_title(self):
         return u"Archives"
@@ -287,8 +285,8 @@ class Html_Archives(Html):
 
 class Html_Folders(Html):
 
-    def __init__(self, top):
-        Html.__init__(self, top, None)
+    def __init__(self, base, top):
+        Html.__init__(self, base, top, None)
 
     def html_title(self):
         return u"Email folders"
@@ -326,8 +324,8 @@ class Html_Folders(Html):
 
 class Html_Summary(Html):
 
-    def __init__(self, top, name):
-        Html.__init__(self, top, name)
+    def __init__(self, base, top, name):
+        Html.__init__(self, base, top, name)
         from Etc import folder
         self.messages = folder.folder(os.path.join(top, name), strip201=True)
 
@@ -362,32 +360,34 @@ class Html_Summary(Html):
                 subject = "(None)"
             write('   <tr>\n'
                   '    <td class="no">%d</td>\n'
-                  '    <td class="from>"<a href="mailto:%s">%s</a></td>\n'
-                  '    <td class="subject"><a href="/%s/%d">%s</a></td>\n'
+                  '    <td class="from"><a href="mailto:%s">%s</a></td>\n'
+                  '    <td class="subject"><a href="%s/%s/%d.html">%s</a></td>\n'
                   '   </tr>\n'
                   % (index + 1, email,
-                     enhanced(user[:20]), enhanced(self.name),
+                     enhanced(user[:20]), self.base, enhanced(self.name),
                      index + 1, enhanced(subject)))
             index += 1
         write('  </table>\n')
         return ''.join(fragments)
 
     def html_buttons(self, title):
-        self.up = os.path.dirname(self.name)
+        self.up = '%s/%s.html' % (self.base, self.name)
         if len(self.messages) > 0:
-            self.right = self.name + '/1'
+            self.right = '%s/%s/1.html' % (self.base, self.name)
         return Html.html_buttons(self, title)
 
 # Make HTML out of a selected message from within a folder.
 
 class Html_Message(Html):
 
-    def __init__(self, top, name, index, buffer_cache=None):
-        Html.__init__(self, top, name)
+    def __init__(self, base, top, name, index,
+                 buffer_cache=None, messages=None):
+        Html.__init__(self, base, top, name)
         self.index = index
         self.buffer_cache = buffer_cache
-        from Etc import folder
-        messages = folder.folder(os.path.join(top, name), strip201=True)
+        if messages is None:
+            from Etc import folder
+            messages = folder.folder(os.path.join(top, name), strip201=True)
         if not 0 <= index < len(messages):
             raise error(u"No such message!")
         self.count = len(messages)
@@ -544,18 +544,19 @@ class Html_Message(Html):
 
     def html_buttons(self, title):
         if self.index > 0:
-            self.left = self.name + '/%d' % self.index
-        self.up = self.name
+            self.left = '%s/%s/%d.html' % (self.base, self.name, self.index)
+        self.up = '%s/%s.html' % (self.base, self.name)
         if self.index < self.count - 1:
-            self.right = self.name + '/%d' % (self.index + 2)
+            self.right = '%s/%s/%d.html' % (self.base, self.name,
+                                            self.index + 2)
         return Html.html_buttons(self, title)
 
 # Make HTML listing the directory hierarchy.
 
 class Html_File_List(Html):
 
-    def __init__(self, top, name='', dots=False):
-        Html.__init__(self, top, name)
+    def __init__(self, base, top, name='', dots=False):
+        Html.__init__(self, base, top, name)
         self.name = name
         self.dots = dots
 
@@ -617,8 +618,8 @@ class Html_File_List(Html):
 
 class Html_File(Html):
 
-    def __init__(self, top, name, mode=None):
-        Html.__init__(self, top, name)
+    def __init__(self, base, top, name, mode=None):
+        Html.__init__(self, base, top, name)
         self.mode = mode
 
     def html_title(self):
