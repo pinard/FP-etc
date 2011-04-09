@@ -138,19 +138,19 @@ class Html:
     def html_buttons(self, title):
         fragments = []
         write = fragments.append
-        write('  <table class=navigation>\n'
+        write('  <table class="navigation">\n'
               '   <tr>\n')
-        write('    <td class=left>\n')
+        write('    <td class="left">\n')
         if self.left is not None:
             write(u'  <a href="/%s">←</a>\n' % self.left)
         if self.up is not None:
             write(u'  <a href="/%s">↑</a>\n' % self.up)
         write('    </td>\n')
-        write('    <td class=title>')
+        write('    <td class="title">')
         if title is not None:
             write(enhanced(title))
         write('</td>\n')
-        write('    <td class=right>\n')
+        write('    <td class="right">\n')
         if self.right is not None:
             write('  <a href="/%s">→</a>\n' % self.right)
         write('    </td>\n')
@@ -161,7 +161,7 @@ class Html:
 
     @staticmethod
     def html_ruler():
-        return '  <hr class=ruler />\n'
+        return '  <hr class="ruler" />\n'
 
     def file_data(self, names):
         data = []
@@ -341,11 +341,11 @@ class Html_Summary(Html):
             from email.Utils import parseaddr
         fragments = []
         write = fragments.append
-        write('  <table class=index align=center>\n'
+        write('  <table class="index" align=center>\n'
               '   <tr>\n'
-              u'    <th class=no>Nº</th>\n'
-              '    <th class=from>From</th>\n'
-              '    <th class=subject>Subject</th>\n'
+              u'    <th class="no">Nº</th>\n'
+              '    <th class="from">From</th>\n'
+              '    <th class="subject">Subject</th>\n'
               '   </tr>\n')
         index = 0
         for index in range(len(self.messages)):
@@ -361,9 +361,9 @@ class Html_Summary(Html):
             if not subject:
                 subject = "(None)"
             write('   <tr>\n'
-                  '    <td class=no>%d</td>\n'
-                  '    <td class=from><a href="mailto:%s">%s</a></td>\n'
-                  '    <td class=subject><a href="/%s/%d">%s</a></td>\n'
+                  '    <td class="no">%d</td>\n'
+                  '    <td class="from>"<a href="mailto:%s">%s</a></td>\n'
+                  '    <td class="subject"><a href="/%s/%d">%s</a></td>\n'
                   '   </tr>\n'
                   % (index + 1, email,
                      enhanced(user[:20]), enhanced(self.name),
@@ -422,7 +422,7 @@ class Html_Message(Html):
             fragments = []
             write = fragments.append
             if pairs:
-                write('  <table class=email>\n')
+                write('  <table class="email">\n')
                 for field, value in pairs:
                     if field in ('From', 'To'):
                         user, email = parseaddr(value)
@@ -448,8 +448,8 @@ class Html_Message(Html):
                     else:
                         value = decoded_header(value)
                     write('   <tr>\n'
-                          '    <td class=field>%s: </td>\n'
-                          '    <td class=value>%s</td>\n'
+                          '    <td class="field">%s: </td>\n'
+                          '    <td class="value">%s</td>\n'
                           '   </tr>\n'
                           % (enhanced(field), enhanced(value)))
                 write('  </table>\n')
@@ -480,11 +480,11 @@ class Html_Message(Html):
                                 "Aucune entité retenue dans: %s" % content_type)
                         write(text)
                     elif content_type == 'message/delivery-status':
-                        write('<hr class=ruler />\n')
+                        write('<hr class="ruler" />\n')
                         for payload in payloads:
                             write(render_recursive(payload, headers=True))
                     elif content_type == 'message/rfc822':
-                        write('<hr class=ruler />\n')
+                        write('<hr class="ruler" />\n')
                         for payload in payloads:
                             write(render_recursive(payload))
                     elif content_maintype == 'multipart':
@@ -500,7 +500,7 @@ class Html_Message(Html):
                         index = self.buffer_cache.save(
                                 payload_of(message, raw=True),
                                 content_type, 3600)
-                        write('  <a class=attachment href="/+%s">%s</a>\n'
+                        write('  <a class="attachment" href="/+%s">%s</a>\n'
                               % (index,
                                  message.get_param('name', content_type)))
                     elif content_type == 'application/octet-stream':
@@ -568,12 +568,12 @@ class Html_File_List(Html):
         fragments = []
         write = fragments.append
         counter = 0
-        write('  <table class=directory align=center>\n'
+        write('  <table class="directory" align=center>\n'
               '   <tr>\n'
-              u'    <th class=no>Nº</th>\n'
-              '    <th class=folder>Folder</th>\n'
-              '    <th class=date>Date</th>\n'
-              '    <th class=size>Size</th>\n'
+              u'    <th class="no">Nº</th>\n'
+              '    <th class="folder">Folder</th>\n'
+              '    <th class="date">Date</th>\n'
+              '    <th class="size">Size</th>\n'
               '   </tr>\n')
         directory = self.name or '.'
         directories = []
@@ -604,10 +604,10 @@ class Html_File_List(Html):
                     base = os.path.basename(name)
                 counter += 1
                 write('   <tr>\n'
-                      '    <td class=no>%d</td>\n'
-                      '    <td class=folder><a href="/%s">%s</a></td>\n'
-                      '    <td class=date>%s</td>\n'
-                      '    <td class=size>%d</td>\n'
+                      '    <td class="no">%d</td>\n'
+                      '    <td class="folder"><a href="/%s">%s</a></td>\n'
+                      '    <td class="date">%s</td>\n'
+                      '    <td class="size">%d</td>\n'
                       '   </tr>\n'
                       % (counter, name, base, date, size))
         write('  </table>\n')
@@ -779,7 +779,7 @@ class Html_Allout(Html_lines_read):
 
     def header(self, goal, title, write):
         while self.level < goal:
-            write('%s<ol class=level%d>\n' % (self.margin, self.level + 1))
+            write('%s<ol class="level%d">\n' % (self.margin, self.level + 1))
             self.level += 1
             self.margin = ' ' * (self.level+3)
         while self.level > goal:
@@ -887,7 +887,7 @@ class Html_Thanks(Html_lines_read):
         def produce_row():
             if name is None:
                 write(u'  <p> </p>\n'
-                      '  <table align=center border=2>\n'
+                      '  <table align="center" border="2">\n'
                       '   <tr>\n'
                       '    <th>Contributor</th>\n'
                       '    <th>Email address</th>\n'
@@ -961,14 +961,14 @@ enriched_map = {
         'smaller': ('<small>', '</small>'),
         'bigger': ('<big>', '</big>'),
         'underline': ('<u>', '</u>'),
-        'center': ('<div align=center>', '</div>'),
-        'flushright': ('<div class=flushright>', '</div>'),
-        'flushleft': ('<div class=flushleft>', '</div>'),
-        'flushboth': ('<div class=flushboth>', '</div>'),
+        'center': ('<div align="center">', '</div>'),
+        'flushright': ('<div class="flushright">', '</div>'),
+        'flushleft': ('<div class="flushleft">', '</div>'),
+        'flushboth': ('<div class="flushboth">', '</div>'),
         'nofill': ('<pre>', '</pre>'),
-        'indent': ('<div class=indent>', '</div>'),
-        'indentright': ('<div class=indentright>', '</div>'),
-        'excerpt': ('<div class=excerpt>', '</div>'),
+        'indent': ('<div class="indent">', '</div>'),
+        'indentright': ('<div class="indentright">', '</div>'),
+        'excerpt': ('<div class="excerpt">', '</div>'),
         }
 
 def from_text_enriched(buffer):
@@ -1091,11 +1091,11 @@ def from_text_plain(buffer):
             if not text:
                 if current_margin is not None:
                     if verbatim:
-                        write('<pre class=level%d>\n' % current_level)
+                        write('<pre class="level%d">\n' % current_level)
                         write_verbatim_block(lines[start:counter])
                         write('</pre>\n')
                     elif recursive is None:
-                        write('<pre class=level%d>\n' % current_level)
+                        write('<pre class="level%d">\n' % current_level)
                         write_filled_block(lines[start:counter])
                         write('</pre>\n')
                     else:
@@ -1122,11 +1122,11 @@ def from_text_plain(buffer):
                     recursive = counter
                 continue
             if verbatim:
-                write('<pre class=level%d>\n' % current_level)
+                write('<pre class="level%d">\n' % current_level)
                 write_verbatim_block(lines[start:counter])
                 write('</pre>\n')
             elif recursive is None:
-                write('<pre class=level%d>\n' % current_level)
+                write('<pre class="level%d">\n' % current_level)
                 write_filled_block(lines[start:counter])
                 write('</pre>\n')
             else:
@@ -1138,15 +1138,15 @@ def from_text_plain(buffer):
             continue
         if current_margin is not None and start < len(lines):
             if verbatim:
-                write('<pre class=level%d>\n' % current_level)
+                write('<pre class="level%d">\n' % current_level)
                 write_verbatim_block(lines[start:])
                 write('</pre>\n')
             elif recursive is None:
-                write('<pre class=level%d>\n' % current_level)
+                write('<pre class="level%d">\n' % current_level)
                 write_filled_block(lines[start:])
                 write('</pre>\n')
             else:
-                write('<pre class=level%d>\n' % current_level)
+                write('<pre class="level%d">\n' % current_level)
                 write_filled_block(lines[start:recursive])
                 write('</pre>\n')
                 handle_block(lines[recursive:])
@@ -1208,7 +1208,7 @@ def from_text_plain(buffer):
                 os.remove(work)
 
     def write_whiteline():
-       write('\n')
+        write('\n')
 
     input = unicode_force(buffer).splitlines(True)
     input.append('')
@@ -1229,7 +1229,7 @@ def from_text_plain(buffer):
     # Copy signature.
     if counter < len(lines):
         write_whiteline()
-        write('<pre class=signature>\n')
+        write('<pre class="signature">\n')
         write_verbatim_block(input[counter:])
         write('</pre>\n')
     return ''.join(fragments)
@@ -1359,7 +1359,7 @@ def enhanced(text, clean=False):
     return text
 
 def error_body(text):
-    return '<p class=error>%s</p>\n' % text
+    return '<p class="error">%s</p>\n' % text
 
 def payload_of(message, raw=False):
     text = message.get_payload(decode=True)
