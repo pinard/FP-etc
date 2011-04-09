@@ -107,7 +107,7 @@ class Html:
     def html_body(self):
         return self.body or ''
 
-    def html_prefixe(self):
+    def html_prefixe(self, css=None):
         fragments = []
         write = fragments.append
         title = self.html_title()
@@ -116,12 +116,12 @@ class Html:
               '  <meta http-equiv="Content-type"'
               ' content="text/html; charset=UTF-8" />\n'
               '  <title>%s</title>\n'
-              '  <link href="/gabarit.css" rel="stylesheet"'
-              ' type="text/css" />\n'
-              '  <script src="/gabarit.js" type="text/javascript" />\n'
-              ' </head>\n'
-              ' <body>\n'
               % title)
+        if css is not None:
+            write('  <link href="%s" rel="stylesheet" type="text/css" />\n'
+                  % css)
+        write(' </head>\n'
+              ' <body>\n')
         write(self.html_buttons(title))
         write(self.html_ruler())
         return ''.join(fragments)
@@ -142,21 +142,9 @@ class Html:
               '   <tr>\n')
         write('    <td class=left>\n')
         if self.left is not None:
-            write('  <a href="/%s">'
-                  '<img id="previous" alt="Previous" src="/flèche-gauche-1.png"'
-                  ' onmouseover="previousOver()" onmouseout="previousOut()" />'
-                  '</a>\n'
-                  % self.left)
-        else:
-            write('  <img src="/flèche-gauche-0.png" />\n')
+            write(u'  <a href="/%s">←</a>\n' % self.left)
         if self.up is not None:
-            write('  <a href="/%s">'
-                  '<img id="up" alt="Up" src="/flèche-haut-1.png"'
-                  ' onmouseover="upOver()" onmouseout="upOut()" />'
-                  '</a>\n'
-                  % self.up)
-        else:
-            write('  <img src="/flèche-haut-0.png" />\n')
+            write(u'  <a href="/%s">↑</a>\n' % self.up)
         write('    </td>\n')
         write('    <td class=title>')
         if title is not None:
@@ -164,13 +152,7 @@ class Html:
         write('</td>\n')
         write('    <td class=right>\n')
         if self.right is not None:
-            write('  <a href="/%s">'
-                  '<img id="next" alt="Next" src="/flèche-droite-1.png"'
-                  ' onmouseover="nextOver()" onmouseout="nextOut()" />'
-                  '</a>\n'
-                  % self.right)
-        else:
-            write('  <img src="/flèche-droite-0.png" />\n')
+            write('  <a href="/%s">→</a>\n' % self.right)
         write('    </td>\n')
         write('   </tr>\n'
               '  </table>\n')
