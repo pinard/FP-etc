@@ -56,25 +56,24 @@ esac
 
 if [ -n "$DOSWIN" ]; then
   # Le bash de DJGPP ajoute plusieurs blancs suffixes à \h.
-  ident=$LOGNAME'@'$HOST':\w'
+  ident=' '$LOGNAME'@'$HOST': \w'
 else
   case $shell in
     sh)
-      ident=$name'@'$HOST
+      ident=' '$name'@'$HOST
       ;;
     bash)
       if [ "$COLORTERM" = gnome-terminal ]; then
-        ident=$name'@\h'
-        PROMPT_COMMAND='echo -e "\e]2;`pwd`\007\e]1;\007"'
+        ident='\[\e]0;'$name'@\h: \w\a\]'
       else
-        ident=$name'@\h:\w'
+        ident=' '$name'@\h: \w'
         PROMPT_DIRTRIM=2
       fi
       ;;
     zsh)
       case "$user" in
-        super) ident='%n@%m:%/' ;;
-        normal) ident=$name'@%m:%2~' ;;
+        super) ident=' %n@%m: %/' ;;
+        normal) ident=' '$name'@%m: %2~' ;;
       esac
       ;;
   esac
@@ -119,60 +118,60 @@ fi
 
 case $fond-$user-$shell in
   simple-normal-sh)
-     PS1=$?' '$ident'$ '
-     PS2=$?' '$ident'+ '
+     PS1=$?$ident'$ '
+     PS2=$?$ident'+ '
      ;;
   simple-super-sh)
-     PS1=$?' '$ident'# '
-     PS2=$?' '$ident'+ '
+     PS1=$?$ident'# '
+     PS2=$?$ident'+ '
      ;;
   unknown-normal-bash)
-     PS1='\t $? '$ident' $ '
-     PS2='\t $? '$ident' + '
+     PS1='\t $?'$ident' $ '
+     PS2='\t $?'$ident' + '
      ;;
   unknown-normal-zsh)
-     PS1='%T %? '$ident' $ '
-     PS2='%T %? '$ident' + '
+     PS1='%T %?'$ident' $ '
+     PS2='%T %?'$ident' + '
      ;;
   unknown-super-bash)
-     PS1='\t $? '$ident' # '
-     PS2='\t $? '$ident' + '
+     PS1='\t $?'$ident' # '
+     PS2='\t $?'$ident' + '
      ;;
   unknown-super-zsh)
-     PS1='%T %? '$ident' # '
-     PS2='%T %? '$ident' + '
+     PS1='%T %?'$ident' # '
+     PS2='%T %?'$ident' + '
      ;;
   dark-normal-bash)
-     PS1='\[[;32;40m\]\t $?\[[36m\] '$ident'\[[32m\] $\[[0m\] '
-     PS2='\[[;32;40m\]\t $?\[[37m\] '$ident'\[[32m\] +\[[0m\] '
+     PS1='\[[;32;40m\]\t $?\[[36m\]'$ident'\[[32m\] $\[[0m\] '
+     PS2='\[[;32;40m\]\t $?\[[37m\]'$ident'\[[32m\] +\[[0m\] '
      ;;
   dark-normal-zsh)
-     PS1='%{[;32;40m%}%T %?%{[36m%} '$ident'%{[32m%} $%{[0m%} '
-     PS2='%{[;32;40m%}%T %?%{[37m%} '$ident'%{[32m%} +%{[0m%} '
+     PS1='%{[;32;40m%}%T %?%{[36m%}'$ident'%{[32m%} $%{[0m%} '
+     PS2='%{[;32;40m%}%T %?%{[37m%}'$ident'%{[32m%} +%{[0m%} '
      ;;
   dark-super-bash)
-     PS1='\[[;32;40m\]\t $?\[[33m\] '$ident'\[[31m\] #\[[0m\] '
-     PS2='\[[;32;40m\]\t $?\[[37m\] '$ident'\[[31m\] +\[[0m\] '
+     PS1='\[[;32;40m\]\t $?\[[33m\]'$ident'\[[31m\] #\[[0m\] '
+     PS2='\[[;32;40m\]\t $?\[[37m\]'$ident'\[[31m\] +\[[0m\] '
      ;;
   dark-super-zsh)
-     PS1='%{[;32;40m%}%T %?%{[33m%} '$ident'%{[31m%} #%{[0m%} '
-     PS2='%{[;32;40m%}%T %?%{[37m%} '$ident'%{[31m%} +%{[0m%} '
+     PS1='%{[;32;40m%}%T %?%{[33m%}'$ident'%{[31m%} #%{[0m%} '
+     PS2='%{[;32;40m%}%T %?%{[37m%}'$ident'%{[31m%} +%{[0m%} '
      ;;
   pale-normal-bash)
-     PS1='\[[;30;42m\]\t $?\[[46m\] '$ident'\[[42m\] $\[[0m\] '
-     PS2='\[[;30;42m\]\t $?\[[47m\] '$ident'\[[42m\] +\[[0m\] '
+     PS1='\[[;30;42m\]\t $?\[[46m\]'$ident'\[[42m\] $\[[0m\] '
+     PS2='\[[;30;42m\]\t $?\[[47m\]'$ident'\[[42m\] +\[[0m\] '
      ;;
   pale-normal-zsh)
-     PS1='%{[;30;42m%}%T %?%{[46m%} '$ident'%{[42m%} $%{[0m%} '
-     PS2='%{[;30;42m%}%T %?%{[47m%} '$ident'%{[42m%} +%{[0m%} '
+     PS1='%{[;30;42m%}%T %?%{[46m%}'$ident'%{[42m%} $%{[0m%} '
+     PS2='%{[;30;42m%}%T %?%{[47m%}'$ident'%{[42m%} +%{[0m%} '
      ;;
   pale-super-bash)
-     PS1='\[[;30;42m\]\t $?\[[43m\] '$ident'\[[41m\] #\[[0m\] '
-     PS2='\[[;30;42m\]\t $?\[[47m\] '$ident'\[[41m\] +\[[0m\] '
+     PS1='\[[;30;42m\]\t $?\[[43m\]'$ident'\[[41m\] #\[[0m\] '
+     PS2='\[[;30;42m\]\t $?\[[47m\]'$ident'\[[41m\] +\[[0m\] '
      ;;
   pale-super-zsh)
-     PS1='%{[;30;42m%}%T %?%{[43m%} '$ident'%{[41m%} #%{[0m%} '
-     PS2='%{[;30;42m%}%T %?%{[47m%} '$ident'%{[41m%} +%{[0m%} '
+     PS1='%{[;30;42m%}%T %?%{[43m%}'$ident'%{[41m%} #%{[0m%} '
+     PS2='%{[;30;42m%}%T %?%{[47m%}'$ident'%{[41m%} +%{[0m%} '
      ;;
   *)
      echo "$usage"
