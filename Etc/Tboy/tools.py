@@ -187,16 +187,16 @@ class Sweeper:
         write = sys.stdout.write
         write("%5d scanned Tomboy notes\n"
               % self.note_count)
-        write("%5d K chars (Unicode), including XML\n"
+        write("%5d K Unicode chars, XML included\n"
               % (self.character_count // 1000))
         if self.from_tomboy_count:
-            write("%5d internal links from within Tomboy\n"
+            write("%5d internal links within Tomboy\n"
                   % self.from_tomboy_count)
         if self.from_todo_count:
-            write("%5d internal links from within WorkFlowy\n"
+            write("%5d links incoming from WorkFlowy\n"
                   % self.from_todo_count)
         if self.url_count:
-            write("%5d contained URLs in Tomboy notes\n"
+            write("%5d external URLs within Tomboy\n"
                   % self.url_count)
 
 class Location:
