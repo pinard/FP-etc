@@ -140,12 +140,18 @@ class Html:
         write('  <table class="navigation">\n'
               '   <tr>\n')
         write('    <td class="arrow">\n')
-        if self.left is not None:
-            write(u'  <a href="%s">←</a>\n' % self.left)
-        if self.up is not None:
-            write(u'  <a href="%s">↑</a>\n' % self.up)
-        if self.right is not None:
-            write('  <a href="%s">→</a>\n' % self.right)
+        if self.left is None:
+            write(u'     ←\n')
+        else:
+            write(u'     <a href="%s">←</a>\n' % self.left)
+        if self.up is None:
+            write(u'     ↑\n')
+        else:
+            write(u'     <a href="%s">↑</a>\n' % self.up)
+        if self.right is None:
+            write('     →\n')
+        else:
+            write('     <a href="%s">→</a>\n' % self.right)
         write('    </td>\n')
         write('    <td class="title">')
         if title is not None:
