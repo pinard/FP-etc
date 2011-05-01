@@ -42,7 +42,7 @@ fi
 case "$LOGNAME" in
   root)
     user=super
-    name=root
+    name=root@
     ;;
   pinard|fpinard)
     user=normal
@@ -50,7 +50,7 @@ case "$LOGNAME" in
     ;;
   *)
     user=normal
-    name=$LOGNAME
+    name=$LOGNAME@
     ;;
 esac
 
@@ -60,20 +60,17 @@ if [ -n "$DOSWIN" ]; then
 else
   case $shell in
     sh)
-      ident=' '$name'@'$HOST
+      ident=' '$name$HOST
       ;;
     bash)
-      if [ "$COLORTERM" = gnome-terminal ]; then
-        ident='\[\e]0;'$name'@\h: \w\a\]'
-      else
-        ident=' '$name'@\h: \w'
-        PROMPT_DIRTRIM=2
-      fi
+      ident='\[\e]0;'$name'\h: \w\a\]'
+      #ident=' '$name'\h: \w'
+      #PROMPT_DIRTRIM=2
       ;;
     zsh)
       case "$user" in
         super) ident=' %n@%m: %/' ;;
-        normal) ident=' '$name'@%m: %2~' ;;
+        normal) ident=' '$name'%m: %2~' ;;
       esac
       ;;
   esac
