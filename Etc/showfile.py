@@ -377,7 +377,7 @@ class Html_Summary(Html):
         return ''.join(fragments)
 
     def html_buttons(self, title):
-        self.up = '%s/%s.html' % (self.base, self.name)
+        self.up = None
         if len(self.messages) > 0:
             self.right = '%s/%s/1.html' % (self.base, self.name)
         return Html.html_buttons(self, title)
