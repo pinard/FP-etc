@@ -101,6 +101,8 @@ class Converter:
             return recurse()
         if tag == 'monospace':
             return recurse(Monospace_node)
+        if tag == 'huge':
+            return recurse(Huge_node)
         if tag == 'large':
             return recurse(Large_node)
         if tag == 'small':
@@ -782,6 +784,21 @@ class Highlight_node(Node):
 
     wiki_output = html_output
 
+class Huge_node(Node):
+    inline_markup = True
+
+    def docbook_output(self, write, converter):
+        # TODO; Should really use a larger font.
+        self.output_nested(
+                write, converter, '<emphasis role="bold">', '</emphasis>')
+
+    def html_output(self, write, converter):
+        start = '<span style="font-size:200%">'
+        end = '</span>'
+        self.output_nested(write, converter, start, end)
+
+    wiki_output = html_output
+
 class Image_node(Node):
 
     def __init__(self, note, image, link=None, alt=None):
@@ -1021,12 +1038,12 @@ class Note_content_node(Node):
             self.append('')
 
     def fixup_sections(self):
-        # A section is either major or minor.  In a Tomboy note, a section is
-        # introduced by a header, a major one being a single line of all large
-        # characters, a minor one being a single line of all bold characters.
-        # In a section node, there is a boolean major field.  On output,
-        # section numbers looks like N for a major section and N.M for a
-        # minor section.
+        # A section is either major or minor. In a Tomboy note, a section is
+        # introduced by a header, a major one being a single line of all huge
+        # bold characters, a minor one being a single line of all large bold
+        # characters. In a section node, there is a boolean major field. On
+        # output, section numbers looks like N for a major section and N.M for
+        # a minor section.
 
         # The table of contents node, if any.
         self.toc = None
@@ -1035,7 +1052,7 @@ class Note_content_node(Node):
         # when at the beginning of a line.
         bol = True
 
-        # Accumulates, in this order: any stuff before the first section. then
+        # Accumulates, in this order: any stuff before the first section, then
         # a table of contents node if any section, then zero or more minor
         # nodes, then zero or more major nodes.  (Any minor section, once a
         # major header has been seen, gets included in some major section.)
@@ -1052,11 +1069,33 @@ class Note_content_node(Node):
         # tells as a boolean whether if the header is major or not.
         category = None
 
+        def is_major_header(node):
+            if (isinstance(node, Bold_node)
+                    and len(node) == 1
+                    and isinstance(node[0], Huge_node)):
+                return True
+            if (isinstance(node, Huge_node)
+                    and len(node) == 1
+                    and isinstance(node[0], Bold_node)):
+                return True
+            return False
+
+        def is_minor_header(node):
+            if (isinstance(node, Bold_node)
+                    and len(node) == 1
+                    and isinstance(node[0], Large_node)):
+                return True
+            if (isinstance(node, Large_node)
+                    and len(node) == 1
+                    and isinstance(node[0], Bold_node)):
+                return True
+            return False
+
         for counter, branch in enumerate(self):
             # Set category for the next element.  Unless None, text has the
             # incoming section title.
             category = None
-            if bol and isinstance(branch, (Large_node, Bold_node)):
+            if bol and (is_major_header(branch) or is_minor_header(branch)):
                 if branch.ends_with_newline():
                     eol = True
                 elif counter == len(self) - 1:
@@ -1069,11 +1108,11 @@ class Note_content_node(Node):
                         eol = branch2.startswith('\n')
                 if eol:
                     # FIXME: Does not cover all possible cases.
-                    text = branch[0]
+                    text = branch[0][0]
                     if not isinstance(text, Node):
                         text = text.strip()
                         if text and '\n' not in text.strip():
-                            category = isinstance(branch, Large_node)
+                            category = is_major_header(branch)
             # Take action on element.
             if category is None:
                 current.append(branch)
