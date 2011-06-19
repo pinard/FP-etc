@@ -1195,24 +1195,25 @@ class Note_content_node(Node):
         self.output_paragraphs(write, converter)
 
     def html_output(self, write, converter):
-        if not isinstance(converter, MT_converter):
-            write('<body>\n')
-        pretty = tools.pretty_title(self.note.title.strip())
         if isinstance(converter, MT_converter):
             editor = None
         else:
             editor = self.note.run.site.editor
-        if editor is None:
-            write('<h1>' + converter.escape(pretty) + '</h1>\n')
-        else:
-            write('<form method="get" action="%s">\n'
-                  '<h1>%s\n'
-                  '<input type="submit" value="Edit"/>\n'
-                  '<input type="hidden" name="note" value="%s"/>\n'
-                  '</h1>\n'
-                  '</form>\n'
-                  % (editor, converter.escape(pretty),
-                     converter.escape(self.note.title)))
+            write('<body>\n')
+        if editor is not None:
+            write('<script type="text/javascript">\n'
+                  'function launchEdit() {\n'
+                  '  open("%s");\n'
+                  '}\n'
+                  '</script>\n'
+                  % converter.escape('%s?name=%s'
+                                     % (editor, self.note.title)))
+            write('<form>\n'
+                  '<input type="button" value="Edit"\n'
+                  '       onclick="launchEdit()"/>\n'
+                  '</form>\n')
+        pretty = tools.pretty_title(self.note.title.strip())
+        write('<h1>' + converter.escape(pretty) + '</h1>\n')
         self.output_paragraphs(write, converter)
         if not isinstance(converter, MT_converter):
             write('</body>\n')
