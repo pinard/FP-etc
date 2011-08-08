@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 # l1 - Passer en mode Latin-1.
 # Faire ". l1" dans le terminal voulu.
 
 export LANG=fr_CA.ISO-8859-1
 
 if [ -n "$DISPLAY" ]; then
-  echo -ne '\e]5379;encoding=ISO-8859-1;bg_color=mint cream\a'
+  echo '\033]5379;encoding=ISO-8859-1;bg_color=mint cream\007\c'
 elif type 2>/dev/null unicode_stop; then
   unicode_stop
 fi
