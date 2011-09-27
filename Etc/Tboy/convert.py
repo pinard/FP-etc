@@ -365,6 +365,76 @@ class MT_converter(Html_converter):
                 "\n"
                 "--------\n")
 
+class Redmine_converter(Converter):
+    list_level = 0
+
+    def bold_tag(self, write, converter):
+        self.output_nested(write, converter, '*', '*')
+
+    def datetime_tag(self, write, converter):
+        self.output_nested(write, converter, '+', '+')
+
+    def italic_tag(self, write, converter):
+        self.output_nested(write, converter, '_', '_')
+
+    def link_tag(self, write, converter):
+        if self:
+            write('[[' + converter.escape_link(self.url) + '|')
+            self.output_branches(write, converter)
+            write(']]')
+        else:
+            write(converter.escape(self.url))
+
+    def list_item_tag(self, write, converter):
+        if self:
+            write('*' * converter.list_level + ' ')
+            self.output_branches(write, converter)
+            write('\n')
+
+    def list_tag(self, write, converter):
+        converter.list_level += 1
+        self.output_branches(write, converter)
+        converter.list_level -= 1
+
+    def monospace_tag(self, write, converter):
+        converter.literally = True
+        self.output_nested(write, converter, '@', '@')
+        converter.literally = False
+
+    def note_content_tag(self, write, converter):
+        write('\nh1. ' + converter.escape(self.note.title) + '\n\n')
+        self.output_paragraphs(write, converter)
+
+    def section_tag(self, write, converter):
+        tag = ('h3.', 'h2.')[self.major]
+        write('\n' + tag + ' '
+              + converter.escape(self.title)
+              + ' ' + equals + '\n\n')
+        self.output_paragraphs(write, converter)
+
+    def convert(self, note):
+        document = self.document_from_note(note)
+        fragments = []
+        document.wiki_output(fragments.append, self)
+        return ''.join(fragments)
+
+    def escape(self, text):
+        if self.literally:
+            text = text.replace(' ', tools.NON_BREAKABLE_SPACE)
+        return text
+
+    def output(self, node, write):
+        node.redmine_output(write, self)
+
+    def start_paragraph(self, write):
+        write('\n\n')
+
+    def end_paragraph(self, write):
+        write('\n\n')
+
+    def break_line(self, write):
+        write('\n')
+
 class Rest_converter(Converter):
     list_level = 0
 
@@ -728,6 +798,9 @@ class Bold_node(Node):
     def html_output(self, write, converter):
         self.output_nested(write, converter, '<b>', '</b>')
 
+    def redmine_output(self, write, converter):
+        self.output_nested(write, converter, '*', '*')
+
     def rest_output(self, write, converter):
         self.output_nested(write, converter, '**', '**')
 
@@ -741,6 +814,9 @@ class Comment_node(Node):
         self.output_nested(write, converter, '<!-- ', ' -->')
 
     html_output = docbook_output
+
+    def redmine_output(self, write, converter):
+        pass
 
     def rest_output(self, write, converter):
         self.output_nested(write, converter, '.: ', '\n')
@@ -758,6 +834,9 @@ class Datetime_node(Node):
         start = '<span style="font-size:71%"><i>'
         end = '</i></span>'
         self.output_nested(write, converter, start, end)
+
+    def redmine_output(self, write, converter):
+        self.output_nested(write, converter, '_', '_')
 
     def rest_output(self, write, converter):
         self.output_nested(write, converter, '*', '*')
@@ -778,6 +857,9 @@ class Highlight_node(Node):
         self.output_nested(
                 write, converter,
                 '<span style="background-color:#FFFF66">', '</span>')
+
+    def redmine_output(self, write, converter):
+        self.output_nested(write, converter, '_*', '*_')
 
     def rest_output(self, write, converter):
         self.output_nested(write, converter, '*', '*')
@@ -832,6 +914,9 @@ class Italic_node(Node):
 
     def html_output(self, write, converter):
         self.output_nested(write, converter, '<i>', '</i>')
+
+    def redmine_output(self, write, converter):
+        self.output_nested(write, converter, '_', '_')
 
     def rest_output(self, write, converter):
         self.output_nested(write, converter, '*', '*')
@@ -896,6 +981,15 @@ class Link_node(Node):
             write(converter.escape(self.url))
         write('</a>')
 
+    def redmine_output(self, write, converter):
+        if self:
+            write('"')
+            self.output_branches(write, converter)
+            write('":')
+            write(converter.escape_link(self.url))
+        else:
+            write(converter.escape(self.url))
+
     def rest_output(self, write, converter):
         write('`')
         if self:
@@ -931,6 +1025,12 @@ class List_item_node(Node):
         if self:
             self.output_nested(write, converter, '<li>', '</li>\n')
 
+    def redmine_output(self, write, converter):
+        if self:
+            write('*' * converter.list_level + ' ')
+            self.output_branches(write, converter)
+            write('\n')
+
     def wiki_output(self, write, converter):
         if self:
             write(':' * (converter.list_level - 1) + '* ')
@@ -949,6 +1049,11 @@ class List_node(Node):
 
     def html_output(self, write, converter):
         self.output_nested(write, converter, '<ul>\n', '</ul>\n')
+
+    def redmine_output(self, write, converter):
+        converter.list_level += 1
+        self.output_branches(write, converter)
+        converter.list_level -= 1
 
     def wiki_output(self, write, converter):
         converter.list_level += 1
@@ -1000,6 +1105,11 @@ class Monospace_node(Node):
                 write(converter.escape(branch))
         converter.literally = False
         write('</span></tt>')
+
+    def redmine_output(self, write, converter):
+        converter.literally = True
+        self.output_nested(write, converter, '<pre>', '</pre>')
+        converter.literally = False
 
     def rest_output(self, write, converter):
         converter.literally = True
@@ -1217,6 +1327,10 @@ class Note_content_node(Node):
         if not isinstance(converter, MT_converter):
             write('</body>\n')
 
+    def redmine_output(self, write, converter):
+        write('\nh1. ' + converter.escape(self.note.title) + '\n\n')
+        self.output_paragraphs(write, converter)
+
     def rest_output(self, write, converter):
         title = converter.escape(self.note.title)
         ruler = '=' * len(title)
@@ -1250,6 +1364,9 @@ class Note_node(Node):
             write('<html>\n')
             self.output_branches(write, converter)
             write('\n</html>\n')
+
+    def redmine_output(self, write, converter):
+        self.output_branches(write, converter)
 
     def rest_output(self, write, converter):
         self.output_branches(write, converter)
@@ -1294,6 +1411,11 @@ class Section_node(Node):
             write(('<h3>', '<h2>')[self.major]
                    + title
                   + ('</h3>', '</h2>')[self.major] + '\n')
+        self.output_paragraphs(write, converter)
+
+    def redmine_output(self, write, converter):
+        tag = ('h3.', 'h2.')[self.major]
+        write('\n' + tag + ' ' + converter.escape(self.title) + '\n\n')
         self.output_paragraphs(write, converter)
 
     def rest_output(self, write, converter):
@@ -1349,6 +1471,9 @@ class Title_node(Node):
             write(tools.pretty_title(''.join(fragments)))
             write('</title>\n'
                   '</head>\n')
+
+    def redmine_output(self, write, converter):
+        pass
 
     def rest_output(self, write, converter):
         pass
@@ -1416,6 +1541,12 @@ class Toc_node(Node):
                   '</li>\n')
         write('</ul>\n'
               '<hr class="ruler" />\n')
+
+    def redmine_output(self, write, converter):
+        if self.inhibited:
+            return
+        write('\n'
+              '{{toc}}\n')
 
     def rest_output(self, write, converter):
         if self.inhibited:

@@ -34,7 +34,7 @@ Options pour un site Web de notes:
   -X   Afficher l'arbre XML digéré (avec l'un de -dhpw)
 
 Si -o est utilisée, NOTE doit donner le titre d'une seule note, et OUTPUT
-doit alors se terminer par .html, .mt, .pdf, .rst, .wiki ou .xml.
+doit alors se terminer par .html, .mt, .pdf, '.rl', .rst, .wiki ou .xml.
 Si OUTPUT se termine par .pdf, le .xml correspondant est aussi produit.
 L'extension .mt indique le format Movable Type (étape vers Blogger).
 Si aucun argument NOTE n'est donné, alors TOMBOY_DIR/*.note est présumé.
@@ -138,15 +138,18 @@ class Main:
                     file(xml, 'w').write(
                             self.convert(title, convert.Docbook_converter))
                     self.system('dblatex -T simple "' + xml + '"')
-                elif output.endswith('.xml'):
+                elif output.endswith('.rl'):
                     file(output, 'w').write(
-                            self.convert(title, convert.Docbook_converter))
+                            self.convert(title, convert.Redmine_converter))
                 elif output.endswith('.rst'):
                     file(output, 'w').write(
                             self.convert(title, convert.Rest_converter))
                 elif output.endswith('.wiki'):
                     file(output, 'w').write(
                             self.convert(title, convert.Wiki_converter))
+                elif output.endswith('.xml'):
+                    file(output, 'w').write(
+                            self.convert(title, convert.Docbook_converter))
                 else:
                     raise self.Fatal("Option -o not using a valid extension")
             if stats:
