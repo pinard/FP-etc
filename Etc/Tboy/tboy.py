@@ -27,14 +27,15 @@ Options pour toutes les notes:
   -g GABARIT      Chercher dans les notes pour ce gabarit
 
 Options pour un site Web de notes:
+  -j   Convertir un sous-ensemble de mes notes en Org mode
   -w   Convertir un sous-ensemble de mes notes en HTML
   -d   Mode daemon, transforme les notes modifiées, au vol
   -r   Reformatter le HTML ou le XML produit
   -x   Préférer XSLT pour le traitement (expérimental)
   -X   Afficher l'arbre XML digéré (avec l'un de -dhpw)
 
-Si -o est utilisée, NOTE doit donner le titre d'une seule note, et OUTPUT
-doit alors se terminer par .html, .mt, .pdf, '.rl', .rst, .wiki ou .xml.
+Si -o est utilisée, NOTE donne le titre d'une seule note, et OUTPUT
+se termine alors par .html, .mt, .org, .pdf, '.rl', .rst, .wiki ou .xml.
 Si OUTPUT se termine par .pdf, le .xml correspondant est aussi produit.
 L'extension .mt indique le format Movable Type (étape vers Blogger).
 Si aucun argument NOTE n'est donné, alors TOMBOY_DIR/*.note est présumé.
@@ -69,6 +70,7 @@ class Main:
         extract = None
         find = None
         grep = None
+        orgmode = False
         output = None
         save = None
         stats = False
@@ -76,7 +78,7 @@ class Main:
 
         import getopt
         options, arguments = getopt.getopt(arguments,
-                                           'ab:c:de:f:g:no:rsvwXxyz:')
+                                           'ab:c:de:f:g:jno:rsvwXxyz:')
         for option, value in options:
             if option == '-a':
                 all = True
@@ -92,6 +94,8 @@ class Main:
                 find = value
             elif option == '-g':
                 grep = value
+            elif option == '-j':
+                orgmode = True
             elif option == '-n':
                 self.dryrun = True
             elif option == '-o':
@@ -120,7 +124,7 @@ class Main:
         locale.setlocale(locale.LC_COLLATE, 'fr_CA.UTF-8')
 
         try:
-            if daemon or extract or output or stats or web:
+            if daemon or extract or orgmode or output or stats or web:
                 import socket
                 host = socket.gethostname()
                 if host not in site.Site.registry:
@@ -133,6 +137,9 @@ class Main:
                 elif output.endswith('.mt'):
                     file(output, 'w').write(
                             self.convert(title, convert.MT_converter))
+                elif output.endswith('.org'):
+                    file(output, 'w').write(
+                            self.convert(title, convert.Orgmode_converter))
                 elif output.endswith('.pdf'):
                     xml = output[:-4] + '.xml'
                     file(xml, 'w').write(
@@ -169,6 +176,8 @@ class Main:
                 self.save_notes(save)
             if extract:
                 self.extract_path(extract)
+            if orgmode:
+                self.site.orgmode_all()
             if daemon or web:
                 self.site.update_all()
             if auto_old:

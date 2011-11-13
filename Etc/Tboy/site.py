@@ -34,9 +34,17 @@ class Site:
             return self.notebook_info[notebook]
         return self.notebook_info[None]
 
-    def output_name(self, note):
+    def html_output_name(self, note):
         url, directory = self.url_directory(note.notebook)
         return directory + '/' + tools.clean_file_name(note.title) + '.html'
+
+    def orgmode_output_name(self, note):
+        title = note.title
+        if title.endswith(':p'):
+            title = title[:-2]
+        return os.path.join(self.orgmode_dir,
+                            note.notebook.replace(' ', '_'),
+                            tools.clean_file_name(title) + '.org')
 
     def is_kept(self, note):
         return not tools.is_ignorable_title(note.title)
@@ -54,7 +62,7 @@ class Site:
             def convert(self2, input_name):
                 note = tools.Note(self.run, input_name)
                 if self.run.site.is_kept(note):
-                    output_name = self.output_name(note)
+                    output_name = self.html_output_name(note)
                     self.maybe_replace(converter.convert(note), output_name)
                     self.decorate_web_pages(output_name)
 
@@ -69,6 +77,31 @@ class Site:
                     notifier.read_events()
         finally:
             notifier.stop()
+
+    def orgmode_all(self):
+        converter = convert.Orgmode_converter()
+
+        # Make an inventory of the output directories.
+        self.output_names = set()
+        for base in os.listdir(self.orgmode_dir):
+            directory = os.path.join(self.orgmode_dir, base)
+            if os.path.isdir(directory):
+                for base in os.listdir(directory):
+                    if base.endswith('.org'):
+                        self.output_names.add(
+                                directory + '/' + base.decode(tools.ENCODING))
+
+        # Translate all public notes.
+        for note in sorted(self.run.each_public_note()):
+            if self.run.site.is_kept(note):
+                self.maybe_replace(converter.convert(note),
+                                   self.orgmode_output_name(note))
+
+        # Clean up.
+        for name in sorted(self.output_names):
+            self.run.report_action("Removing", name)
+            if not self.run.dryrun:
+                os.remove(name)
 
     def update_all(self):
         converter = convert.Html_converter()
@@ -93,7 +126,7 @@ class Site:
         for note in sorted(self.run.each_public_note()):
             if self.run.site.is_kept(note):
                 self.maybe_replace(converter.convert(note),
-                                   self.output_name(note))
+                                   self.html_output_name(note))
 
         # Create a full note index, another one for recent entries.
         self.run.entertain("Generating note index")
@@ -105,7 +138,7 @@ class Site:
                                  title=tools.pretty_title(note.title),
                                  url=(url + '/'
                                       + os.path.basename(
-                                          self.output_name(note))),
+                                          self.html_output_name(note))),
                                  group=note.notebook,
                                  date=note.date)
         url, directory = self.url_directory()
@@ -217,6 +250,8 @@ class Site_Phenix(Site):
                 os.path.expanduser(
                     '~/entretien/xxml/web/notes')),
             }
+
+    orgmode_dir = os.path.expanduser('~/fp/admin')
 
     def decorate_web_pages(self, output_name):
         directory = os.path.dirname(output_name)

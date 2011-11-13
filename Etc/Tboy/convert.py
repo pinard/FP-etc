@@ -93,9 +93,14 @@ class Converter:
                 note.run.report_error(
                         note.title, "Refers to restricted \"%s\"" % text)
                 return replace(text_sans)
-            url, directory = note2.run.site.url_directory(note2.notebook)
-            link = Link_node(note2, [text_sans])
-            link.url = url + '/' + tools.clean_file_name(text) + '.html'
+            if text.endswith(':p'):
+                link = Link_node(note2, [text_sans])
+                link.url = 'file:/home/pinard/fp/admin/%s/%s.org' % (
+                        note2.notebook.replace(' ', '_'), tools.clean_file_name(text[:-2]))
+            else:
+                url, directory = note2.run.site.url_directory(note2.notebook)
+                link = Link_node(note2, [text_sans])
+                link.url = url + '/' + tools.clean_file_name(text) + '.html'
             return replace(link)
         if tag == 'broken':
             return recurse()
@@ -365,6 +370,74 @@ class MT_converter(Html_converter):
                 "\n"
                 "--------\n")
 
+class Orgmode_converter(Converter):
+    list_level = 2
+
+    def bold_tag(self, write, converter):
+        self.output_nested(write, converter, '*', '*')
+
+    def datetime_tag(self, write, converter):
+        self.output_nested(write, converter, '', '')
+
+    def italic_tag(self, write, converter):
+        self.output_nested(write, converter, '_', '_')
+
+    def link_tag(self, write, converter):
+        if self:
+            write('[[' + self.url + '][')
+            self.output_branches(write, converter)
+            write(']]')
+        else:
+            write('[[' + self.url + ']]')
+
+    def list_item_tag(self, write, converter):
+        if self:
+            write('*' * converter.list_level + ' ')
+            self.output_branches(write, converter)
+            write('\n')
+
+    def list_tag(self, write, converter):
+        converter.list_level += 1
+        self.output_branches(write, converter)
+        converter.list_level -= 1
+
+    def monospace_tag(self, write, converter):
+        converter.literally = True
+        self.output_nested(write, converter, '=', '=')
+        converter.literally = False
+
+    def note_content_tag(self, write, converter):
+        write('* ' + converter.escape(self.note.title) + '\n\n')
+        self.output_paragraphs(write, converter)
+
+    def section_tag(self, write, converter):
+        tag = ('**', '*')[self.major]
+        write('\n\n' + tag + ' ' + converter.escape(self.title) + '\n\n')
+        self.output_paragraphs(write, converter)
+
+    def convert(self, note):
+        document = self.document_from_note(note)
+        fragments = []
+        document.orgmode_output(fragments.append, self)
+        return re.sub('\n\n\n\n*', '\n\n', ''.join(fragments))
+
+    def escape(self, text):
+        if self.literally:
+            text = text.replace(' ', tools.NON_BREAKABLE_SPACE)
+        return text
+
+    def output(self, node, write):
+        node.orgmode_output(write, self)
+
+    def start_paragraph(self, write):
+        write('\n\n')
+
+    def end_paragraph(self, write):
+        write('\n\n')
+
+    def break_line(self, write):
+        write('\n')
+
 class Redmine_converter(Converter):
     list_level = 0
 
@@ -407,9 +480,7 @@ class Redmine_converter(Converter):
 
     def section_tag(self, write, converter):
         tag = ('h3.', 'h2.')[self.major]
-        write('\n' + tag + ' '
-              + converter.escape(self.title)
-              + ' ' + equals + '\n\n')
+        write('\n' + tag + ' ' + converter.escape(self.title) + '\n\n')
         self.output_paragraphs(write, converter)
 
     def convert(self, note):
@@ -798,6 +869,9 @@ class Bold_node(Node):
     def html_output(self, write, converter):
         self.output_nested(write, converter, '<b>', '</b>')
 
+    def orgmode_output(self, write, converter):
+        self.output_nested(write, converter, '*', '*')
+
     def redmine_output(self, write, converter):
         self.output_nested(write, converter, '*', '*')
 
@@ -814,6 +888,9 @@ class Comment_node(Node):
         self.output_nested(write, converter, '<!-- ', ' -->')
 
     html_output = docbook_output
+
+    def orgmode_output(self, write, converter):
+        self.output_nested(write, converter, '# ', '\n')
 
     def redmine_output(self, write, converter):
         pass
@@ -834,6 +911,9 @@ class Datetime_node(Node):
         start = '<span style="font-size:71%"><i>'
         end = '</i></span>'
         self.output_nested(write, converter, start, end)
+
+    def orgmode_output(self, write, converter):
+        self.output_nested(write, converter, '_', '_')
 
     def redmine_output(self, write, converter):
         self.output_nested(write, converter, '_', '_')
@@ -858,6 +938,9 @@ class Highlight_node(Node):
                 write, converter,
                 '<span style="background-color:#FFFF66">', '</span>')
 
+    def orgmode_output(self, write, converter):
+        self.output_nested(write, converter, '_*', '*_')
+
     def redmine_output(self, write, converter):
         self.output_nested(write, converter, '_*', '*_')
 
@@ -878,6 +961,9 @@ class Huge_node(Node):
         start = '<span style="font-size:200%">'
         end = '</span>'
         self.output_nested(write, converter, start, end)
+
+    def orgmode_output(self, write, converter):
+        self.output_nested(write, converter, '*', '*')
 
     wiki_output = html_output
 
@@ -903,6 +989,9 @@ class Image_node(Node):
         if self.link:
             write('</a>\n')
 
+    def orgmode_output(self, write, converter):
+        pass
+
     def wiki_output(self, write, converter):
         pass
 
@@ -914,6 +1003,9 @@ class Italic_node(Node):
 
     def html_output(self, write, converter):
         self.output_nested(write, converter, '<i>', '</i>')
+
+    def orgmode_output(self, write, converter):
+        self.output_nested(write, converter, '_', '_')
 
     def redmine_output(self, write, converter):
         self.output_nested(write, converter, '_', '_')
@@ -936,6 +1028,9 @@ class Large_node(Node):
         start = '<span style="font-size:141%">'
         end = '</span>'
         self.output_nested(write, converter, start, end)
+
+    def orgmode_output(self, write, converter):
+        self.output_nested(write, converter, '*', '*')
 
     wiki_output = html_output
 
@@ -981,6 +1076,18 @@ class Link_node(Node):
             write(converter.escape(self.url))
         write('</a>')
 
+    def orgmode_output(self, write, converter):
+        if self:
+            write('[[')
+            write(self.url)
+            write('][')
+            self.output_branches(write, converter)
+            write(']]')
+        else:
+            write('[[')
+            write(self.url)
+            write(']]')
+
     def redmine_output(self, write, converter):
         if self:
             write('"')
@@ -1025,6 +1132,12 @@ class List_item_node(Node):
         if self:
             self.output_nested(write, converter, '<li>', '</li>\n')
 
+    def orgmode_output(self, write, converter):
+        if self:
+            write('*' * converter.list_level + ' ')
+            self.output_branches(write, converter)
+            write('\n')
+
     def redmine_output(self, write, converter):
         if self:
             write('*' * converter.list_level + ' ')
@@ -1049,6 +1162,11 @@ class List_node(Node):
 
     def html_output(self, write, converter):
         self.output_nested(write, converter, '<ul>\n', '</ul>\n')
+
+    def orgmode_output(self, write, converter):
+        converter.list_level += 1
+        self.output_branches(write, converter)
+        converter.list_level -= 1
 
     def redmine_output(self, write, converter):
         converter.list_level += 1
@@ -1105,6 +1223,11 @@ class Monospace_node(Node):
                 write(converter.escape(branch))
         converter.literally = False
         write('</span></tt>')
+
+    def orgmode_output(self, write, converter):
+        converter.literally = True
+        self.output_nested(write, converter, '=', '=')
+        converter.literally = False
 
     def redmine_output(self, write, converter):
         converter.literally = True
@@ -1327,8 +1450,12 @@ class Note_content_node(Node):
         if not isinstance(converter, MT_converter):
             write('</body>\n')
 
+    def orgmode_output(self, write, converter):
+        write('* ' + converter.escape(self.note.title) + '\n\n')
+        self.output_paragraphs(write, converter)
+
     def redmine_output(self, write, converter):
-        write('\nh1. ' + converter.escape(self.note.title) + '\n\n')
+        write('\n* ' + converter.escape(self.note.title) + '\n\n')
         self.output_paragraphs(write, converter)
 
     def rest_output(self, write, converter):
@@ -1364,6 +1491,9 @@ class Note_node(Node):
             write('<html>\n')
             self.output_branches(write, converter)
             write('\n</html>\n')
+
+    def orgmode_output(self, write, converter):
+        self.output_branches(write, converter)
 
     def redmine_output(self, write, converter):
         self.output_branches(write, converter)
@@ -1413,6 +1543,11 @@ class Section_node(Node):
                   + ('</h3>', '</h2>')[self.major] + '\n')
         self.output_paragraphs(write, converter)
 
+    def orgmode_output(self, write, converter):
+        tag = ('**', '*')[self.major]
+        write('\n' + tag + ' ' + converter.escape(self.title) + '\n\n')
+        self.output_paragraphs(write, converter)
+
     def redmine_output(self, write, converter):
         tag = ('h3.', 'h2.')[self.major]
         write('\n' + tag + ' ' + converter.escape(self.title) + '\n\n')
@@ -1445,6 +1580,9 @@ class Small_node(Node):
         end = '</span>'
         self.output_nested(write, converter, start, end)
 
+    def orgmode_output(self, write, converter):
+        self.output_nested(write, converter, '_', '_')
+
     wiki_output = html_output
 
 class Title_node(Node):
@@ -1471,6 +1609,9 @@ class Title_node(Node):
             write(tools.pretty_title(''.join(fragments)))
             write('</title>\n'
                   '</head>\n')
+
+    def orgmode_output(self, write, converter):
+        pass
 
     def redmine_output(self, write, converter):
         pass
@@ -1541,6 +1682,9 @@ class Toc_node(Node):
                   '</li>\n')
         write('</ul>\n'
               '<hr class="ruler" />\n')
+
+    def orgmode_output(self, write, converter):
+        pass
 
     def redmine_output(self, write, converter):
         if self.inhibited:
