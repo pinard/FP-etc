@@ -89,11 +89,9 @@ def xsl_string(value):
     return '""'
 
 class Sweeper:
-    todo_file = os.path.expanduser('~/fp/WorkFlowy.dump')
     note_count = 0
     character_count = 0
     from_tomboy_count = 0
-    from_todo_count = 0
     url_count = 0
 
     def __init__(self, run, notes):
@@ -152,32 +150,6 @@ class Sweeper:
                         return path
 
     def report_errors(self):
-        todo_buffer = None
-        for title in set(self.arrows) - self.marked:
-            if not is_ignorable_title(title):
-                if todo_buffer is None:
-                    if os.path.exists(self.todo_file):
-                        todo_buffer = (open(self.todo_file).read()
-                                       .decode('UTF-8'))
-                    else:
-                        todo_buffer = ''
-                if title not in todo_buffer:
-                    self.errors.append((title, u"Unreachable", None))
-        if os.path.exists(self.todo_file):
-            pattern = re.compile(
-                ('\\b(%s)$'
-                 % '|'.join([re.escape(title) for title in self.arrows])),
-                re.UNICODE)
-            for line in codecs.open(self.todo_file, encoding=ENCODING):
-                line2 = line.strip()
-                if line2.startswith('- '):
-                    line2 = line2[2:]
-                for match in re.finditer('[^ ]:[bnpt]\\b', line2):
-                    if pattern.search(line2, endpos=match.end()):
-                        self.from_todo_count += 1
-                    else:
-                        self.run.report_error(
-                            'WorkFlowy', u"Unknown (%s)" % line2[:match.end()])
         for title, diagnostic, location in sorted(self.errors):
             if location is not None:
                 diagnostic += ' (' + location.context() + ')'
@@ -192,9 +164,6 @@ class Sweeper:
         if self.from_tomboy_count:
             write("%5d internal links within Tomboy\n"
                   % self.from_tomboy_count)
-        if self.from_todo_count:
-            write("%5d links incoming from WorkFlowy\n"
-                  % self.from_todo_count)
         if self.url_count:
             write("%5d external URLs within Tomboy\n"
                   % self.url_count)
