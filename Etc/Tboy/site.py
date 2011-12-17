@@ -99,9 +99,9 @@ class Site:
 
         # Clean up.
         for name in sorted(self.output_names):
-            self.run.report_action("Removing", name)
-            if not self.run.dryrun:
-                os.remove(name)
+            self.run.report_action("(not) Removing", name)
+            #if not self.run.dryrun:
+            #    os.remove(name)
 
     def update_all(self):
         converter = convert.Html_converter()
@@ -152,9 +152,9 @@ class Site:
 
         # Clean up.
         for name in sorted(self.output_names):
-            self.run.report_action("Removing", name)
-            if not self.run.dryrun:
-                os.remove(name)
+            self.run.report_action("(not) Removing", name)
+            #if not self.run.dryrun:
+            #    os.remove(name)
 
     def create_through_xslt(self, xml, stylesheet):
         xslt = tools.xsl_transformer(stylesheet)
