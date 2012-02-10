@@ -43,7 +43,7 @@ Un argument PAGE vide, par exemple donné comme '', n'est pas considéré comme
 fourni.  Le résultat est toujours produit sur la sortie standard.
 """
 
-import cgi, os, sys
+import cgi, os, subprocess, sys
 
 # Exception qui suit la production d'une page d'erreur dans Traiter.  Elle
 # est utilisée pour inhiber toute production HTML supplémentaire.
@@ -114,7 +114,9 @@ def main(*arguments):
     # Déterminer comment écrire.
     try:
         if option_w3m:
-            output = os.popen('w3m -T text/html -dump', 'w')
+            output = subprocess.Popen(
+                    ['w3m', '-T', 'text/html', '-dump'],
+                    stdin=subprocess.PIPE).stdin
             try:
                 Traiter(file(fichier_a_traiter), contexte, output.write,
                         docutils=option_docutils, tracage=option_tracage)

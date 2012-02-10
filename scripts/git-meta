@@ -15,7 +15,7 @@ If no FILEs, simulate a file named TAG with one line displaying TAG.
 """
 
 __metaclass__ = type
-import os, sys, tempfile
+import os, subprocess, sys, tempfile
 
 class Main:
     message = None
@@ -37,23 +37,24 @@ class Main:
         if arguments:
             for argument in arguments:
                 base = os.path.basename(argument)
-                command = ('git hash-object -w --path=%s %s'
-                           % (shell_quoted(base), shell_quoted(argument)))
+                args = ['git', 'hash-object', '-w',
+                        '--path=%s' % base, argument]
                 write('100644 blob %s\t%s\n'
-                      % (os.popen(command).read().rstrip(),
+                      % (subprocess.check_output(args).rstrip(),
                          lstree_quoted(base)))
         else:
             command = ('echo %s | git hash-object -w --path=%s --stdin'
                        % (shell_quoted(tag), shell_quoted(tag)))
             write('100644 blob %s\t%s\n'
-                  % (os.popen(command).read().rstrip(), lstree_quoted(tag)))
+                  % (subprocess.check_output(command, shell=True).rstrip(), lstree_quoted(tag)))
         write = None
         tree = os.popen('git mktree < %s' % tempname).read().rstrip()
         os.remove(tempname)
-        commit = os.popen('echo %s | git commit-tree %s'
-                          % (shell_quoted(self.message or tag),
-                             tree)).read().rstrip()
-        os.system('git tag %s %s' % (shell_quoted(tag), commit))
+        commit = subprocess.check_output(
+                'echo %s | git commit-tree %s'
+                % (shell_quoted(self.message or tag), tree),
+                shell=True).rstrip()
+        subprocess.call(['git', 'tag', tag, commit])
 
 def lstree_quoted(text):
     return text.replace('\\', '\\\\').replace('\t', '\\t').replace('\n', '\\n')

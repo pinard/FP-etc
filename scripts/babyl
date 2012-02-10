@@ -38,7 +38,7 @@ inventory of some folder file, merely use `babyl -s FOLDER'.
 """
 
 __metaclass__ = type
-import os, re, sys
+import os, re, subprocess, sys
 
 def decoded_header(texte):
     try:
@@ -452,10 +452,10 @@ class PrintOutput(Output):
 
     def process_message(self, (start, headers, body)):
         self.message_count += 1
-        write = (os.popen(('enscript -G -Email -t"%s [%d.]"'
-                           % (self.input_name, self.message_count)),
-                          'w')
-                 .write)
+        write = subprocess.Popen(
+                ['enscript', '-G', '-Email',
+                 '-t%s [%d.]' % (self.input_name, self.message_count)],
+            stdin=subprocess.PIPE).input.write
         # Process headers.
         while headers:
             line = headers[0]

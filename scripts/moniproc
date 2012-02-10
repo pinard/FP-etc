@@ -73,12 +73,12 @@ class Main:
         self.columns = 'pid stat pcpu rss vsize size cmd'.split()
         self.writer.writerow(['date', 'time'] + self.columns)
         # Prepare the command to run.
-        self.command = 'ps'
+        self.args = ['ps']
         if self.pid is not None:
-            self.command += ' -p ' + self.pid
+            self.args += ['-p', self.pid]
         if self.user is not None:
-            self.command += ' -u ' + self.user
-        self.command += ' xwh -o ' + ','.join(self.columns)
+            self.args += ['-u', self.user]
+        self.args += ['xwh', '-o' + ','.join(self.columns)]
         # Run the command.
         if self.repeat is None:
             self.run_ps()
@@ -93,7 +93,8 @@ class Main:
 
     def run_ps(self):
         stamp = datetime.datetime.today().isoformat()[:19].split('T')
-        for line in os.popen(self.command):
+        for line in subprocess.Popen(self.args,
+                                     stdout=subprocess.PIPE).stdout:
             fields = line.rstrip().split(None, len(self.columns) - 1)
             if self.patterns:
                 cmd = fields[-1]

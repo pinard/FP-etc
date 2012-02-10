@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 # Copyright © 2000, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2000.
 
@@ -21,7 +21,7 @@ Le résultat de la comparaison est produit sur la sortie standard.
 """
 
 __metaclass__ = type
-import os, sys
+import os, subprocess, sys
 from curses.ascii import NUL, SOH, ESC
 nul = chr(NUL)
 soh = chr(SOH)
@@ -53,7 +53,7 @@ class Wdiff:
         elif os.path.isdir(droite) and not os.path.isdir(gauche):
             droite = os.path.join(droite, os.path.basename(gauche))
         arguments = ['wdiff']
-        if os.popen('wdiff --help').read().find(' -D') >= 0:
+        if subprocess.check_output(['wdiff', '--help']).find(' -D') >= 0:
             arguments.append('-D=<>"().,/')
         arguments.append('-w' + self.start_delete)
         arguments.append('-x' + self.end_delete)
@@ -83,8 +83,10 @@ class Wdiff_Postscript(Wdiff):
         enfant = os.fork()
         if enfant == 0:
             os.close(ecriture)
-            os.popen('enscript -G -e -p-', 'w').write(
-                os.fdopen(lecture).read().replace(soh, nul))
+            subprocess.Popen(
+                    ['enscript', '-G', '-e', '-p-'],
+                    stdin=subprocess.PIPE).input.write(
+                            os.fdopen(lecture).read().replace(soh, nul))
         else:
             os.close(lecture)
             os.dup2(ecriture, sys.stdout.fileno())

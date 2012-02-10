@@ -27,7 +27,7 @@ a whole hierarchy with `C-c h', and reveal one level at a time with `C-c i'.
 """
 
 __metaclass__ = type
-import os, sys
+import os, subprocess, sys
 
 class Main:
     def __init__(self):
@@ -67,7 +67,8 @@ class Main:
     def obtain_pairs(self, arguments):
         # Get the data, properly filtered.
         pairs = []
-        for line in os.popen('du %s' % ' '.join(arguments)):
+        for line in subprocess.Popen(
+                ['du'] + arguments, stdout=subprocess.PIPE).stdout:
             line = line.rstrip("\n/")
             text, path = line.split('\t')
             size = int(text)

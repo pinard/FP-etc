@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 # Copyright © 2005 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2005.
 
@@ -30,7 +30,7 @@ sont ignorées.  Si aucun CHEMIN, le répertoire courant est présumé.
 """
 
 __metaclass__ = type
-import os, re, sys, time
+import os, re, subprocess, sys, time
 
 class Main:
     eliminations = False
@@ -78,7 +78,7 @@ class Main:
             import tempfile
             self.fifo = tempfile.mktemp()
             os.mkfifo(self.fifo)
-            os.system('term -e cat %s &' % self.fifo)
+            subprocess.call('term -e cat %s &' % self.fifo, shell=True)
             self.sortie = open(self.fifo, 'a')
         else:
             self.fifo = None
@@ -169,7 +169,7 @@ class Main:
                                         'color body black brightgreen "%s"\n'
                                         'folder-hook . "push \'l%s^m \'"\n'
                                         % (gabarit, gabarit))
-                os.system('mutt -F %s -f %s' % (muttrc, fichier))
+                subprocess.call(['mutt', '-F', muttrc, '-f', fichier])
             finally:
                 if muttrc is not None:
                     try:
@@ -246,7 +246,7 @@ class Main:
                                     for ordinal, _ in valeur]),
                            valeur[0][0]))
                 #sys.stdout.write(file(muttrc).read())
-                os.system('mutt -F %s -f %s' % (muttrc, fichier))
+                subprocess.call(['mutt', '-F', muttrc, '-f', fichier])
             finally:
                 if muttrc is not None:
                     try:

@@ -22,7 +22,7 @@ par ``.ps``.
 """
 
 __metaclass__ = type
-import os, sys
+import os, subprocess, sys
 
 class Main:
     latex = False
@@ -73,8 +73,8 @@ class Main:
                                    settings_overrides=overrides)
             file('%s-tmp.tex' % prefixe, 'w').write(texte)
             # Produire le PostScript.
-            os.system('latex %s-tmp.tex' % prefixe)
-            os.system('dvips %s-tmp.dvi' % prefixe)
+            subprocess.call(['latex', '%s-tmp.tex' % prefixe])
+            subprocess.call(['dvips', '%s-tmp.dvi' % prefixe])
             os.rename('%s-tmp.ps' % prefixe, '%s.ps' % prefixe)
         else:
             # Transformer le document en HTML.
@@ -83,8 +83,8 @@ class Main:
                                    settings_overrides=overrides)
             file('%s-tmp.html' % prefixe, 'w').write(texte)
             # Produire le PostScript.
-            os.system('htmldoc --webpage -f %s-tmp.ps %s-tmp.html'
-                      % (prefixe, prefixe))
+            subprocess.call(['htmldoc', '--webpage', '-f',
+                             '%s-tmp.ps' % prefixe, '%s-tmp.html' % prefixe])
             os.rename('%s-tmp.ps' % prefixe, '%s.ps' % prefixe)
         # Nettoyer.
         from glob import glob

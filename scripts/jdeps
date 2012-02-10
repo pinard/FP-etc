@@ -35,9 +35,8 @@ or .ps for a PostScript file (the "dot" program is used to make it).
 """
 
 __metaclass__ = type
-import sys
-from Etc import graph
-from Etc import spark
+import subprocess, sys
+from Etc import graph, spark
 
 # REVOIR, peut-être:
 # /tmp/servlets_2_3/javax/servlet ~/r-d/dev/modules/api/servlets/lib
@@ -118,8 +117,9 @@ class Main:
             if self.graph_file.endswith('.dot'):
                 handle = file(self.graph_file, 'w')
             else:
-                import os
-                handle = os.popen('dot -Tps > %s' % self.graph_file, 'w')
+                handle = subprocess.Popen(
+                        'dot -Tps > %s' % self.graph_file, shell=True,
+                        input=subprocess.PIPE).stdin
             self.produce_dot(handle.write)
 
     def study_sources(self, arguments):

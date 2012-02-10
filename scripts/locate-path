@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8
+# -*- coding: utf-8
 # Copyright © 2000, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2000.
 
@@ -14,7 +14,7 @@ Options:
 """
 
 __metaclass__ = type
-import os, sys
+import os, subprocess, sys
 
 class Main:
 
@@ -66,7 +66,9 @@ class Main:
             packages = packages.keys()
             packages.sort()
             for package in packages:
-                for line in os.popen('rpm -ql %s' % package):
+                for line in subprocess.Popen(
+                        ['rpm', '-ql',  package],
+                        stdout=subprocess.PIPE).stdout:
                     name = line.rstrip()
                     if name in within:
                         within[name] = package

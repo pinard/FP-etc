@@ -136,8 +136,9 @@ class Main:
                 command = pstoedit + ' %s' % self.output
         if self.verbose:
             sys.stderr.write(command + '\n')
-        import os
-        os.popen(command, 'w').write(buffer)
+        subprocess.Popen(
+                command, shell=True,
+                stdin=subprocess.PIPE).stdin.write(buffer)
 
 run = Main()
 main = run.main

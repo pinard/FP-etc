@@ -49,28 +49,30 @@ class Main:
 
         if image:
             time.sleep(self.delay)
-            command = 'import -silent -descend'
+            args = ['import', '-silent', '-descend']
             if image.endswith('.png'):
                 # Gimp reveals an offset bug between image layers, whenever
                 # a crop occurred.  Read and write the PNG to correct this.
                 work = image[:-4] + '-tmp.png'
-                os.system(command + ' ' + work)
+                subprocess.call(args + [work])
                 from PIL import Image
                 Image.open(work).save(image)
                 os.remove(work)
             elif image.endswith('.gif'):
                 # ImageMagick does not compress, but PBMnet library does.
                 work = image[:-4] + '-tmp.gif'
-                os.system(command + ' ' + work)
-                os.system('giftopnm %s | ppmtogif > %s' % (work, image))
+                subprocess.call(args + [work])
+                subprocess.call(
+                        'giftopnm %s | ppmtogif > %s' % (work, image),
+                        shell=True)
                 os.remove(work)
             else:
-                os.system(command + ' ' + image)
+                subprocess.call(args + [image])
         else:
-            command = 'gnome-screenshot -d %s' % self.delay
+            args = ['gnome-screenshot', '-d', self.delay]
             if self.window:
-                command += ' -w'
-            os.system(command)
+                args.append('-w')
+            subprocess.call(args)
 
 run = Main()
 main = run.main
