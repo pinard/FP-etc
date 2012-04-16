@@ -26,9 +26,9 @@ __ /pynits-doc.html
 On Windows or other non-Unix systems
 ====================================
 
-You likeley have fetched a recent ``.zip`` archive from:
+You likeley have fetched a recent ``.zip`` archive by visiting::
 
-    http://fp-etc.progiciels-bpi.ca/archives
+    https://github.com/pinard/FP-etc/zipball/master
 
 Choose the directory where you want the files installed.  This is
 normally one of the directories listed by VIM command::
@@ -72,11 +72,12 @@ holds at least the following line::
 On Unix or Linux systems
 ========================
 
-On Linux or other Unix systems, you might follow the instructions above,
-meant for non-Unix systems, they should work as well.  Or else, you may
-fetch a recent ``.tgz`` archive from:
+On Linux or other Unix systems, you might follow the instructions
+above, meant for non-Unix systems, they should work for Unix systems
+as well.  Or else, you may fetch a recent ``.tar.gz`` archive by
+visiting::
 
-    http://fp-etc.progiciels-bpi.ca/archives
+    https://github.com/pinard/FP-etc/tarball/master 
 
 You may either install this tool for yourself only, or for all users in
 your system.
