@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Copyright © 2005 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2005.
 
-u"""\
+"""\
 Reformatter un ou plusieurs fichiers XML.
 
 Usage: jolixml [OPTION] FICHIER...
@@ -69,7 +69,7 @@ class SaxWriter(XMLGenerator):
 
     def setDocumentLocator(self, locator):
         self.locator = locator
-        print dir(locator)
+        print(dir(locator))
 
     def startDocument(self):
         XMLGenerator.startDocument(self)

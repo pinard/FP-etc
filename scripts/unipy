@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 2006 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2006-03.
 
-u"""\
+"""\
 Préparer un source Python, pour travailler complètement en Unicode.
 
 Usage: unipy [OPTION]... [FICHIER]...
@@ -107,7 +107,7 @@ class Main:
 
         # En mode volubile, il faut relire l'entrée deux fois.
         if self.volubile:
-            from cStringIO import StringIO
+            from io import StringIO
             entree = StringIO(entree.read())
         # Transformer les chaînes.
         fragments = []

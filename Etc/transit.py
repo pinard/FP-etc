@@ -23,7 +23,7 @@ def envoyer(socket, structure):
         transmis = socket.send(reponse)
         #sys.stderr.write('Envoi %d de %d\n' % (transmis, len(reponse)))
         if not transmis:
-            raise Erreur, "Connection rompue (vu par l'envoyeur)."
+            raise Erreur("Connection rompue (vu par l'envoyeur).")
         reponse = reponse[transmis:]
 
 def recevoir(socket):
@@ -34,7 +34,7 @@ def recevoir(socket):
         fragment = socket.recv(grandeur_fragment)
         #sys.stderr.write('Réception %d de %d\n' % (len(fragment), attendu))
         if not fragment:
-            raise Erreur, "Connection rompue (vu par le récipiendaire)."
+            raise Erreur("Connection rompue (vu par le récipiendaire).")
         chaine += fragment
     valeurs = struct.unpack(format_prefixe, chaine[:attendu])
     chaine = chaine[attendu:]
@@ -43,6 +43,6 @@ def recevoir(socket):
         fragment = socket.recv(grandeur_fragment)
         #sys.stderr.write('Réception %d de %d\n' % (len(fragment), attendu))
         if not fragment:
-            raise Erreur, "Connection rompue (vu par le récipiendaire)."
+            raise Erreur("Connection rompue (vu par le récipiendaire).")
         chaine += fragment
     return marshal.loads(chaine)

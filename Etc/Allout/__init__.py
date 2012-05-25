@@ -5,5 +5,5 @@
 
 __metaclass__ = type
 
-__package__ = u'Allout'
-__version__ = u'0.2'
+__package__ = 'Allout'
+__version__ = '0.2'

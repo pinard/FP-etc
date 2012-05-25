@@ -3,7 +3,7 @@
 # Copyright © 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2003-05.
 
-u"""\
+"""\
 Traitements Babyl ou mbox fréquents: partie mise en commun.
 """
 
@@ -16,7 +16,7 @@ class Error(Exception): pass
 def folder(file_name, strip201=False):
     if file_name:
         if not os.path.isfile(file_name):
-            raise Error, u"%s: File not found." % file_name
+            raise Error("%s: File not found." % file_name)
         buffer = file(file_name).read()
     else:
         buffer = sys.stdin.read()
@@ -29,7 +29,7 @@ def folder(file_name, strip201=False):
     elif buffer.startswith('From '):
         folder = Mbox(file_name, buffer)
     else:
-        raise Error, u"%s: Unknown format." % (file_name or '<stdin>')
+        raise Error("%s: Unknown format." % (file_name or '<stdin>'))
     if strip201:
         folder.count201 = count
         if count > 0:
@@ -50,7 +50,7 @@ class Folder:
             self.file_name = file_name
         if buffer is None:
             if file_name and os.path.exists(file_name):
-                self.error(u"May not create folder over an existing file.")
+                self.error("May not create folder over an existing file.")
             self.data = []
             self.deleted = []
         else:
@@ -62,15 +62,15 @@ class Folder:
 
     def rescan(self):
         if self.file_name is None:
-            self.error(u"May not rescan standard input.")
+            self.error("May not rescan standard input.")
         if self.file_size is None:
-            self.error(u"May not rescan a file which did not exist.")
+            self.error("May not rescan a file which did not exist.")
         try:
             size = os.path.getsize(self.file_name)
         except IOError:
-            self.error(u"May not rescan a vanished folder.")
+            self.error("May not rescan a vanished folder.")
         if size < self.file_size:
-            self.error(u"May not rescan a shrunk folder.")
+            self.error("May not rescan a shrunk folder.")
         if size > self.file_size:
             input = file(self.file_name)
             input.seek(self.file_size)
@@ -95,7 +95,7 @@ class Folder:
          ) = self.find_head_body(index)
         try:
             return message_from_string(data[head_begin:head_end])
-        except MessageError, diagnostic:
+        except MessageError as diagnostic:
             self.error(diagnostic, index)
 
     def message_body(self, index):
@@ -107,7 +107,7 @@ class Folder:
         if self.modified:
             if self.file_size is not None:
                 if os.path.getsize(self.file_name) != self.file_size:
-                    self.error(u"May not close a file which changed on disk.")
+                    self.error("May not close a file which changed on disk.")
                 if backup is None:
                     backup = self.file_name + '~'
                 if os.path.exists(backup):
@@ -152,23 +152,23 @@ Note:    it means the file has no messages in it.
         if self.data and self.data[-1].endswith('\37'):
             self.data[-1] = self.data[-1][:-1]
         else:
-            self.error(u"Folder does not end like a Babyl file.")
+            self.error("Folder does not end like a Babyl file.")
         if self.data[0].startswith('BABYL OPTIONS:'):
             self.folder_prefix = self.data.pop(0) + '\37'
         else:
-            self.error(u"Folder does not start like a Babyl file.")
+            self.error("Folder does not start like a Babyl file.")
 
     def extend_data(self, buffer):
         data = buffer.split('\37\f\n')
         if data[-1].endswith('\37'):
             data[-1] = data[-1][:-1]
         else:
-            self.error(u"Message does not end like a Babyl article.",
+            self.error("Message does not end like a Babyl article.",
                        len(self.data) + len(data) - 1)
         if data[0].startswith('\f\n'):
             data[0] = date[0][2:]
         else:
-            self.error(u"Message does not start like a Babyl article.",
+            self.error("Message does not start like a Babyl article.",
                        len(self.data))
         self.data += data
 
@@ -204,10 +204,10 @@ Note:    it means the file has no messages in it.
         data = self.data[index]
         eooh = data.find(self.eooh_string)
         if eooh < 0:
-            self.error(u"Missing EOOH within a Babyl article.", index)
+            self.error("Missing EOOH within a Babyl article.", index)
         double_newline = data.find('\n\n', eooh)
         if double_newline < 0:
-            self.error(u"Unterminated head within Babyl article.", index)
+            self.error("Unterminated head within Babyl article.", index)
         body_begin = double_newline + 2
         body_end = len(data)
         if data.startswith('0'):
@@ -216,11 +216,11 @@ Note:    it means the file has no messages in it.
         elif data.startswith('1'):
             newline = data.find('\n', 0, eooh)
             if newline < 0:
-                self.error(u"Invalid Babyl article.", index)
+                self.error("Invalid Babyl article.", index)
             head_begin = newline + 1
             head_end = eooh
         else:
-            self.error(u"Invalid Babyl flag.", index)
+            self.error("Invalid Babyl flag.", index)
         return data, head_begin, head_end, body_begin, body_end
 
 class Mbox(Folder):
@@ -244,7 +244,7 @@ class Mbox(Folder):
                 end = len(buffer)
             newline = buffer.find('\n', start, end)
             if newline < 0:
-                self.error(u"Unterminated envelope in Mbox folder.",
+                self.error("Unterminated envelope in Mbox folder.",
                            len(self.data) + len(data))
             double_newline = buffer.find('\n\n', newline+1, end)
             if double_newline < 0:

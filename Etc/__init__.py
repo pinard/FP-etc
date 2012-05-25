@@ -6,7 +6,7 @@ class _py:
 
     def __getattr__(self, attribut):
         if attribut == 'log':
-            import pylog
+            from . import pylog
             self.log = pylog
             return pylog
         if attribut == 'test':

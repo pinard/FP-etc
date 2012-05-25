@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 2004 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2004.
 
-u"""\
+"""\
 Tenter de deviner le jeu de caractères utilisé dans des fichiers.
 
 Usage: charset [OPTION]... [FICHIER]...
@@ -39,13 +39,13 @@ class Main:
             elif option == '-m':
                 self.minus = True
         write = sys.stdout.write
-        arguments = map(unicode, arguments)
+        arguments = list(map(str, arguments))
         if arguments:
-            largeur = max(map(len, arguments)) + 2
+            largeur = max(list(map(len, arguments))) + 2
             for argument in arguments:
                 try:
                     tampon = file(argument).read()
-                except IOError, exception:
+                except IOError as exception:
                     write('%*s%s\n' % (-largeur, argument, exception))
                 else:
                     write('%*s%s\n' % (-largeur, argument,

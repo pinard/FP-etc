@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8
 # Copyright © 1991, 97, 98, 99, 00, 01, 02, 03 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, April 1991.
 
-u"""\
+"""\
 Order object archives or object modules for bottom-up study.
 
 Usage: nm-order [OPTION]... {LIBRARY | OBJECT}...
@@ -66,7 +66,7 @@ def study(name):
     elif extension == '.o':
         module = base
     else:
-        assert False, u"`%s' (%s) de type inconnu\n" % (name, extension)
+        assert False, "`%s' (%s) de type inconnu\n" % (name, extension)
     import re
     for line in os.popen('nm %s' % name):
         if not line:
@@ -84,7 +84,7 @@ def study(name):
             symbol = match.group(1)
             if symbol in run.ignore:
                 continue
-            if run.map.has_key(symbol):
+            if symbol in run.map:
                 run.map[symbol].append('/' + module)
             else:
                 run.map[symbol] = ['/' + module]
@@ -95,7 +95,7 @@ def study(name):
             symbol = match.group(1)
             if symbol in run.ignore:
                 continue
-            if run.map.has_key(symbol):
+            if symbol in run.map:
                 run.map[symbol].append('#' + module)
             else:
                 run.map[symbol] = ['#' + module]
@@ -106,7 +106,7 @@ def study(name):
             symbol = match.group(1)
             if symbol in run.ignore:
                 continue
-            if run.map.has_key(symbol):
+            if symbol in run.map:
                 run.map[symbol].append('=' + module)
             else:
                 run.map[symbol] = ['=' + module]
@@ -117,7 +117,7 @@ def study(name):
             symbol = match.group(1)
             if symbol in run.ignore:
                 continue
-            if run.map.has_key(symbol):
+            if symbol in run.map:
                 run.map[symbol].append(module)
             else:
                 run.map[symbol] = [module]
@@ -131,7 +131,7 @@ def print_references(write):
     # Produce the reference table.
     if run.xref:
         write('\nENTRY POINTS (and usages)\n')
-    entries = run.map.keys()
+    entries = list(run.map.keys())
     entries.sort()
     for entry in entries:
         if run.xref:
@@ -143,7 +143,7 @@ def print_references(write):
                 print_item(write, caller)
             if caller[0] == '=':
                 if module:
-                    diagnostics.append(u"`%s' defined in `%s' and `%s'\n"
+                    diagnostics.append("`%s' defined in `%s' and `%s'\n"
                                        % (entry, module, caller[1:]))
                 else:
                     module = caller[1:]
@@ -151,17 +151,17 @@ def print_references(write):
             elif caller[0] in '/#':
                 continue
             elif module:
-                if needs.has_key(caller):
+                if caller in needs:
                     if module not in needs[caller]:
                         needs[caller].append(module)
                 else:
                     needs[caller] = [module]
-                if not needs.has_key(module):
+                if module not in needs:
                     needs[module] = []
         if run.xref:
             print_end(write)
     write('\nPROGRESSIVE (and callers)\n')
-    modules = needs.keys()
+    modules = list(needs.keys())
     modules.sort()
     modified = True
     while modified:

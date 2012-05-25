@@ -3,7 +3,7 @@
 # Copyright © 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2001.
 
-u"""\
+"""\
 Interprète pour rendre "actives" certaines pages HTML.
 
 Cet outil a pour but de traiter des pages HTML contenant des directives
@@ -62,7 +62,7 @@ def main(*arguments):
             sys.stdout.write(__doc__)
             sys.exit(0)
         formulaire = cgi.FieldStorage()
-        for nom in formulaire.keys():
+        for nom in list(formulaire.keys()):
             valeurs = formulaire[nom]
             if isinstance(valeurs, list):
                 # REVOIR!
@@ -74,7 +74,7 @@ def main(*arguments):
         # Produire le Content-Type immédiatement, pour que le fureteur soit
         # patient durant le traitement de la page.
         charset = os.environ.get('CHARSET', 'ISO-8859-1')
-        sys.stdout.write(u"Content-type: text/html; charset=%s\n\n" % charset)
+        sys.stdout.write("Content-type: text/html; charset=%s\n\n" % charset)
         sys.stdout.flush()
     else:
         # L'appel se fait probablement via un shell interactif.  Étudier les
@@ -98,10 +98,10 @@ def main(*arguments):
         for option in config.options('contexte'):
             contexte[option] = config.get('contexte', option)
     # Ajuster PATH.
-    import ConfigParser
+    import configparser
     try:
         library = config.get('DEFAULT', 'Library')
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         pass
     else:
         os.environ['PATH'] = '%s:%s' % (library, os.environ['PATH'])
@@ -154,8 +154,8 @@ def get_config(repertoire=None,
             contexte['projet'] = projet
     # Produire une configuration, à partir d'un fichier de configuration
     # si nous le trouvons, vide autrement.
-    import ConfigParser
-    config = ConfigParser.ConfigParser()
+    import configparser
+    config = configparser.ConfigParser()
     if projet is not None:
         fichier = (os.environ.get('CONFIG_%s' % projet.upper())
                    or '/usr/local/etc/%s.conf' % projet)
@@ -167,12 +167,12 @@ def get_config(repertoire=None,
     if contexte:
         if not config.has_section('contexte'):
             config.add_section('contexte')
-        for nom, valeur in contexte.iteritems():
+        for nom, valeur in contexte.items():
             config.set('contexte', nom, valeur)
     # S'occuper de PythonPath automatiquement, s'il est défini.
     try:
         chaine = config.get('DEFAULT', 'PythonPath')
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         chaine = None
     if chaine is not None:
         morceaux = chaine.split(':')
@@ -196,7 +196,7 @@ class Traiter:
         # WRITE_ERRORS est utilisé en cas d'erreur, None implique WRITE.
         self.compilateurs = {
             # Pré-traitement.
-            u'Délimiter': self.compiler_delimiter,
+            'Délimiter': self.compiler_delimiter,
             # Énoncés simples.
             'Inclure': self.compiler_inclure,
             'Sauver': self.compiler_sauver,
@@ -223,7 +223,7 @@ class Traiter:
         self.dans_page_erreur = False
         self.contexte = contexte
         try:
-            if isinstance(fichier, basestring):
+            if isinstance(fichier, str):
                 self.location = '<string>', 0, None
                 self.compiler(fichier, '<string>')
             else:
@@ -233,7 +233,7 @@ class Traiter:
         except Interruption:
             raise
         except:
-            self.erreur(u"Erreur durant le traitement!", True)
+            self.erreur("Erreur durant le traitement!", True)
 
     def compiler(self, texte, nom_fichier):
         # CODE, qui a la forme d'une liste d'instructions, est fabriqué à la
@@ -312,7 +312,7 @@ class Traiter:
             position = texte.find(self.delimiteur_fin, curseur)
             if position < 0:
                 fin = curseur
-                self.erreur(u"Terminateur absent ou incorrect.")
+                self.erreur("Terminateur absent ou incorrect.")
                 continue
             fin = curseur = position + len(self.delimiteur_fin)
             ligne += texte.count('\n', precedent, curseur)
@@ -329,10 +329,10 @@ class Traiter:
                 else:
                     compilateur(fragment[len(fragments[0]):]) # FIXME: ???
                 continue
-            self.erreur(u"Directive non reconnue")
+            self.erreur("Directive non reconnue")
         while self.pile:
             self.location = self.pile[-1][1]
-            self.erreur(u"Bloc `%s' mal terminé." % self.pile[-1][0])
+            self.erreur("Bloc `%s' mal terminé." % self.pile[-1][0])
             self.pile.pop()
 
     def compiler_afficher(self, texte):
@@ -346,7 +346,7 @@ class Traiter:
         elif texte == 'variables':
             afficheur = self.executer_afficher_variables
         else:
-            self.erreur(u"Requête invalide dans Afficher.")
+            self.erreur("Requête invalide dans Afficher.")
             return
         self.code.append((self.location, afficheur, None))
 
@@ -354,17 +354,17 @@ class Traiter:
         # REVOIR: Peut-être utiliser "Chaque VARIABLE dans EXPRESSION"?
         fragments = texte.split(':', 1)
         if len(fragments) != 2:
-            self.erreur(u"Séparateur `:' attendu dans Chacun.")
+            self.erreur("Séparateur `:' attendu dans Chacun.")
             return
         nom = fragments[0].strip()
         expression = fragments[1].lstrip()
         if expression == '':
-            self.erreur(u"Expression manquante dans Chacun.")
+            self.erreur("Expression manquante dans Chacun.")
             return
         try:
             code = self.faire_code(expression, 'Chacun', 'eval')
         except:
-            self.erreur(u"Expression invalide dans Chacun.", True)
+            self.erreur("Expression invalide dans Chacun.", True)
             return
         self.empiler('Chacun')
         self.code.append((self.location, self.executer_chacun,
@@ -379,21 +379,21 @@ class Traiter:
             try:
                 valeurs = eval(texte, {}, {})
             except:
-                self.erreur(u"Expression invalide dans Délimiter.", True)
+                self.erreur("Expression invalide dans Délimiter.", True)
                 return
             if len(valeurs) != 2:
-                self.erreur(u"Délimiter doit fournir deux valeurs.")
+                self.erreur("Délimiter doit fournir deux valeurs.")
                 return
             if not (isinstance(valeurs[0], str)
                     and isinstance(valeurs[1], str)):
-                self.erreur(u"Délimiter doit fournir des chaînes.")
+                self.erreur("Délimiter doit fournir des chaînes.")
                 return
             self.pile_delimiteurs.append((self.delimiteur_debut,
                                           self.delimiteur_fin))
         elif self.pile_delimiteurs:
             valeurs = self.pile_delimiteurs.pop()
         else:
-            self.erreur(u"`Délimiter' mal placé.")
+            self.erreur("`Délimiter' mal placé.")
             return
         self.delimiteur_debut = valeurs[0]
         self.delimiteur_fin = valeurs[1]
@@ -404,8 +404,8 @@ class Traiter:
             texte = texte.lstrip() + '\n'
         else:
             if lignes[0].rstrip():
-                self.erreur(u"Faire doit être seul sur sa ligne"
-                            u" dans un Faire multi-lignes.")
+                self.erreur("Faire doit être seul sur sa ligne"
+                            " dans un Faire multi-lignes.")
                 return
             lignes[0] = ''
             import re
@@ -413,7 +413,7 @@ class Traiter:
             for compteur in range(1, len(lignes)):
                 if lignes[compteur].rstrip():
                     if lignes[compteur][:len(marge)] != marge:
-                        self.erreur(u"Marge inconsistante dans Faire.")
+                        self.erreur("Marge inconsistante dans Faire.")
                         return
                     lignes[compteur] = lignes[compteur][len(marge):] + '\n'
                 else:
@@ -422,7 +422,7 @@ class Traiter:
         try:
             code = self.faire_code(texte, 'Faire', 'exec')
         except:
-            self.erreur(u"Énoncé invalide dans Faire.", True)
+            self.erreur("Énoncé invalide dans Faire.", True)
             return
         self.code.append((self.location, self.executer_faire, [code]))
 
@@ -432,7 +432,7 @@ class Traiter:
         if not adresses:
             return
         if texte:
-            self.erreur(u"Texte intempestif dans FinChacun.")
+            self.erreur("Texte intempestif dans FinChacun.")
             return
         # Retourner au début de la boucle.
         adresse = adresses[0]
@@ -447,7 +447,7 @@ class Traiter:
         if not adresses:
             return
         if texte:
-            self.erreur(u"Texte intempestif dans FinSauver.")
+            self.erreur("Texte intempestif dans FinSauver.")
             return
         # Ajuster la fin de la région à sauver.
         adresse = adresses[0]
@@ -460,7 +460,7 @@ class Traiter:
         if not adresses:
             return
         if texte:
-            self.erreur(u"Texte intempestif dans FinSi.")
+            self.erreur("Texte intempestif dans FinSi.")
             return
         # Ajuster tous les sauts qui doivent l'être:
         # - le saut du test conditionel précédent,
@@ -476,7 +476,7 @@ class Traiter:
         if not adresses:
             return
         if texte:
-            self.erreur(u"Texte intempestif dans FinTantque.")
+            self.erreur("Texte intempestif dans FinTantque.")
             return
         # Retourner au début de la boucle.
         adresse = adresses[0]
@@ -488,7 +488,7 @@ class Traiter:
     def compiler_fintracer(self, texte):
         texte = texte.lstrip()
         if texte:
-            self.erreur(u"Texte intempestif dans FinTracer.")
+            self.erreur("Texte intempestif dans FinTracer.")
             return
         self.code.append((self.location, self.executer_fintracer, None))
 
@@ -506,7 +506,7 @@ class Traiter:
         try:
             code = self.faire_code(texte, 'Si', 'eval')
         except:
-            self.erreur(u"Expression invalide dans Si.", True)
+            self.erreur("Expression invalide dans Si.", True)
             return
         # Préparer un saut conditionnel à compléter plus tard.
         self.empiler('Si')
@@ -515,10 +515,10 @@ class Traiter:
     def compiler_sinon(self, texte):
         texte = texte.lstrip()
         if self.pile[-1][0] != 'Si' or self.pile[-1][2] is None:
-            self.erreur(u"`Sinon' mal placé.")
+            self.erreur("`Sinon' mal placé.")
             return
         if texte:
-            self.erreur(u"Texte intempestif dans Sinon.")
+            self.erreur("Texte intempestif dans Sinon.")
             return
         # Préparer un saut inconditionnel à compléter au FinSi.
         self.pile[-1].append(len(self.code))
@@ -531,12 +531,12 @@ class Traiter:
     def compiler_sinonsi(self, texte):
         texte = texte.lstrip()
         if self.pile[-1][0] != 'Si' or self.pile[-1][2] is None:
-            self.erreur(u"`SinonSi' mal placé.")
+            self.erreur("`SinonSi' mal placé.")
             return
         try:
             code = self.faire_code(texte, 'SinonSi', 'eval')
         except:
-            self.erreur(u"Expression invalide dans SinonSi.", True)
+            self.erreur("Expression invalide dans SinonSi.", True)
             return
         # Préparer un saut inconditionnel à compléter au FinSi.
         self.pile[-1].append(len(self.code))
@@ -560,10 +560,10 @@ class Traiter:
             elif type == 'Tantque':
                 chacun = False
         if chacun is None:
-            self.erreur(u"`Suffit!' mal placé.")
+            self.erreur("`Suffit!' mal placé.")
             return
         if texte:
-            self.erreur(u"Texte intempestif dans Suffit!.")
+            self.erreur("Texte intempestif dans Suffit!.")
             return
         self.code.append((self.location, self.executer_suffit,
                           [self.pile[compteur][2], chacun]))
@@ -573,7 +573,7 @@ class Traiter:
         try:
             code = self.faire_code(texte, 'Tantque', 'eval')
         except:
-            self.erreur(u"Expression invalide dans Tantque.", True)
+            self.erreur("Expression invalide dans Tantque.", True)
             return
         # Préparer un saut conditionnel à compléter plus tard.
         self.empiler('Tantque')
@@ -582,7 +582,7 @@ class Traiter:
     def compiler_tracer(self, texte):
         texte = texte.lstrip()
         if texte:
-            self.erreur(u"Texte intempestif dans Tracer.")
+            self.erreur("Texte intempestif dans Tracer.")
             return
         self.code.append((self.location, self.executer_tracer, None))
 
@@ -593,14 +593,14 @@ class Traiter:
             attendu = None
         if attendu == bloc:
             return self.pile.pop()[2:]
-        self.erreur(u"Fin de `%s' vue alors que fin de `%s' attendue."
+        self.erreur("Fin de `%s' vue alors que fin de `%s' attendue."
                     % (bloc, attendu))
 
     def empiler(self, bloc):
         self.pile.append([bloc, self.location, len(self.code)])
 
     def faire_code(self, texte, directive, action):
-        if isinstance(texte, unicode):
+        if isinstance(texte, str):
             return compile(texte, directive, action)
         return compile('# -*- coding: %s -*-\n' % self.charset + texte,
                        directive, action)
@@ -620,8 +620,8 @@ class Traiter:
         write = self.write
         write('<br>\n'
               '<table border=1>\n'
-              u"<tr><th>No.</th>"
-              u"<th>Argument du programme</th></tr>\n")
+              "<tr><th>No.</th>"
+              "<th>Argument du programme</th></tr>\n")
         for compteur in range(len(sys.argv)):
             write('<tr><td align=right>%d.</td><td>%s</td></tr>\n'
                   % (compteur, cgi.escape(repr(sys.argv[compteur]))))
@@ -644,9 +644,9 @@ class Traiter:
         write('<br>\n'
               '<table border=1>\n'
               '<tr><th>#</th>'
-              u"<th>Code</th>"
-              u"<th>Arguments</th>"
-              u"<th>Référence</th>"
+              "<th>Code</th>"
+              "<th>Arguments</th>"
+              "<th>Référence</th>"
               '</tr>\n')
         import types
         for compteur in range(len(self.code)):
@@ -681,7 +681,7 @@ class Traiter:
             if fragments:
                 write('<td>%s.</td>' % '; '.join(fragments))
             else:
-                write(u'<td> </td>')
+                write('<td> </td>')
             write('<td align=left valign=top>%s:%d</td>'
                   % (nom_fichier, ligne))
             write('</tr>\n')
@@ -690,12 +690,12 @@ class Traiter:
 
     def executer_afficher_environnement(self):
         write = self.write
-        items = os.environ.items()
+        items = list(os.environ.items())
         items.sort()
         write('<br>\n'
               '<table border=1>\n'
-              u"<tr><th>Variable</th>"
-              u"<th>Dans l'environnement</th></tr>\n")
+              "<tr><th>Variable</th>"
+              "<th>Dans l'environnement</th></tr>\n")
         for nom, valeur in items:
             write('<tr><td>%s</td><td>%s</td></tr>\n'
                   % (nom, cgi.escape(repr(valeur))))
@@ -706,9 +706,9 @@ class Traiter:
         write = self.write
         write('<br>\n'
               '<table border=1>\n'
-              u"<tr><th>Variable</th>"
-              u"<th>Substitution</th></tr>\n")
-        items = self.contexte.items()
+              "<tr><th>Variable</th>"
+              "<th>Substitution</th></tr>\n")
+        items = list(self.contexte.items())
         items.sort()
         for nom, valeur in items:
             write('<tr><td>%s</td><td>%s</td></tr>\n'
@@ -723,7 +723,7 @@ class Traiter:
             try:
                 valeurs = eval(code, globals(), self.contexte)
             except:
-                self.erreur(u"Erreur à l'exécution dans Chacun.", True)
+                self.erreur("Erreur à l'exécution dans Chacun.", True)
                 return
             compteur = 0
             arguments[4] = valeurs
@@ -731,14 +731,14 @@ class Traiter:
             # Toutes les valeurs ont été vues, sauter hors de la boucle.
             arguments[4] = None
             if self.tracage:
-                self.tracer(u"Saut [%d]" % curseur)
+                self.tracer("Saut [%d]" % curseur)
             if curseur is not None:
                 self.curseur = curseur
             return
         # Affecter la valeur suivante à la variable de contrôle.
         valeur = valeurs[compteur]
         if self.tracage:
-            self.tracer(u"`%s' reçoit `%s'" % (nom, valeur))
+            self.tracer("`%s' reçoit `%s'" % (nom, valeur))
         self.contexte[nom] = valeur
         arguments[3] = compteur + 1
 
@@ -748,14 +748,14 @@ class Traiter:
                 self.write(texte % self.contexte)
             except UnicodeError:
                 # REVOIR: Traiter devra fonctionner en Unicode, un jour...
-                if isinstance(texte, unicode):
+                if isinstance(texte, str):
                     texte = texte.encode('UTF-8')
-                for nom, valeur in self.contexte.iteritems():
-                    if isinstance(valeur, unicode):
+                for nom, valeur in self.contexte.items():
+                    if isinstance(valeur, str):
                         self.contexte[nom] = valeur.encode('UTF-8')
-            except KeyError, exception:
+            except KeyError as exception:
                 nom = exception.args[0]
-                self.contexte[nom] = u"@@@ `%s' inconnu! @@@" % nom
+                self.contexte[nom] = "@@@ `%s' inconnu! @@@" % nom
             else:
                 return
 
@@ -763,9 +763,9 @@ class Traiter:
         if self.tracage:
             self.tracer()
         try:
-            exec code in globals(), self.contexte
+            exec(code, globals(), self.contexte)
         except:
-            self.erreur(u"Erreur à l'exécution dans Faire.", True)
+            self.erreur("Erreur à l'exécution dans Faire.", True)
 
     def executer_fintracer(self):
         self.tracage = False
@@ -773,7 +773,7 @@ class Traiter:
     def executer_inclure(self, nom_fichier):
         nom_fichier = self.resoudre_nom_fichier(nom_fichier % self.contexte)
         if nom_fichier is None:
-            self.erreur(u"Ne peut lire le fichier `%s'." % nom_fichier)
+            self.erreur("Ne peut lire le fichier `%s'." % nom_fichier)
             return
         Traiter(file(nom_fichier), self.contexte,
                 self.write, self.write_errors)
@@ -809,7 +809,7 @@ class Traiter:
                 if curseur is not None:
                     self.curseur = curseur
         except:
-            self.erreur(u"Erreur à l'exécution dans Si ou Tantque.", True)
+            self.erreur("Erreur à l'exécution dans Si ou Tantque.", True)
             if curseur is not None:
                 self.curseur = curseur
 
@@ -830,20 +830,20 @@ class Traiter:
         adresse = self.curseur - 1
         nom_fichier, ligne, texte = self.location
         write = self.write
-        write(u"\n")
+        write("\n")
         if message:
-            write(u"<!-- Trace [%d]: %s -->\n" % (adresse, message))
+            write("<!-- Trace [%d]: %s -->\n" % (adresse, message))
         else:
-            write(u"<!-- Trace [%d] -->\n" % adresse)
-        write(u"<!-- %s:%d: %s -->\n" % (nom_fichier, ligne, str(texte)))
+            write("<!-- Trace [%d] -->\n" % adresse)
+        write("<!-- %s:%d: %s -->\n" % (nom_fichier, ligne, str(texte)))
 
     def erreur(self, lignes, montrer_pile=False):
-        from cStringIO import StringIO as StringIO
+        from io import StringIO as StringIO
         tampon = StringIO()
         write = tampon.write
         # Fabriquer le diagnostic principal.
         nom_fichier, ligne, texte = self.location
-        write(u"\n%s:%d: %s\n\n" % (nom_fichier, ligne, texte or 'Oups!'))
+        write("\n%s:%d: %s\n\n" % (nom_fichier, ligne, texte or 'Oups!'))
         if isinstance(lignes, str):
             petit_diagnostic = lignes
         else:
@@ -854,20 +854,20 @@ class Traiter:
             import traceback
             traceback.print_exc(file=tampon)
         # Fabriquer l'information sur les variables.
-        write(u"\nVariables en traitement\n")
-        items = self.contexte.items()
+        write("\nVariables en traitement\n")
+        items = list(self.contexte.items())
         items.sort()
         for nom, valeur in items:
             write('  %-24s  %s\n' % (nom, repr(valeur)))
-        write(u"\nVariables de l'environnement\n")
-        items = os.environ.items()
+        write("\nVariables de l'environnement\n")
+        items = list(os.environ.items())
         items.sort()
         for nom, valeur in items:
             write('  %-24s  %s\n' % (nom, repr(valeur)))
         config = get_config()
         # En mode production uniquement, envoyer un message à adresse fixe,
         # et traiter le contenu de `erreur.page' dans la page Web fabriquée.
-        import ConfigParser
+        import configparser
         try:
             if config.getboolean('traiter', 'Production'):
                 import smtplib
@@ -876,20 +876,20 @@ class Traiter:
                     config.get('traiter', 'MailTo'),
                     # REVOIR: Garantir un "To:" explicite dans le message!
                     #("Subject: Problème durant l'exécution de `traiter'\n"
-                    (u"Subject: =?ISO-8859-1?Q?Probl=E8me?= durant"
-                     u" =?ISO-8859-1?Q?l'ex=E9cution?= de `traiter'\n"
-                     + u"To: %s" % config.get('traiter', 'MailTo')
-                     + u"\nContent-Type: text/plain; charset=UTF-8\n"
+                    ("Subject: =?ISO-8859-1?Q?Probl=E8me?= durant"
+                     " =?ISO-8859-1?Q?l'ex=E9cution?= de `traiter'\n"
+                     + "To: %s" % config.get('traiter', 'MailTo')
+                     + "\nContent-Type: text/plain; charset=UTF-8\n"
                      + tampon.getvalue()))
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             pass
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         self.write = self.write_errors
         if self.dans_page_erreur:
             self.write(
-                u"Ehbedon!  Erreur durant le traitement d'une erreur.\n"
-                u"C'est trop pour le pauvre petit moi, j'abandonne!\n")
+                "Ehbedon!  Erreur durant le traitement d'une erreur.\n"
+                "C'est trop pour le pauvre petit moi, j'abandonne!\n")
             raise Interruption
         # Indépendamment du mode production, préparer une page HTML pour
         # signaler l'erreur à l'usager, idéalement par le traitement du
@@ -898,15 +898,15 @@ class Traiter:
         try:
             nom_fichier = self.resoudre_nom_fichier(
                 config.get('traiter', 'PageErreur'))
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             nom_fichier = None
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             nom_fichier = None
         if nom_fichier is None:
-            self.write(u"<html>\n"
-                       u" <head><title>Page d'erreur</title></head>\n"
-                       u" <body><pre>%s</pre></body>\n"
-                       u"</html>\n"
+            self.write("<html>\n"
+                       " <head><title>Page d'erreur</title></head>\n"
+                       " <body><pre>%s</pre></body>\n"
+                       "</html>\n"
                        % cgi.escape(tampon.getvalue()))
         else:
             self.dans_page_erreur = True

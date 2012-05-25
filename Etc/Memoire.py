@@ -3,7 +3,7 @@
 # Copyright © 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, décembre 2002.
 
-u"""\
+"""\
 Outils divers pour explorer l'utilisation dynamique des ressources par
 un programme.  Une attention particulière est donnée aux problèmes de
 déperdition de mémoire, puisque c'est le besoin à l'origine de ce module.
@@ -71,18 +71,18 @@ class Inventaire:
         import types
         compteur_references = 0
         if titre is None and write is None:
-            for module in sys.modules.itervalues():
+            for module in sys.modules.values():
                 if type(module) is types.ModuleType:
-                    for nom, valeur in module.__dict__.iteritems():
-                        if type(valeur) in (types.ClassType, types.TypeType):
+                    for nom, valeur in module.__dict__.items():
+                        if type(valeur) in (type, type):
                             compteur_references += sys.getrefcount(valeur)
         else:
             avant = self.references_par_classe
             apres = self.references_par_classe = {}
-            for module in sys.modules.itervalues():
+            for module in sys.modules.values():
                 if type(module) is types.ModuleType:
-                    for nom, valeur in module.__dict__.iteritems():
-                        if type(valeur) in (types.ClassType, types.TypeType):
+                    for nom, valeur in module.__dict__.items():
+                        if type(valeur) in (type, type):
                             compteur = sys.getrefcount(valeur)
                             apres[module.__name__, nom] = compteur
                             compteur_references += compteur
@@ -98,23 +98,23 @@ class Inventaire:
             write = sys.stderr.write
         write(titre + '\n')
         pertes = []
-        for cle, auparavant in avant.iteritems():
+        for cle, auparavant in avant.items():
             if cle in apres:
                 perte = auparavant - apres[cle]
                 if perte != 0:
                     pertes.append((perte, cle, auparavant))
             else:
                 pertes.append((auparavant, cle, auparavant))
-        for cle, maintenant in apres.iteritems():
+        for cle, maintenant in apres.items():
             if cle not in avant:
                 pertes.append((-maintenant, cle, 0))
         pertes.sort()
         for perte, (module, classe), auparavant in pertes:
             if perte < 0:
-                write(u"%5d + %-5d références à %s.%s\n"
+                write("%5d + %-5d références à %s.%s\n"
                       % (auparavant, -perte, module, classe))
             else:
-                write(u"%5d - %-5d références à %s.%s\n"
+                write("%5d - %-5d références à %s.%s\n"
                       % (auparavant, perte, module, classe))
 
     def essai(self):
@@ -165,14 +165,14 @@ class Graphique:
                 break
         else:
             return
-        self.references = Collection(u"Nombre références")
-        self.statm = map(Collection, (u"Mémoire totale (K)",
-                                      u"Mémoire résidente (K)",
-                                      u"Mémoire partagée (K)",
-                                      u"Mémoire pure (K)",
-                                      u"Mémoire impure (K)",
-                                      u"Mémoire bibliothèque (K)",
-                                      u"Mémoire modifiée (K)"))
+        self.references = Collection("Nombre références")
+        self.statm = list(map(Collection, ("Mémoire totale (K)",
+                                      "Mémoire résidente (K)",
+                                      "Mémoire partagée (K)",
+                                      "Mémoire pure (K)",
+                                      "Mémoire impure (K)",
+                                      "Mémoire bibliothèque (K)",
+                                      "Mémoire modifiée (K)")))
         self.fichier = os.popen(
             # REVOIR: Comment faire ça tout en Python?
             'sh -c \'trap "" 1; %s -persist\'' % nom, 'w',
@@ -282,11 +282,11 @@ class Inventaire_Vieux:
         write = sys.stderr.write
         write('\n' + '\\' * 59 + '\n')
         self.ordinal += 1
-        write(u"nº%d  " % self.ordinal)
+        write("nº%d  " % self.ordinal)
         import resource
         usage = resource.getrusage(resource.RUSAGE_SELF)
         temps = usage.ru_utime + usage.ru_stime
-        write(u"   %+.3f -> %.1f sec" % (temps - self.temps, temps))
+        write("   %+.3f -> %.1f sec" % (temps - self.temps, temps))
         self.temps = temps
         # REVOIR: Les ressources de mémoire sont toujours indiquée à
         # zéro par getrusage(), alors je place le code en commentaire pour
@@ -294,11 +294,11 @@ class Inventaire_Vieux:
         #memoire = (usage.ru_ixrss + usage.ru_idrss + usage.ru_isrss) * 1e-6
         #write(u"   %+.1f -> %.1f Mo" % (memoire - self.memoire, memoire))
         #self.memoire = memoire
-        write(u"   %d Nones" % sys.getrefcount(None))
+        write("   %d Nones" % sys.getrefcount(None))
         import gc
         gc.collect()
         if gc.garbage:
-            write(u"   %d miettes" % len(gc.garbage))
+            write("   %d miettes" % len(gc.garbage))
         write('\n')
         compteurs = {}
         for objet in gc.get_objects():
@@ -307,16 +307,16 @@ class Inventaire_Vieux:
                 compteurs[nom] = 0
             compteurs[nom] += 1
         if self.compteurs:
-            for nom, compteur in sorted(compteurs.iteritems()):
+            for nom, compteur in sorted(compteurs.items()):
                 if nom in self.compteurs:
                     delta = compteur - self.compteurs[nom]
                     del self.compteurs[nom]
                 else:
                     delta = compteur
                 if delta:
-                    write(u"  %+7d -> %-7d   %s\n" % (delta, compteur, nom))
-            for nom, compteur in sorted(self.compteurs.iteritems()):
-                write(u"  %+7d -> %-7d   %s\n" % (-compteur, 0, nom))
+                    write("  %+7d -> %-7d   %s\n" % (delta, compteur, nom))
+            for nom, compteur in sorted(self.compteurs.items()):
+                write("  %+7d -> %-7d   %s\n" % (-compteur, 0, nom))
         self.compteurs = compteurs
         write('/' * 59 + '\n')
 

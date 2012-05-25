@@ -3,7 +3,7 @@
 # Copyright © 2009 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2009-03.
 
-u"""\
+"""\
 Facilitateur pour Tomboy.
 
 Usage: tboy [OPTION]... [NOTE]...
@@ -43,7 +43,7 @@ Si aucun argument NOTE n'est donné, alors TOMBOY_DIR/*.note est présumé.
 
 __metaclass__ = type
 import codecs, locale, os, re, sys
-import convert, site, tools
+from . import convert, site, tools
 
 class Main:
     debug = False
@@ -187,7 +187,7 @@ class Main:
                 self.site.run_daemon()
         except KeyboardInterrupt:
             pass
-        except self.Fatal, exception:
+        except self.Fatal as exception:
             sys.exit(str(exception))
         if self.error_seen:
             sys.exit(1)
@@ -225,27 +225,27 @@ class Main:
             else:
                 no_suffix[note.title] = note.input_name
         for title in set(ancien_suffix) & set(old_suffix):
-            print "Harder:", title, "(ancien/old)"
+            print("Harder:", title, "(ancien/old)")
             del ancien_suffix[title]
             del old_suffix[title]
         for title in set(ancien_suffix) - set(no_suffix):
-            print "Spurious:", title, "(ancien)"
+            print("Spurious:", title, "(ancien)")
             del ancien_suffix[title]
         for title in set(old_suffix) - set(no_suffix):
-            print "Spurious:", title, "(old)"
+            print("Spurious:", title, "(old)")
             del old_suffix[title]
         old_suffix.update(ancien_suffix)
         for counter, (title, name1) in enumerate(sorted(old_suffix.items())):
             name2 = no_suffix[title]
-            print
-            print '=' * 79
-            print counter + 1, title
-            print '=' * 79
-            print
+            print()
+            print('=' * 79)
+            print(counter + 1, title)
+            print('=' * 79)
+            print()
             #print os.popen('gvim -od %s %s' % (name1, name2)).read()
             #print os.popen('diff -u %s %s' % (name1, name2)).read()
             # Utiliser ediff au mieux en filtrant la sortie avec "less -r"
-            print os.popen('ediff %s %s' % (name1, name2)).read()
+            print(os.popen('ediff %s %s' % (name1, name2)).read())
             if counter == 15:
                 break
 
@@ -255,7 +255,7 @@ class Main:
         self.tomboy.SetNoteContents(
                 note,
                 title + '\n\n' + 'Coucou?\n\n' + sys.stdin.read())
-        self.tomboy.AddTagToNote(note, u"commandline")
+        self.tomboy.AddTagToNote(note, "commandline")
         self.tomboy.DisplayNote(note)
 
     def convert(self, title, factory):
@@ -329,7 +329,7 @@ class Main:
 
     def each_note(self):
         if tools.Note.registry:
-            for note in tools.Note.registry.itervalues():
+            for note in tools.Note.registry.values():
                 yield note
         else:
             for name in self.note_file_names():

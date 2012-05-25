@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Copyright © 2005 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2005.
 
-u"""\
+"""\
 Transformer un fichier utilisant, en colonne 1 de chaque ligne, un
 caractère de contrôle de l'imprimante comme en FORTRAN ou PL/I.
 
@@ -43,7 +43,7 @@ class Main:
                 self.rabotage = ''
                 import unicodedata
                 for compteur in range(256):
-                    texte = unicodedata.decomposition(unichr(compteur))
+                    texte = unicodedata.decomposition(chr(compteur))
                     if not texte or texte.startswith('<'):
                         self.rabotage += chr(compteur)
                     else:

@@ -3,59 +3,59 @@
 # Copyright © 1998, 99, 00, 01, 02, 03 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1998.
 
-u"""\
+"""\
 Do various checks for one message.
 """
 
 import os, re
-import tools
+from . import tools
 
-loewis_string = u"""\
+loewis_string = """\
  <martin.v.loewis@t-online.de>
    550 Mailbox quota exceeded / Mailbox voll.
 """
 
 viral_subject_pattern = re.compile(
-    u"(Approved"
-    u"|Details"
-    u"|My details"
-    u"|Thank you!"
-    u"|That movie"
-    u"|Wicked screensaver"
-    u"|Your application"
-    u"|Your details"
+    "(Approved"
+    "|Details"
+    "|My details"
+    "|Thank you!"
+    "|That movie"
+    "|Wicked screensaver"
+    "|Your application"
+    "|Your details"
     ')$'
     )
 
 viral_body_pattern = re.compile(
     '(> )?'
-    u"(Please see the attached file for details."
-    u"|See the attached file for details"
+    "(Please see the attached file for details."
+    "|See the attached file for details"
     ')\n*$'
     )
 
 virus_alert_pattern = re.compile(
-    u"   V I R U S  A L E R T"
-    u"|   A L E R T A   D E   V I R U S"
-    u"|  Problem: Virus found"
-    u"|  Reason: Unsafe file .* is removed!"
-    u"|[0-9]\\) The attachment is infected"
-    u"|A report on the virus is given at the end of this email"
-    u"|ANTIVIRUS SYSTEM FOUND VIRUSES"
-    u"|As a security precaution this mail was blocked and discarded"
-    u"|Avertissement de la passerelle antivirus MailScanner"
-    u"|BANNED FILENAME ALERT"
-    u"|Content violation found in email message."
-    u"|Executable attachment \\(not allowed\\)"
-    u"|Our email scanner has detected a VIRUS in your email."
-    u"|Since such content may contain viruses or other dangerous code"
-    u"|SVP lire la pièce jointe «AlerteVirus.txt» pour plus d'informations."
-    u"|SWEEP virus detection utility"
-    u"|The infected message envelope follows"
-    u"|The virus detector said this about the message:"
-    u"|Virus\\(es\\) found."
-    u"|WARNING! You have attempted to send an unacceptable message "
-    u"|a potentially executable attachment"
+    "   V I R U S  A L E R T"
+    "|   A L E R T A   D E   V I R U S"
+    "|  Problem: Virus found"
+    "|  Reason: Unsafe file .* is removed!"
+    "|[0-9]\\) The attachment is infected"
+    "|A report on the virus is given at the end of this email"
+    "|ANTIVIRUS SYSTEM FOUND VIRUSES"
+    "|As a security precaution this mail was blocked and discarded"
+    "|Avertissement de la passerelle antivirus MailScanner"
+    "|BANNED FILENAME ALERT"
+    "|Content violation found in email message."
+    "|Executable attachment \\(not allowed\\)"
+    "|Our email scanner has detected a VIRUS in your email."
+    "|Since such content may contain viruses or other dangerous code"
+    "|SVP lire la pièce jointe «AlerteVirus.txt» pour plus d'informations."
+    "|SWEEP virus detection utility"
+    "|The infected message envelope follows"
+    "|The virus detector said this about the message:"
+    "|Virus\\(es\\) found."
+    "|WARNING! You have attempted to send an unacceptable message "
+    "|a potentially executable attachment"
     )
 
 class Check:
@@ -95,12 +95,12 @@ class Check:
             'words': self.check_words,
             }
         try:
-            import unpack
+            from . import unpack
             self.unpacker = unpack.Unpacker(self.message, run, checker)
             for opcode, arguments in self.run.instructions:
                 check = self.check_function.get(opcode)
                 assert check is not None, (
-                    u"Unrecognised `%s' directive." % opcode)
+                    "Unrecognised `%s' directive." % opcode)
                 check(arguments)
         finally:
             del self.message, self.body, self.run, self.checker, self.unpacker
@@ -120,7 +120,7 @@ class Check:
             return
         user, domain = fields
         # Get a list of IP addresses.
-        import DNS
+        from . import DNS
         if not parsed_flag:
             DNS.ParseResolvConf()
             parsed_flag.append(None)
@@ -129,7 +129,7 @@ class Check:
             numeric_ips.append(answer['data'])
         if not numeric_ips:
             if not DNS.Request(domain, qtype='mx').req().answers:
-                self.checker.reject(u"Domain `%s' is not resolved." % domain)
+                self.checker.reject("Domain `%s' is not resolved." % domain)
         # Validate IP addresses against blacklists.
         for numeric_ip in numeric_ips:
             fragments = numeric_ip.split('.')
@@ -139,7 +139,7 @@ class Check:
                     blacklist += '.mail-abuse.org'
                 domain = '.'.join(fragments) + '.' + blacklist
                 if DNS.Request(domain, qtype='a').req().answers:
-                    self.checker.reject(u"Listed in `%s'." % blacklist)
+                    self.checker.reject("Listed in `%s'." % blacklist)
 
     def check_body(self, arguments):
         assert not arguments, arguments
@@ -148,10 +148,10 @@ class Check:
         while length > 0 and self.body[length-1] == '\n':
             length -= 1
         if length == 0:
-            self.checker.reject(u"Empty body.")
+            self.checker.reject("Empty body.")
         # Check for lazy Martins.
         if loewis_string in self.body:
-            self.checker.kill(u"Hmph! Martin's still away...")
+            self.checker.kill("Hmph! Martin's still away...")
         # Check for a few common aborted viruses.
         subject = self.get_decoded_subject()
         if viral_subject_pattern.match(subject):
@@ -160,23 +160,23 @@ class Check:
                 if len(parts) == 1:
                     body = parts[0].get_payload(decode=True)
                     if viral_body_pattern.match(body):
-                        self.checker.kill(u"Aborted virus?")
+                        self.checker.kill("Aborted virus?")
         # Check for returned mail about viruses.
         if virus_alert_pattern.search(self.body):
-            self.checker.kill(u"VirusAdmin message (Alert string in Body).")
+            self.checker.kill("VirusAdmin message (Alert string in Body).")
         if 'virus' in subject.lower():
-            self.checker.reject(u"VirusAdmin message (First Subject).")
+            self.checker.reject("VirusAdmin message (First Subject).")
         for index, part in enumerate(self.unpacker.get_mime_parts()):
             mimetype = part.get_content_type()
             subject = self.get_decoded_subject(part)
             if index > 0 and subject:
                 if viral_subject_pattern.match(subject):
                     self.checker.reject(
-                        u"VirusAdmin message (Embedded Subject).")
+                        "VirusAdmin message (Embedded Subject).")
             if mimetype == 'text/plain':
                 body = part.get_payload(decode=True)
                 if isinstance(body, str) and viral_body_pattern.match(body):
-                    self.checker.reject(u"VirusAdmin message (Body).")
+                    self.checker.reject("VirusAdmin message (Body).")
                     break
 
     def check_charset(self, arguments):
@@ -199,7 +199,7 @@ class Check:
                                'iso-8859-9', 'iso-8859-15',
                                'unicode-1-1-utf-7','us-ascii', 'utf-8',
                                'windows-1252'):
-                self.checker.reject(u"Message uses `%s' as a charset."
+                self.checker.reject("Message uses `%s' as a charset."
                                     % charset)
 
     def check_check(self, arguments):
@@ -210,18 +210,18 @@ class Check:
         for opcode in arguments:
             check = self.check_function.get(opcode)
             assert check is not None, (
-                u"Unrecognised `%s' directive." % opcode)
+                "Unrecognised `%s' directive." % opcode)
             check(None)
 
     def check_date(self, arguments):
         assert not arguments, arguments
         date = self.message.get('Date')
         if not date:
-            self.checker.reject(u"Missing Date.")
+            self.checker.reject("Missing Date.")
         else:
             from email.Utils import parsedate_tz
             if parsedate_tz(date) is None:
-                self.checker.reject(u"Invalid Date.")
+                self.checker.reject("Invalid Date.")
 
     def check_domains(self, map_names):
         user_domains = []
@@ -254,7 +254,7 @@ class Check:
             key = extension.lower()
             for map_name in map_names:
                 value = self.checker.get_value(
-                    map_name, key, u"Unaccepted extension `%s'" % extension)
+                    map_name, key, "Unaccepted extension `%s'" % extension)
                 if value is not None:
                     break
 
@@ -265,35 +265,35 @@ class Check:
         text = self.message.get('From')
         pair = text and parseaddr(text)
         if not pair or not pair[1]:
-            self.checker.reject(u"Missing From.")
+            self.checker.reject("Missing From.")
             return
         text = pair[1].lower()
         if not text:
-            self.checker.reject(u"Empty From.")
+            self.checker.reject("Empty From.")
             return
         fields = text.split('@')
         if len(fields) != 2:
-            self.checker.reject(u"Invalid From `%s'." % text)
+            self.checker.reject("Invalid From `%s'." % text)
             return
         user, domain = fields
         if all_numeric.match(user):
-            self.checker.reject(u"All numeric user `%s'." % user)
+            self.checker.reject("All numeric user `%s'." % user)
         fields = domain.split('.')
         if len(fields) < 2:
-            self.checker.reject(u"Domain `%s' not fully qualified." % domain)
+            self.checker.reject("Domain `%s' not fully qualified." % domain)
             return
         if domain == 'hotmail.com':
             if not self.message.get('X-Originating-IP'):
-                self.checker.reject(u"Forged From `hotmail.com'.")
+                self.checker.reject("Forged From `hotmail.com'.")
 
     def check_languages(self, languages):
         languages = [language.capitalize() for language in languages]
         if languages:
-            import lingua
+            from . import lingua
             guesser = lingua.Guesser(self.run.debug >= 3)
             language = guesser.language(self.get_subject_and_body())
             if language is not None and language not in languages:
-                self.checker.reject(u"Message written in %s." % language)
+                self.checker.reject("Message written in %s." % language)
 
     def check_locals(self, map_names):
         from email.Utils import getaddresses
@@ -305,7 +305,7 @@ class Check:
                 address = pair[1].lower()
                 fields = address.split('@')
                 if len(fields) != 2:
-                    self.checker.reject(u"Invalid address `%s'." % address)
+                    self.checker.reject("Invalid address `%s'." % address)
                     continue
                 user, domain = fields
                 if domain in self.run.heres:
@@ -313,13 +313,13 @@ class Check:
                         for map_name in map_names:
                             value = self.checker.get_value(
                                 map_name, item,
-                                u"Rejected domain `%s'." % domain)
+                                "Rejected domain `%s'." % domain)
                             if value is not None:
                                 break
                         if value is not None:
                             break
                     else:
-                        self.checker.reject(u"Address `%s' locally unknown."
+                        self.checker.reject("Address `%s' locally unknown."
                                             % pair[1])
         for pair in pairs:
             if pair is not None and pair[1]:
@@ -330,7 +330,7 @@ class Check:
                         break
         else:
             if not self.run.silence_locals:
-                self.checker.reject(u"Neither origin nor destination is local.")
+                self.checker.reject("Neither origin nor destination is local.")
 
     def check_locutions(self, map_names):
         text = self.get_subject_and_body()
@@ -338,7 +338,7 @@ class Check:
             for locution in tools.map_keys(map_name):
                 if locution in text:
                     self.checker.get_value(map_name, locution,
-                                           u"Locution `%s' rejected by `%s'."
+                                           "Locution `%s' rejected by `%s'."
                                            % (locution, map_name))
 
     def check_mailers(self, map_names):
@@ -350,7 +350,7 @@ class Check:
         text = re.sub(r' *\([^)]+\)', '', text).lower()
         for map_name in map_names:
             self.checker.get_value(map_name, text,
-                                   u"Mass mailer `%s' rejected by `%s'."
+                                   "Mass mailer `%s' rejected by `%s'."
                                    % (text, map_name))
 
     def check_message_id(self, arguments,
@@ -362,20 +362,20 @@ class Check:
         assert not arguments, arguments
         text = self.message.get('Message-ID')
         if not text:
-            self.checker.reject(u"Missing Message-ID.")
+            self.checker.reject("Missing Message-ID.")
             return
         if not legal.match(text):
-            self.checker.reject(u"Invalid Message-ID `%s'." % text)
+            self.checker.reject("Invalid Message-ID `%s'." % text)
             return
         if not usual.match(text):
-            self.checker.reject(u"Unusual Message-ID `%s'." % text)
+            self.checker.reject("Unusual Message-ID `%s'." % text)
 
     def check_mimetypes(self, map_names):
         for part in self.unpacker.get_mime_parts():
             mimetype = part.get_content_type()
             fragments = mimetype.split('/')
             if len(fragments) != 2:
-                self.checker.reject(u"Invalid Content-Type `%s'"
+                self.checker.reject("Invalid Content-Type `%s'"
                                     % mimetype)
                 continue
             for mimetype in ('%s/%s' % tuple(fragments),
@@ -384,7 +384,7 @@ class Check:
                 for map_name in map_names:
                     value = self.checker.get_value(
                         map_name, mimetype,
-                        u"Unaccepted MIME Content-Type `%s/%s'"
+                        "Unaccepted MIME Content-Type `%s/%s'"
                         % tuple(fragments))
                     if value is not None:
                         break
@@ -393,7 +393,7 @@ class Check:
         # HTML only messages are very suspicious.
         text = self.message.get_content_type()
         if text and text == 'text/html':
-            self.checker.reject(u"HTML only message.")
+            self.checker.reject("HTML only message.")
         else:
             # Broken HTML even more! :-)
             body = self.body
@@ -402,20 +402,20 @@ class Check:
             while position == start:
                 start += 1
             if position >= 0 and body[start:start+6].lower() == '<html>':
-                self.checker.reject(u"Undeclared HTML only message.")
+                self.checker.reject("Undeclared HTML only message.")
 
     def check_precedence(self, arguments):
         assert not arguments, arguments
         text = self.message.get('Precedence')
         if text and text.lower() == 'bulk':
-            self.checker.reject(u"Bulk precedence.")
+            self.checker.reject("Bulk precedence.")
 
     def check_received(self, arguments):
         assert not arguments, arguments
         steps = self.get_received_steps()
         if self.run.debug >= 2:
             for step in steps:
-                self.checker.report(u"DEBUG: " + str(step))
+                self.checker.report("DEBUG: " + str(step))
         previous_by = None
         for by, helo_from, read_from, ip_from, line in steps:
             #if by is None:
@@ -426,7 +426,7 @@ class Check:
                     if not re.match(r'[-A-Za-z0-9]+(\.[-A-Za-z0-9]+)*$',
                                     domain):
                         self.checker.reject(
-                            u"Invalid domain `%s' in Received by `%s'."
+                            "Invalid domain `%s' in Received by `%s'."
                             % (domain, by))
             if previous_by is not None and helo_from is not None:
                 if previous_by not in (helo_from, read_from):
@@ -475,11 +475,11 @@ class Check:
         # Evaluate spamicity and act accordingly.
         spamicity = data_base.score(self.message)
         if spamicity > kill_cutoff:
-            self.checker.kill(u"Spambayes score is %4.2f." % spamicity)
+            self.checker.kill("Spambayes score is %4.2f." % spamicity)
         elif spamicity > spam_cutoff:
-            self.checker.reject(u"Spambayes score is %4.2f." % spamicity)
+            self.checker.reject("Spambayes score is %4.2f." % spamicity)
         elif self.run.debug >= 2:
-            self.checker.report(u"DEBUG: Spambayes score is %4.2f." % spamicity)
+            self.checker.report("DEBUG: Spambayes score is %4.2f." % spamicity)
 
     def check_subject(self, arguments,
                       has_noise=re.compile(
@@ -489,14 +489,14 @@ class Check:
         assert not arguments, arguments
         text = self.get_decoded_subject()
         if not text:
-            self.checker.reject(u"Missing Subject.")
+            self.checker.reject("Missing Subject.")
             return
         if has_noise.search(text):
-            self.checker.reject(u"Noisy Subject.")
+            self.checker.reject("Noisy Subject.")
         if not has_word.search(text):
-            self.checker.reject(u"Subject without mixed case word.")
+            self.checker.reject("Subject without mixed case word.")
         if has_money.search(text):
-            self.checker.reject(u"Money value within Subject.")
+            self.checker.reject("Money value within Subject.")
         histogram = {1: 0, 2: 0}
         for fragment in text.split():
             if len(fragment) in histogram:
@@ -504,7 +504,7 @@ class Check:
             else:
                 histogram[len(fragment)] = 1
         if histogram[1]*2 + histogram[2] > 10:
-            self.checker.reject(u"Many small words in Subject.")
+            self.checker.reject("Many small words in Subject.")
 
     def check_to_cc(self, arguments):
         assert not arguments, arguments
@@ -512,11 +512,11 @@ class Check:
         count = len(getaddresses(self.message.get_all('To', [])
                                  + self.message.get_all('Cc', [])))
         if count > 50:
-            self.checker.reject(u"More than 50 recipients (%d)." % count)
+            self.checker.reject("More than 50 recipients (%d)." % count)
 
     def check_viruses(self, arguments):
         assert not arguments, arguments
-        import virus
+        from . import virus
         for scanner in virus.all():
             if scanner.check():
                 scanner.scan(self.unpacker.get_full_unpack_directory(),
@@ -528,7 +528,7 @@ class Check:
             for map_name in map_names:
                 value = self.checker.get_value(
                     map_name, word,
-                    u"Word `%s' rejected by `%s'." % (word, map_name))
+                    "Word `%s' rejected by `%s'." % (word, map_name))
                 if value is not None:
                     break
 
@@ -609,7 +609,7 @@ class Check:
                 steps.append((by, helo_from, real_from, ip_from, line))
             steps.reverse()
             if not steps:
-                self.checker.reject(u"Missing Received.")
+                self.checker.reject("Missing Received.")
         return self.received_steps
 
     def progressive_lookup(self, user, domain, map_names):
@@ -620,7 +620,7 @@ class Check:
         def get_value(map_name, text, type):
             return self.checker.get_value(
                 map_name, text,
-                u"%s `%s' rejected by `%s'." % (type, text, map_name))
+                "%s `%s' rejected by `%s'." % (type, text, map_name))
 
         for map_name in map_names:
             # Check the whole address with progressively reduced domains.

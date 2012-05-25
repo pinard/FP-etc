@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 1996, 1999, 2000, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1996.
 
 # Idea from Pierre Rioux <riouxp@bch.umontreal.ca>, 1996-07-12.
 
-u"""\
+"""\
 Produce directory hierarchy with sizes, well sorted and indented.
 
 Usage: tree [OPTION]... PATH...

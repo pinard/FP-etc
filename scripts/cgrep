@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 2005 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2005.
 
-u"""\
+"""\
 Courriel-grep!
 
 Usage: cgrep [OPTION] [GABARIT] [CHEMIN]...
@@ -190,7 +190,7 @@ class Main:
                             valeur = lignes[compteur+1].strip()
                         if not (valeur.startswith('<')
                                 and valeur.endswith('>')):
-                            sys.stderr.write(u"%s:%d: Message-ID invalide\n"
+                            sys.stderr.write("%s:%d: Message-ID invalide\n"
                                              % (fichier, ordinal))
                             continue
                         id = valeur[1:-1]
@@ -199,10 +199,10 @@ class Main:
                         selon_message_id[id].append((fichier, ordinal))
                         break
             else:
-                sys.stderr.write(u"%s:%d: Message-ID manquant\n"
+                sys.stderr.write("%s:%d: Message-ID manquant\n"
                                  % (fichier, ordinal))
         selon_fichier = {}
-        for liste in selon_message_id.itervalues():
+        for liste in selon_message_id.values():
             if len(liste) > 1:
                 for compteur, (fichier, ordinal) in enumerate(liste):
                     if self.marques:
@@ -215,14 +215,14 @@ class Main:
                         selon_fichier[fichier] = []
                     selon_fichier[fichier].append((ordinal, copie))
         del selon_message_id
-        infos = selon_fichier.items()
+        infos = list(selon_fichier.items())
         del selon_fichier
         # Visiter tous les fichiers concernés.
         time.sleep(2)
         infos.sort()
         for fichier, valeur in infos:
             valeur.sort()
-            self.sortie.write(u"%s (%d messages)\n"
+            self.sortie.write("%s (%d messages)\n"
                               % (fichier, self.nombre_selon_fichier[fichier]))
             for ordinal, liste in valeur:
                 self.sortie.write('  %d ' % ordinal)

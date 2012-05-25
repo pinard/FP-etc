@@ -3,7 +3,7 @@
 # Copyright © 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2001.
 
-u"""\
+"""\
 Virus scanners.
 """
 
@@ -16,12 +16,12 @@ Virus scanners.
 # Copyright (C) 1996..2000 the people mentioned above.  Also GPL'ed.
 
 import os, types
-import tools
+from . import tools
 
 def all(instances=[]):
     if not instances:
-        for object in globals().itervalues():
-            if (type(object) is types.ClassType
+        for object in globals().values():
+            if (type(object) is type
                 and issubclass(object, Scanner)
                 and object is not Scanner
                 ):
@@ -42,7 +42,7 @@ class Scanner:
     def get_path(self):
         path = tools.get_program_path(self.program)
         if path is None:
-            raise Scanner.Program_Not_Found, self.program
+            raise Scanner.Program_Not_Found(self.program)
         return path
 
     def scan(self, directory, checker):
@@ -51,15 +51,15 @@ class Scanner:
     def report_viruses(self, names, checker):
         if names:
             if len(names) == 1:
-                prefix = u"Virus `%s'" % names[0]
+                prefix = "Virus `%s'" % names[0]
             else:
-                prefix = u"Viruses `%s'" % '\', `'.join(names)
-            checker.reject(u"%s found by `%s'." % (prefix, self.name))
+                prefix = "Viruses `%s'" % '\', `'.join(names)
+            checker.reject("%s found by `%s'." % (prefix, self.name))
         else:
-            checker.reject(u"Virus found by `%s'." % self.name)
+            checker.reject("Virus found by `%s'." % self.name)
 
     def report_internal_error(self, checker):
-        checker.reject(u"Internal error in `%s' scanner." % self.name)
+        checker.reject("Internal error in `%s' scanner." % self.name)
 
 class AntiVir(Scanner):
     name = 'H+BEDV AntiVir'

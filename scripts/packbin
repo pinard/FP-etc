@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Copyright © 1990, 98, 99, 00, 02, 03 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1990-07.
 
-u"""\
+"""\
 Plan how to best fill fixed size bins with variable size chunks.
 
 This tool, when used as a main program, reads a set of lines and ignores
@@ -73,6 +73,8 @@ import sys
 
 def _(text): return text
 
+class BinOverflow(Exception): pass
+
 # Main program.
 
 def main(*arguments):
@@ -82,7 +84,7 @@ def main(*arguments):
     # Decode options.
     import getopt
     bin_size = chunk_overhead = allow_overflow = 0
-    options, arguments = getopt.getopt(arguments, u"b:c:o")
+    options, arguments = getopt.getopt(arguments, "b:c:o")
     for option, value in options:
         if option == '-b':
             bin_size = int(value)
@@ -95,10 +97,10 @@ def main(*arguments):
     elif len(arguments) == 1:
         file = open(arguments[0])
     else:
-        sys.stderr.write(_(u"Try `packbin' for more information.\n"))
+        sys.stderr.write(_("Try `packbin' for more information.\n"))
         sys.exit(1)
     if bin_size == 0:
-        sys.stderr.write(_(u"Bin size has not been specified.\n"))
+        sys.stderr.write(_("Bin size has not been specified.\n"))
         sys.exit(1)
     # Read input data.
     chunks = []
@@ -119,7 +121,7 @@ def main(*arguments):
             sys.stdout.write(chunk[1])
 
 def allocate(chunks, bin_size, chunk_overhead=False, allow_overflow=False):
-    u"""\
+    """\
 Allocate CHUNKS into bins, arranging so bins are maximally filled.  Each
 chunk is a sequence for which the first element is a number representing
 its size in some arbitrary units, while the rest may be anything.  Each
@@ -151,7 +153,7 @@ list of chunks meant for that binset, sorted in increasing size.
                     bin_count = 1 + quotient
                     used_units = chunk_overhead + remainder
                 else:
-                    raise 'Bin overflow'
+                    raise BinOverflow()
                 subset.append(chunk)
                 del chunks[counter]
                 still_virgin = False

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 2008 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2008.
@@ -73,7 +73,7 @@ class Main:
         begin += len(prefix)
         end = buffer.find('\n', begin)
         assert end > 0
-        llx, lly, urx, ury = map(int, buffer[begin :end].split())
+        llx, lly, urx, ury = list(map(int, buffer[begin :end].split()))
 
         # It seems that pstoedit does shifting, scaling, rotation in that
         # order, regardless of option position.  Let's plan accordingly.

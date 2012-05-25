@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2001.
@@ -64,7 +64,7 @@ def main(*arguments):
             sys.stdout.write(__doc__)
             sys.exit(0)
         formulaire = cgi.FieldStorage()
-        for nom in formulaire.keys():
+        for nom in list(formulaire.keys()):
             valeurs = formulaire[nom]
             if isinstance(valeurs, list):
                 # REVOIR!
@@ -104,10 +104,10 @@ def main(*arguments):
         for option in config.options('contexte'):
             contexte[option] = config.get('contexte', option)
     # Ajuster PATH.
-    import ConfigParser
+    import configparser
     try:
         library = config.get('DEFAULT', 'Library')
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         pass
     else:
         os.environ['PATH'] = '%s:%s' % (library, os.environ['PATH'])
@@ -164,8 +164,8 @@ def get_config(repertoire=None,
             contexte['projet'] = projet
     # Produire une configuration, à partir d'un fichier de configuration
     # si nous le trouvons, vide autrement.
-    import ConfigParser
-    config = ConfigParser.ConfigParser()
+    import configparser
+    config = configparser.ConfigParser()
     if projet is not None:
         fichier = (os.environ.get('CONFIG_%s' % projet.upper())
                    or '/usr/local/etc/%s.conf' % projet)
@@ -177,12 +177,12 @@ def get_config(repertoire=None,
     if contexte:
         if not config.has_section('contexte'):
             config.add_section('contexte')
-        for nom, valeur in contexte.iteritems():
+        for nom, valeur in contexte.items():
             config.set('contexte', nom, valeur)
     # S'occuper de PythonPath automatiquement, s'il est défini.
     try:
         chaine = config.get('DEFAULT', 'PythonPath')
-    except ConfigParser.NoOptionError:
+    except configparser.NoOptionError:
         chaine = None
     if chaine is not None:
         morceaux = chaine.split(':')
@@ -236,7 +236,7 @@ class Traiter:
         self.dans_page_erreur = False
         self.contexte = contexte
         try:
-            if isinstance(fichier, basestring):
+            if isinstance(fichier, str):
                 self.location = '<string>', 0, None
                 self.compiler(fichier, '<string>')
             else:
@@ -617,7 +617,7 @@ class Traiter:
         self.pile.append([bloc, self.location, len(self.code)])
 
     def faire_code(self, texte, directive, action):
-        if isinstance(texte, unicode):
+        if isinstance(texte, str):
             return compile(texte, directive, action)
         return compile('# -*- coding: %s -*-\n' % self.charset + texte,
                        directive, action)
@@ -706,7 +706,7 @@ class Traiter:
 
     def executer_afficher_environnement(self):
         write = self.write
-        items = os.environ.items()
+        items = list(os.environ.items())
         items.sort()
         write('<br>\n'
               '<table border=1>\n'
@@ -724,7 +724,7 @@ class Traiter:
               '<table border=1>\n'
               "<tr><th>Variable</th>"
               "<th>Substitution</th></tr>\n")
-        items = self.contexte.items()
+        items = list(self.contexte.items())
         items.sort()
         for nom, valeur in items:
             write('<tr><td>%s</td><td>%s</td></tr>\n'
@@ -764,12 +764,12 @@ class Traiter:
                 self.write(texte % self.contexte)
             except UnicodeError:
                 # REVOIR: Traiter devra fonctionner en Unicode, un jour...
-                if isinstance(texte, unicode):
+                if isinstance(texte, str):
                     texte = texte.encode('UTF-8')
-                for nom, valeur in self.contexte.iteritems():
-                    if isinstance(valeur, unicode):
+                for nom, valeur in self.contexte.items():
+                    if isinstance(valeur, str):
                         self.contexte[nom] = valeur.encode('UTF-8')
-            except KeyError, exception:
+            except KeyError as exception:
                 nom = exception.args[0]
                 self.contexte[nom] = "@@@ `%s' inconnu! @@@" % nom
             else:
@@ -779,7 +779,7 @@ class Traiter:
         if self.tracage:
             self.tracer()
         try:
-            exec code in globals(), self.contexte
+            exec(code, globals(), self.contexte)
         except:
             self.erreur("Erreur à l'exécution dans Faire.", True)
 
@@ -854,7 +854,7 @@ class Traiter:
         write("<!-- %s:%d: %s -->\n" % (nom_fichier, ligne, str(texte)))
 
     def erreur(self, lignes, montrer_pile=False):
-        from cStringIO import StringIO as StringIO
+        from io import StringIO as StringIO
         tampon = StringIO()
         write = tampon.write
         # Fabriquer le diagnostic principal.
@@ -871,19 +871,19 @@ class Traiter:
             traceback.print_exc(file=tampon)
         # Fabriquer l'information sur les variables.
         write("\nVariables en traitement\n")
-        items = self.contexte.items()
+        items = list(self.contexte.items())
         items.sort()
         for nom, valeur in items:
             write('  %-24s  %s\n' % (nom, repr(valeur)))
         write("\nVariables de l'environnement\n")
-        items = os.environ.items()
+        items = list(os.environ.items())
         items.sort()
         for nom, valeur in items:
             write('  %-24s  %s\n' % (nom, repr(valeur)))
         config = get_config()
         # En mode production uniquement, envoyer un message à adresse fixe,
         # et traiter le contenu de `erreur.page' dans la page Web fabriquée.
-        import ConfigParser
+        import configparser
         try:
             if config.getboolean('traiter', 'Production'):
                 import smtplib
@@ -897,9 +897,9 @@ class Traiter:
                      + "To: %s" % config.get('traiter', 'MailTo')
                      + "\nContent-Type: text/plain; charset=UTF-8\n"
                      + tampon.getvalue()))
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             pass
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             pass
         self.write = self.write_errors
         if self.dans_page_erreur:
@@ -914,9 +914,9 @@ class Traiter:
         try:
             nom_fichier = self.resoudre_nom_fichier(
                 config.get('traiter', 'PageErreur'))
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             nom_fichier = None
-        except ConfigParser.NoOptionError:
+        except configparser.NoOptionError:
             nom_fichier = None
         if nom_fichier is None:
             self.write("<html>\n"

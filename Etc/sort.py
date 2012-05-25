@@ -134,7 +134,7 @@ History, references.
    rather meaningless in Python.  The code has also been simplified.
 """
 
-from __future__ import generators
+
 
 ### Global definitions.
 
@@ -227,8 +227,8 @@ class Pickle(File):
     def open_write(self):
         self.file = file(self.file_name, 'wb')
         self.end_of_file = True
-        import cPickle
-        self.dump = cPickle.Pickler(self.file, -1).dump
+        import pickle
+        self.dump = pickle.Pickler(self.file, -1).dump
 
     def write(self, record):
         self.record = record
@@ -238,8 +238,8 @@ class Pickle(File):
         if self.file is not None:
             self.file.close()
         self.file = file(self.file_name, 'rb')
-        import cPickle
-        self.load = cPickle.Unpickler(self.file).load
+        import pickle
+        self.load = pickle.Unpickler(self.file).load
         try:
             self.record = self.load()
         except EOFError:
@@ -329,7 +329,7 @@ class Polyphase:
         if len(heap) < self.heap_size:
             heap.append(record)
             return
-        self.bump_run = self.run_bumper().next
+        self.bump_run = self.run_bumper().__next__
         self.split = 0
         self.put = self.put_DISK
         self.put(record)
@@ -373,7 +373,7 @@ class Polyphase:
     def put_all(self, lines):
         # Put all LINES at once.  LINES should be iterable.  When this
         # method is used in a sort, the PUT method should not be used.
-        next = iter(lines).next
+        next = iter(lines).__next__
         try:
             heap = self.heap
             heap_size = self.heap_size
@@ -385,7 +385,7 @@ class Polyphase:
         try:
             compare = self.compare
             percolate_records = self.percolate_records
-            bump_run = self.bump_run = self.run_bumper().next
+            bump_run = self.bump_run = self.run_bumper().__next__
             while True:
                 # Write one run.
                 self.heapify_records()
@@ -427,7 +427,7 @@ class Polyphase:
     #    pass
 
     def get_GENERATE(self):
-        self.get_next = self.get_all().next
+        self.get_next = self.get_all().__next__
         self.get = self.get_ITERATE
         return self.get()
 

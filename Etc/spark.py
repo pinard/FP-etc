@@ -21,7 +21,7 @@
 #  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 __metaclass__ = type
-__version__ = u'SPARK-0.7 (pre-alpha-7)'
+__version__ = 'SPARK-0.7 (pre-alpha-7)'
 
 import re
 import string
@@ -33,8 +33,8 @@ def _namelist(instance):
         for c in classlist:
                 for b in c.__bases__:
                         classlist.append(b)
-                for name in c.__dict__.keys():
-                        if not namedict.has_key(name):
+                for name in list(c.__dict__.keys()):
+                        if name not in namedict:
                                 namelist.append(name)
                                 namedict[name] = 1
         return namelist
@@ -48,25 +48,25 @@ class Scanner:
                 self.re = re.compile(pattern, re.VERBOSE|flags)
 
                 self.index2func = {}
-                for name, number in self.re.groupindex.items():
-                        self.index2func[number-1] = getattr(self, u't_' + name)
+                for name, number in list(self.re.groupindex.items()):
+                        self.index2func[number-1] = getattr(self, 't_' + name)
 
         def makeRE(self, name):
                 doc = getattr(self, name).__doc__
-                rv = u'(?P<%s>%s)' % (name[2:], doc)
+                rv = '(?P<%s>%s)' % (name[2:], doc)
                 return rv
 
         def reflect(self):
                 rv = []
                 for name in _namelist(self):
-                        if name[:2] == u't_' and name != u't_default':
+                        if name[:2] == 't_' and name != 't_default':
                                 rv.append(self.makeRE(name))
 
-                rv.append(self.makeRE(u't_default'))
-                return string.join(rv, u'|')
+                rv.append(self.makeRE('t_default'))
+                return string.join(rv, '|')
 
         def error(self, s, pos):
-                raise ScannerError(u"Lexical error at position %s" % pos)
+                raise ScannerError("Lexical error at position %s" % pos)
 
         def position(self, newpos=None):
                 oldpos = self.pos
@@ -87,12 +87,12 @@ class Scanner:
                         self.pos = m.end()
                         for i in range(len(groups)):
                                 if (groups[i] is not None and
-                                    self.index2func.has_key(i)):
+                                    i in self.index2func):
                                         self.index2func[i](groups[i])
 
         def t_default(self, s):
-                ur'( . | \n )+'
-                raise ScannerError(u"Specification error: unmatched input")
+                r'( . | \n )+'
+                raise ScannerError("Specification error: unmatched input")
 
 #  Extracted from Parser and made global so that [un]picking works.
 
@@ -123,9 +123,9 @@ class Parser:
                 self.augment(start)
                 self.ruleschanged = 1
 
-        _NULLABLE = u'\e_'
-        _START = u'START'
-        _BOF = u'|-'
+        _NULLABLE = '\e_'
+        _START = 'START'
+        _BOF = '|-'
 
         #  When pickling, take the time to generate the full state machine;
         #  some information is then extraneous, too.  Unfortunately we
@@ -150,18 +150,18 @@ class Parser:
                 changes = 1
                 while changes:
                         changes = 0
-                        for k, v in self.edges.items():
+                        for k, v in list(self.edges.items()):
                                 if v is None:
                                         state, sym = k
-                                        if self.states.has_key(state):
+                                        if state in self.states:
                                                 self.goto(state, sym)
                                                 changes = 1
                 rv = self.__dict__.copy()
-                for s in self.states.values():
+                for s in list(self.states.values()):
                         del s.items
-                del rv[u'rule2func']
-                del rv[u'nullable']
-                del rv[u'cores']
+                del rv['rule2func']
+                del rv['nullable']
+                del rv['cores']
                 return rv
 
         def __setstate__(self, D):
@@ -169,10 +169,10 @@ class Parser:
                 self.rule2func = {}
                 self.rule2name = {}
                 self.collectRules()
-                start = D[u'rules'][self._START][0][1][1]        # Blech.
+                start = D['rules'][self._START][0][1][1]        # Blech.
                 self.augment(start)
-                D[u'rule2func'] = self.rule2func
-                D[u'makeSet'] = self.makeSet_fast
+                D['rule2func'] = self.rule2func
+                D['makeSet'] = self.makeSet_fast
                 self.__dict__ = D
 
         #  A hook for ASTBuilder and ASTMatcher.  Mess
@@ -187,7 +187,7 @@ class Parser:
 
                 index = []
                 for i in range(len(rules)):
-                        if rules[i] == u'::=':
+                        if rules[i] == '::=':
                                 index.append(i-1)
                 index.append(len(rules))
 
@@ -199,7 +199,7 @@ class Parser:
                         if _preprocess:
                                 rule, fn = self.preprocess(rule, func)
 
-                        if self.rules.has_key(lhs):
+                        if lhs in self.rules:
                                 self.rules[lhs].append(rule)
                         else:
                                 self.rules[lhs] = [ rule ]
@@ -209,20 +209,20 @@ class Parser:
 
         def collectRules(self):
                 for name in _namelist(self):
-                        if name[:2] == u'p_':
+                        if name[:2] == 'p_':
                                 func = getattr(self, name)
                                 doc = func.__doc__
                                 self.addRule(doc, func)
 
         def augment(self, start):
-                rule = u'%s ::= %s %s' % (self._START, self._BOF, start)
+                rule = '%s ::= %s %s' % (self._START, self._BOF, start)
                 self.addRule(rule, lambda args: args[1], 0)
 
         def computeNull(self):
                 self.nullable = {}
                 tbd = []
 
-                for rulelist in self.rules.values():
+                for rulelist in list(self.rules.values()):
                         lhs = rulelist[0][0]
                         self.nullable[lhs] = 0
                         for rule in rulelist:
@@ -237,7 +237,7 @@ class Parser:
                                 #  grammars.
 
                                 for sym in rhs:
-                                        if not self.rules.has_key(sym):
+                                        if sym not in self.rules:
                                                 break
                                 else:
                                         tbd.append(rule)
@@ -271,7 +271,7 @@ class Parser:
 
         def makeNewRules(self):
                 worklist = []
-                for rulelist in self.rules.values():
+                for rulelist in list(self.rules.values()):
                         for rule in rulelist:
                                 worklist.append((rule, 0, 1, rule))
 
@@ -280,7 +280,7 @@ class Parser:
                         n = len(rhs)
                         while i < n:
                                 sym = rhs[i]
-                                if (not self.rules.has_key(sym) or
+                                if (sym not in self.rules or
                                     not self.nullable[sym]):
                                         candidate = 0
                                         i = i + 1
@@ -297,7 +297,7 @@ class Parser:
                                 if candidate:
                                         lhs = self._NULLABLE+lhs
                                         rule = (lhs, rhs)
-                                if self.newrules.has_key(lhs):
+                                if lhs in self.newrules:
                                         self.newrules[lhs].append(rule)
                                 else:
                                         self.newrules[lhs] = [ rule ]
@@ -307,7 +307,7 @@ class Parser:
                 return None
 
         def error(self, token):
-                raise ParserError(u"Syntax error at or near `%s' token" % token)
+                raise ParserError("Syntax error at or near `%s' token" % token)
 
         def parse(self, tokens):
                 sets = [ [(1, 0), (2, 0)] ]
@@ -323,7 +323,7 @@ class Parser:
                         self.states = { 0: self.makeState0() }
                         self.makeState(0, self._BOF)
 
-                for i in xrange(len(tokens)):
+                for i in range(len(tokens)):
                         sets.append([])
 
                         if sets[i] == []:
@@ -352,7 +352,8 @@ class Parser:
 
                 return self._NULLABLE == sym[0:len(self._NULLABLE)]
 
-        def skip(self, (lhs, rhs), pos=0):
+        def skip(self, xxx_todo_changeme, pos=0):
+                (lhs, rhs) = xxx_todo_changeme
                 n = len(rhs)
                 while pos < n:
                         if not self.isnullable(rhs[pos]):
@@ -375,7 +376,7 @@ class Parser:
 
                 core.sort()
                 tcore = tuple(core)
-                if self.cores.has_key(tcore):
+                if tcore in self.cores:
                         return self.cores[tcore]
 
                 #  Nope, doesn't exist.  Compute it and the associated
@@ -399,13 +400,13 @@ class Parser:
 
                                 nextSym = rhs[pos]
                                 key = (X.stateno, nextSym)
-                                if not rules.has_key(nextSym):
-                                        if not edges.has_key(key):
+                                if nextSym not in rules:
+                                        if key not in edges:
                                                 edges[key] = None
                                                 X.T.append(nextSym)
                                 else:
                                         edges[key] = None
-                                        if not predicted.has_key(nextSym):
+                                        if nextSym not in predicted:
                                                 predicted[nextSym] = 1
                                                 for prule in rules[nextSym]:
                                                         ppos = self.skip(prule)
@@ -428,10 +429,10 @@ class Parser:
                 #  need to know the entire set of predicted nonterminals
                 #  to do this without accidentally duplicating states.
 
-                core = predicted.keys()
+                core = list(predicted.keys())
                 core.sort()
                 tcore = tuple(core)
-                if self.cores.has_key(tcore):
+                if tcore in self.cores:
                         self.edges[(k, None)] = self.cores[tcore]
                         return k
 
@@ -442,7 +443,7 @@ class Parser:
 
         def goto(self, state, sym):
                 key = (state, sym)
-                if not self.edges.has_key(key):
+                if key not in self.edges:
 
                         #  No transitions from state on sym.
 
@@ -640,7 +641,7 @@ class Parser:
 
                 for i in range(len(rhs)-1, -1, -1):
                         sym = rhs[i]
-                        if not self.newrules.has_key(sym):
+                        if sym not in self.newrules:
                                 if sym != self._BOF:
                                         attr[i] = tokens[k-1]
                                         key = (item, k)
@@ -670,7 +671,7 @@ class Parser:
                         sortlist.append((len(rhs), name))
                         name2index[name] = i
                 sortlist.sort()
-                list = map(lambda (a,b): b, sortlist)
+                list = [a_b[1] for a_b in sortlist]
                 return rules[name2index[self.resolve(list)]]
 
         def resolve(self, list):
@@ -743,7 +744,7 @@ class ASTTraversal:
                         node = self.ast
 
                 try:
-                        name = u'n_' + self.typestring(node)
+                        name = 'n_' + self.typestring(node)
                         if hasattr(self, name):
                                 func = getattr(self, name)
                                 func(node)
@@ -755,7 +756,7 @@ class ASTTraversal:
                 for kid in node:
                         self.preorder(kid)
 
-                name = name + u'_exit'
+                name = name + '_exit'
                 if hasattr(self, name):
                         func = getattr(self, name)
                         func(node)
@@ -767,7 +768,7 @@ class ASTTraversal:
                 for kid in node:
                         self.postorder(kid)
 
-                name = u'n_' + self.typestring(node)
+                name = 'n_' + self.typestring(node)
                 if hasattr(self, name):
                         func = getattr(self, name)
                         func(node)
@@ -808,12 +809,12 @@ class ASTMatcher(Parser):
 
                 for child in node:
                         if children == 0:
-                                self.input.insert(0, u'(')
+                                self.input.insert(0, '(')
                         children = children + 1
                         self.match_r(child)
 
                 if children > 0:
-                        self.input.insert(0, u')')
+                        self.input.insert(0, ')')
 
         def match(self, ast=None):
                 if ast is None:
@@ -831,15 +832,15 @@ class ASTMatcher(Parser):
 
 def _dump(tokens, sets, states):
         for i in range(len(sets)):
-                print u'set', i
+                print('set', i)
                 for item in sets[i]:
-                        print u'\t', item
+                        print('\t', item)
                         for (lhs, rhs), pos in states[item[0]].items:
-                                print u'\t\t', lhs, u'::=',
-                                print string.join(rhs[:pos]),
-                                print u'.',
-                                print string.join(rhs[pos:])
+                                print('\t\t', lhs, '::=', end=' ')
+                                print(string.join(rhs[:pos]), end=' ')
+                                print('.', end=' ')
+                                print(string.join(rhs[pos:]))
                 if i < len(tokens):
-                        print
-                        print u'token', unicode(tokens[i])
-                        print
+                        print()
+                        print('token', str(tokens[i]))
+                        print()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """\
@@ -141,7 +141,7 @@ class Main:
                     if argument.startswith('./'):
                         argument = argument[2:]
                     tokens = scanner.tokenize(argument, text)
-                except spark.Error, exception:
+                except spark.Error as exception:
                     if not self.pass_2:
                         sys.stderr.write('%s: %s\n'
                                          % (scanner.reference, exception))
@@ -542,7 +542,7 @@ class Scanner(spark.Scanner):
         try:
             value = eval(text, {}, {})
         except SyntaxError:
-            print '**', self.reference, repr(text)
+            print('**', self.reference, repr(text))
             value = ''
         self.tokens.append(CHARACTER(self.reference.clone(), value))
         self.reference.column += len(text)
@@ -552,7 +552,7 @@ class Scanner(spark.Scanner):
         try:
             value = eval(text, {}, {})
         except SyntaxError:
-            print '**', self.reference, repr(text)
+            print('**', self.reference, repr(text))
             value = ''
         self.tokens.append(STRING(self.reference.clone(), value))
         self.reference.column += len(text)
@@ -570,7 +570,7 @@ class Token:
         return cmp(self.type, other)
 
     def __getitem__(self, ordinal):
-        raise IndexError, ordinal
+        raise IndexError(ordinal)
 
     def typestring(self):
         return self.type

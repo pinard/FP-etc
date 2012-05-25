@@ -3,12 +3,12 @@
 # Copyright © 2000, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2000.
 
-u"""\
+"""\
 Web page generation tool for many of my own software projects.
 """
 
 import os, re, sys, time
-import cPickle as pickle
+import pickle as pickle
 
 class error(Exception): pass
 
@@ -141,13 +141,13 @@ class Html:
               '   <tr>\n')
         write('    <td class="arrow">\n')
         if self.left is None:
-            write(u'     ←\n')
+            write('     ←\n')
         else:
-            write(u'     <a href="%s">←</a>\n' % self.left)
+            write('     <a href="%s">←</a>\n' % self.left)
         if self.up is None:
-            write(u'     ↑\n')
+            write('     ↑\n')
         else:
-            write(u'     <a href="%s">↑</a>\n' % self.up)
+            write('     <a href="%s">↑</a>\n' % self.up)
         if self.right is None:
             write('     →\n')
         else:
@@ -171,9 +171,9 @@ class Html:
         for name in names:
             full_name = os.path.join(self.top, name)
             try:
-                name = unicode(name)
+                name = str(name)
             except UnicodeError:
-                name = unicode(name, 'ISO-8859-1')
+                name = str(name, 'ISO-8859-1')
             date = ('%d-%.2d-%.2d'
                     % time.localtime(os.path.getmtime(full_name))[:3])
             size = os.path.getsize(full_name)
@@ -187,7 +187,7 @@ class Html_lines_read(Html):
         if buffer is None:
             try:
                 self.lines = unicode_readlines(os.path.join(top, name))
-            except IOError, exception:
+            except IOError as exception:
                 raise error("Page not found (%s)" % exception.strerror)
         else:
             self.lines = buffer.splitlines(True)
@@ -205,7 +205,7 @@ class Html_lines_read(Html):
 # Make HTML showing an error message.
 
 class Html_Error(Html):
-    title = u"Error report"
+    title = "Error report"
 
     def __init__(self, base, top, name, diagnostic):
         Html.__init__(self, base, top, name)
@@ -230,7 +230,7 @@ class Html_Archives(Html):
         Html.__init__(self, base, top, name)
 
     def html_title(self):
-        return u"Archives"
+        return "Archives"
 
     def html_body(self):
         names = []
@@ -295,7 +295,7 @@ class Html_Folders(Html):
         Html.__init__(self, base, top, None)
 
     def html_title(self):
-        return u"Email folders"
+        return "Email folders"
 
     def html_body(self):
         stack = ['.']
@@ -336,7 +336,7 @@ class Html_Summary(Html):
         self.messages = folder.folder(os.path.join(top, name), strip201=True)
 
     def html_title(self):
-        return u"%s (index)" % self.name
+        return "%s (index)" % self.name
 
     def html_body(self):
         try:
@@ -347,7 +347,7 @@ class Html_Summary(Html):
         write = fragments.append
         write('  <table class="index" align=center>\n'
               '   <tr>\n'
-              u'    <th class="no">Nº</th>\n'
+              '    <th class="no">Nº</th>\n'
               '    <th class="from">From</th>\n'
               '    <th class="subject">Subject</th>\n'
               '   </tr>\n')
@@ -395,13 +395,13 @@ class Html_Message(Html):
             from Etc import folder
             messages = folder.folder(os.path.join(top, name), strip201=True)
         if not 0 <= index < len(messages):
-            raise error(u"No such message!")
+            raise error("No such message!")
         self.count = len(messages)
         self.headers = messages.message_headers(index)
         self.body = messages.message_body(index)
 
     def html_title(self):
-        return u"%s (%d/%d)" % (self.name, self.index + 1, self.count)
+        return "%s (%d/%d)" % (self.name, self.index + 1, self.count)
 
     def html_body(self):
         try:
@@ -416,7 +416,7 @@ class Html_Message(Html):
                 headers=['Date', 'From', 'Subject', 'To', 'Cc']):
             if headers:
                 if headers is True:
-                    pairs = message.items()
+                    pairs = list(message.items())
                 else:
                     pairs = []
                     for field in headers:
@@ -462,7 +462,7 @@ class Html_Message(Html):
             try:
                 access_type = message.get_param('access-type')
                 if access_type == 'x-mutt-deleted':
-                    raise RenderError(u"Deleted in Mutt.")
+                    raise RenderError("Deleted in Mutt.")
                 content_type = message.get_content_type()
                 content_maintype = message.get_content_maintype()
                 if message.is_multipart():
@@ -498,7 +498,7 @@ class Html_Message(Html):
                             write(render_recursive(payload))
                     else:
                         raise RenderError(
-                            u"Multi-entité inconnue: %s" % content_type)
+                            "Multi-entité inconnue: %s" % content_type)
                 else:
                     if (content_type in ('application/msword',
                                          'application/pdf')
@@ -536,9 +536,9 @@ class Html_Message(Html):
                         write('<pre>\n%s</pre>\n'
                               % enhanced(payload_of(message)))
                     else:
-                        raise RenderError(u"Entité inconnue: %s"
+                        raise RenderError("Entité inconnue: %s"
                                           % content_type)
-            except RenderError, exception:
+            except RenderError as exception:
                 if not noraise:
                     raise
                 write(error_body(str(exception)))
@@ -577,7 +577,7 @@ class Html_File_List(Html):
         counter = 0
         write('  <table class="directory" align=center>\n'
               '   <tr>\n'
-              u'    <th class="no">Nº</th>\n'
+              '    <th class="no">Nº</th>\n'
               '    <th class="folder">Folder</th>\n'
               '    <th class="date">Date</th>\n'
               '    <th class="size">Size</th>\n'
@@ -597,7 +597,7 @@ class Html_File_List(Html):
                 if (base in ('.git', '.svn', 'RCS', 'CVS',
                              'archives', 'build', 'web')
                         or base.startswith('build-')
-                        or base.startswith(u'Prépare-')):
+                        or base.startswith('Prépare-')):
                     continue
                 directories.append(name + '/')
             elif os.path.isfile(os.path.join(self.top, name)):
@@ -638,7 +638,7 @@ class Html_File(Html):
             if self.mode == 'coloured':
                 return self.html_body_through_vim()
             return self.html_body_through_none()
-        except IOError, exception:
+        except IOError as exception:
             raise error("Page not found (%s)" % exception.strerror)
 
     def html_body_through_none(self):
@@ -693,22 +693,22 @@ class Html_File(Html):
         fragments = []
         write = fragments.append
         write('<form action=\"%s\">\n'
-              u"Redisplay this file \n"
+              "Redisplay this file \n"
               % self.name)
-        value = u"flat"
+        value = "flat"
         if self.mode is not None and self.mode != value:
             write(' <input type=submit name="mode" value="%s">'
-                  u" (not highlighted),\n" % value)
-        value = u"monochrome"
+                  " (not highlighted),\n" % value)
+        value = "monochrome"
         if self.mode != value:
             write(' <input type=submit name="mode" value="%s">'
-                  u" (through Enscript),\n" % value)
-        value = u"coloured"
+                  " (through Enscript),\n" % value)
+        value = "coloured"
         if self.mode != value:
             write(' <input type=submit name="mode" value="%s">'
-                  u" (through Vim),\n" % value)
-        write(u" or go back to the"
-              u" <a href=\"/\">list of project files</a>.\n"
+                  " (through Vim),\n" % value)
+        write(" or go back to the"
+              " <a href=\"/\">list of project files</a>.\n"
               '</form>\n')
         if title:
             write('  <h1>%s</h1>\n' % title)
@@ -893,7 +893,7 @@ class Html_Thanks(Html_lines_read):
 
         def produce_row():
             if name is None:
-                write(u'  <p> </p>\n'
+                write('  <p> </p>\n'
                       '  <table align="center" border="2">\n'
                       '   <tr>\n'
                       '    <th>Contributor</th>\n'
@@ -1048,7 +1048,7 @@ def from_text_enriched(buffer):
                 write('<br>\n' * (len(text) - 1))
             text = match.group('margin')
             if text:
-                write(text.expandtabs().replace(' ', u'\xa0'))
+                write(text.expandtabs().replace(' ', '\xa0'))
             continue
         text = match.group()
         if match.group() == '<<':
@@ -1079,10 +1079,10 @@ def from_text_plain(buffer):
         # Two blocks may be filled together only if not separated by white
         # lines and if they share a common left margin.
         if DEBUG:
-            print '--->'
+            print('--->')
             for counter, line in enumerate(lines):
-                print '%d.' % counter, repr(line)
-            print '--------------------------------------------------'
+                print('%d.' % counter, repr(line))
+            print('--------------------------------------------------')
         current_margin = None
         current_level = 0
         verbatim = False
@@ -1158,7 +1158,7 @@ def from_text_plain(buffer):
                 write('</pre>\n')
                 handle_block(lines[recursive:])
         if DEBUG:
-            print '---<'
+            print('---<')
 
     def is_verbatim(text):
         # Given TEXT, with left margin already removed, should we go in
@@ -1228,7 +1228,7 @@ def from_text_plain(buffer):
         line = input[counter]
         if line.startswith('>from'):
             line = input[counter][1:]
-        lines.append(line.replace(u'\x92', '\''))
+        lines.append(line.replace('\x92', '\''))
         counter += 1
     if lines:
         write_whiteline()
@@ -1316,12 +1316,12 @@ def decoded_header(text):
             if result:
                 result += ' '
             if charset is None:
-                result += unicode(fragment)
+                result += str(fragment)
             else:
-                result += unicode(fragment, charset)
+                result += str(fragment, charset)
         return result
     except UnicodeDecodeError:
-        return unicode(text, 'ISO-8859-1')
+        return str(text, 'ISO-8859-1')
 
 def enhanced(text, clean=False):
     if clean:
@@ -1373,9 +1373,9 @@ def payload_of(message, raw=False):
     if not raw:
         charset = message.get_param('charset') or 'ASCII'
         try:
-            text = unicode(text, charset)
+            text = str(text, charset)
         except UnicodeError:
-            text = unicode(text, 'ISO-8859-1')
+            text = str(text, 'ISO-8859-1')
     return text
 
 def unicode_force(buffer):
@@ -1385,7 +1385,7 @@ def unicode_force(buffer):
         return buffer.decode('ISO-8859-1')
 
 def unicode_read(handle):
-    if isinstance(handle, basestring):
+    if isinstance(handle, str):
         handle = file(handle)
     return unicode_force(handle.read())
 

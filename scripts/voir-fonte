@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, mai 2002.
 
-u"""\
+"""\
 Produit un fichier PostScript sur stdout présentant une fonte particulière
 sur quatre pages, détaillant son apparence et sa métrique.
 
@@ -34,7 +34,7 @@ def copier_prfont_ps(write):
             if line.endswith('/prfont.ps\n'):
                 write(open(line.rstrip()).read())
                 return
-    sys.stderr.write(u"Pas trouvé `prfont.ps'.\n")
+    sys.stderr.write("Pas trouvé `prfont.ps'.\n")
     sys.exit(1)
 
 if __name__ == '__main__':

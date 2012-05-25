@@ -3,7 +3,7 @@
 # Copyright © 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2001.
 
-u"""\
+"""\
 Lorsque ACTION est `html', ce programme produite un fichier HTML à partir
 des indications contenues dans le fichier `allout'.  Nous avons alors:
 
@@ -32,18 +32,18 @@ class Main:
     def main(self, *arguments):
         self.selection = []
         import getopt
-        options, arguments = getopt.getopt(arguments, u'as:')
+        options, arguments = getopt.getopt(arguments, 'as:')
         for option, value in options:
-            if option == u'-s':
-                self.selection = map(int, value.split(u'.'))
+            if option == '-s':
+                self.selection = list(map(int, value.split('.')))
         # Lire le fichier en format `allout'.
-        import allout
+        from . import allout
         if len(arguments) == 0:
             structure = allout.read()
         elif len(arguments) == 1:
             structure = allout.read(arguments[0])
         else:
-            raise allout.UsageError, u"Trop d'arguments."
+            raise allout.UsageError("Trop d'arguments.")
         # Choisir la sous-branche désirée.
         for branche in self.selection:
             structure = structure[branche]
@@ -56,8 +56,8 @@ def write_html(structure, write=sys.stdout.write):
     # Transformer l'arbre STRUCTURE en HTML.
     # Le résultat est écrit sur OUTPUT, qui doit être une fonction
     # d'écriture ou encore, le nom d'un fichier à créer.
-    if isinstance(write, basestring):
-        write = file(write, u'w').write
+    if isinstance(write, str):
+        write = file(write, 'w').write
     write(('<html>\n'
            ' <head>\n'
            '  <meta http-equiv="Content-Type" content="text/html;'
@@ -76,7 +76,7 @@ def write_html_recursive(structure, write, level):
     # indiquer que STRUCTURE a requis plus d'une ligne pour s'imprimer.
     if level > 1:
         write('  ' * level + '<li>')
-    if isinstance(structure, basestring):
+    if isinstance(structure, str):
         if structure.startswith('http://'):
             write('<a href="%s">%s</a>\n' % (structure, cgi.escape(structure)))
         else:
@@ -90,5 +90,5 @@ def write_html_recursive(structure, write, level):
     if level > 1:
         write('</li>\n')
 
-if __name__ == u'__main__':
+if __name__ == '__main__':
     main(*sys.argv[1:])

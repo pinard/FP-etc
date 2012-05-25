@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 2005 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2005.
 
-u"""\
+"""\
 Produire diverses listes de fichiers.
 
 Usage: fichiers [OPTION] [CHEMIN]...
@@ -131,7 +131,7 @@ class Main:
                         assert len(champs) == 3, ligne
                         self.accumuler(champs[1])
             else:
-                sys.stderr.write(u"* %s/tags: n'existe pas.\n" % argument)
+                sys.stderr.write("* %s/tags: n'existe pas.\n" % argument)
 
     def accumuler(self, nom):
         if nom.startswith('./'):

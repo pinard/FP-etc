@@ -16,23 +16,23 @@ HTML_DOCTYPE = (
         #' HTML 4.01 Strict//EN" "http://www.w3.org/TR/html4/strict.dtd">'
         '\n')
 ENCODING = 'UTF-8'
-NON_BREAKABLE_SPACE = u'\u00a0'
+NON_BREAKABLE_SPACE = '\u00a0'
 
 def clean_file_name(name):
     # TODO: Les blancs devraient être acceptés par site.mk/site-Makefile.
     return re.sub('[ :/\\\\?\']{1,}', ' ', name).replace(' ', '_')
 
 def is_ignorable_title(title):
-    if title.startswith(u"Modèle de bloc-notes "):
+    if title.startswith("Modèle de bloc-notes "):
         return True
-    if title.endswith(u" Notebook Template"):
+    if title.endswith(" Notebook Template"):
         return True
-    return title in (u"Nouveau modèle de note",
-                     u"Démarrer ici",
-                     u"Utilisation des liens dans Tomboy",
-                     u"New Note Template",
-                     u"Start Here",
-                     u"Using Links in Tomboy")
+    return title in ("Nouveau modèle de note",
+                     "Démarrer ici",
+                     "Utilisation des liens dans Tomboy",
+                     "New Note Template",
+                     "Start Here",
+                     "Using Links in Tomboy")
 
 def is_linkable(outer, inner):
     # May the outer note link to the inner note?
@@ -43,7 +43,7 @@ def is_linkable(outer, inner):
             >= priority.get(inner.title[-2:], 0))
 
 def pretty_title(text):
-    suffix = {':b': u'⁻', ':p': u'⁺', ':t': ''}.get(text[-2:])
+    suffix = {':b': '⁻', ':p': '⁺', ':t': ''}.get(text[-2:])
     if suffix is None:
         return text
     return text[:-2] + suffix
@@ -114,9 +114,9 @@ class Sweeper:
         if title not in self.arrows:
             self.arrows[title] = []
         for fragment, location in each_regexp(' \t', buffer, name):
-            self.errors.append((title, u"Space then tab", location))
+            self.errors.append((title, "Space then tab", location))
         for fragment, location in each_xml_tag('link:broken', buffer, name):
-            self.errors.append((title, u"Broken link", location))
+            self.errors.append((title, "Broken link", location))
         for internal, location in each_xml_tag('link:internal', buffer, name):
             self.from_tomboy_count += 1
             for fragment, _ in each_xml_tag('monospace', internal, None):
@@ -133,7 +133,7 @@ class Sweeper:
                 if not child in self.marked:
                     self.mark(child)
             else:
-                self.errors.append((ancestor, u"Dangling link", location))
+                self.errors.append((ancestor, "Dangling link", location))
 
     def find_path(self, start, goal):
         return self.find_path_recursive(start, goal, [])
@@ -179,14 +179,14 @@ class Location:
         size = 50
         buffer = codecs.open(self.name, 'r', ENCODING).read()
         if self.start > size:
-            prefix = u'…' + buffer[self.start-size:self.start]
+            prefix = '…' + buffer[self.start-size:self.start]
         else:
             prefix = buffer[:self.start]
         if self.end < len(buffer) - size:
-            suffix = buffer[self.end:self.end+size] + u'…'
+            suffix = buffer[self.end:self.end+size] + '…'
         else:
             suffix = buffer[self.end:]
-        context = prefix + u'▶' + buffer[self.start:self.end] + u'◀' + suffix
+        context = prefix + '▶' + buffer[self.start:self.end] + '◀' + suffix
         return context.replace('\n', '\\n')
 
 class Note:
@@ -235,7 +235,7 @@ class Note:
         document = self.get_raw_document()
         Fixup().dispatch(document.getroot())
         if self.run.debug:
-            print document
+            print(document)
         return document
 
     def get_raw_document(self):

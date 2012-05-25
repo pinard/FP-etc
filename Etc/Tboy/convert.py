@@ -3,10 +3,10 @@
 # François Pinard <pinard@iro.umontreal.ca>, 2009.
 
 __metaclass__ = type
-import os, re, sys, time, urllib
+import os, re, sys, time, urllib.request, urllib.parse, urllib.error
 from lxml import etree
 from xml.sax import saxutils
-import tools
+from . import tools
 
 ### Conversion classes
 
@@ -60,7 +60,7 @@ class Converter:
             assert len(element) == 0
             return recurse(Title_node)
         if tag == 'text':
-            attribs = self.clean_attrib(element).items()
+            attribs = list(self.clean_attrib(element).items())
             assert attribs == [('space', 'preserve')], attribs
             return recurse()
         if tag == 'note-content':
@@ -81,7 +81,7 @@ class Converter:
             text = element.text
             if text is None:
                 # TODO: Se produisait avec ``xmartin``
-                print '** internal = None'
+                print('** internal = None')
                 return ''
             text_sans = tools.pretty_title(text)
             note2 = tools.Note.registry.get(text)
@@ -131,7 +131,7 @@ class Converter:
             [note.title + ': ' + self.clean_tag(element) + ' inconnu!'])]
         fragments = []
         write = fragments.append
-        keys = element.attrib.items()
+        keys = list(element.attrib.items())
         write(self.clean_tag(element))
         if keys:
             write(' ' + repr(keys))
@@ -152,7 +152,7 @@ class Converter:
     def clean_attrib(self, element):
         result = {}
         if element.attrib:
-            for key, value in element.attrib.items():
+            for key, value in list(element.attrib.items()):
                 position = key.find('}')
                 if position:
                     result[key[position + 1:]] = value
@@ -167,9 +167,9 @@ class Converter:
         else:
             left = ''
             right = text
-        if isinstance(right, unicode):
+        if isinstance(right, str):
             right = right.encode(tools.ENCODING)
-        return left + self.escape(urllib.quote(right, safe="/#?="))
+        return left + self.escape(urllib.parse.quote(right, safe="/#?="))
 
 class Docbook_converter(Converter):
 
@@ -856,7 +856,7 @@ def truncated_repr(object, length):
     if len(text) > length:
         left = length * 2 / 3
         right = length - left
-        text = text[:left-3] + u' … ' + text[-right:]
+        text = text[:left-3] + ' … ' + text[-right:]
     return text
 
 class Bold_node(Node):

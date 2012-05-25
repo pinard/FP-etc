@@ -69,8 +69,8 @@ To get `cliff' to compute `2 + 3', a Python expression, one uses this:
 """
 
 import base64, threading, zlib
-import cPickle as pickle
-from StringIO import StringIO
+import pickle as pickle
+from io import StringIO
 
 # Debugging.
 DEBUG = True
@@ -95,8 +95,8 @@ TELNET_STTY_NL = False
 TELNET_STTY_NO_OPOST = False
 
 # Named constants.
-INDIRECT_CODE, APPLY_CODE, EVAL_CODE, EXECUTE_CODE = range(4)
-INDIRECT_RETURN, NORMAL_RETURN, ERROR_RETURN = range(3)
+INDIRECT_CODE, APPLY_CODE, EVAL_CODE, EXECUTE_CODE = list(range(4))
+INDIRECT_RETURN, NORMAL_RETURN, ERROR_RETURN = list(range(3))
 
 import os, sys
 
@@ -136,7 +136,7 @@ Decide which kind of server is needed for PATH, then create and return it.
     #server = maker(path, trace, insist=True)
     #if server is not None:
     #    return server
-    raise CreationError, "* Ne peut créer un serveur pour `%s'." % path
+    raise CreationError("* Ne peut créer un serveur pour `%s'." % path)
 
 Serveur = Server
 
@@ -208,7 +208,7 @@ Execute TEXT as Python statements on the remote server.  Return None.
         if self.trace_client:
             request = None, EXECUTE_CODE, text
             sys.stderr.write('%s: < %s\n' % (self.host, short_repr(request)))
-        exec text in globals(), self.context
+        exec(text, globals(), self.context)
         if self.trace_client:
             reply = None, NORMAL_RETURN, None
             sys.stderr.write('%s: > %s\n' % (self.host, short_repr(reply)))
@@ -234,8 +234,8 @@ class Remote_Server:
             self.upload_file(name, SCRIPT_FILE_NAME)
             text = self.receive_start_text()
             if text != '%s\n' % PROTOCOL_HEADER:
-                raise UploadError, "Unable to install `%s' on `%s'." % (
-                    name, self.host)
+                raise UploadError("Unable to install `%s' on `%s'." % (
+                    name, self.host))
         if self.trace_client:
             sys.stderr.write('%s: %s - Started\n'
                              % (self.host, PROTOCOL_HEADER))
@@ -309,7 +309,7 @@ class Remote_Server:
         if self.trace_client:
             sys.stderr.write('%s: > %s\n' % (self.host, short_repr(reply)))
         if code == ERROR_RETURN:
-            raise ServerError, value
+            raise ServerError(value)
         return value
 
 def make_ssh_server(path, trace, insist=False):
@@ -720,7 +720,7 @@ class Server_Agent(threading.Thread):
                         reply = (thread, NORMAL_RETURN,
                                  eval(text, globals(), context))
                     else:
-                        exec text in globals(), context
+                        exec(text, globals(), context)
                         reply = thread, NORMAL_RETURN, None
                 else:
                     if code == APPLY_CODE:

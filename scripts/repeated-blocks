@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 2009 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2009.
@@ -175,21 +175,21 @@ class Main:
                             map[token].append(block)
                         else:
                             map[token] = [block]
-                for token, blocks in map.items():
+                for token, blocks in list(map.items()):
                     if len(blocks) == 1 and token is not None:
                         if None in map:
                             map[None] += blocks
                         else:
                             map[None] = blocks
                         del map[token]
-                for token, blocks in map.items():
+                for token, blocks in list(map.items()):
                     if len(blocks) == 1:
                         del map[token]
                 if len(map) < 2:
                     if not map:
                         break
                     # Simulate tail recursion in this case.
-                    token, cluster = map.items()[0]
+                    token, cluster = list(map.items())[0]
                     if token is None:
                         for block in cluster:
                             block.mark_nested()
@@ -200,7 +200,7 @@ class Main:
                         block.limit += 1
                     given_cluster = cluster
                     continue
-                for token, cluster in map.iteritems():
+                for token, cluster in map.items():
                     if len(cluster) >= 2:
                         if token is None:
                             for block in cluster:
@@ -306,7 +306,7 @@ class Main:
                     pairs.append((block, reference))
         pairs.sort()
         for block, reference in pairs:
-            print block.buffer.name, block.first, block.limit, bool(reference)
+            print(block.buffer.name, block.first, block.limit, bool(reference))
 
 class Buffer:
     ordinal = 0

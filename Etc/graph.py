@@ -79,7 +79,7 @@ involved into some cycle.
                 and after not in before.followers):
             before.followers.append(after)
             after.predecessor_count += 1
-    vertices = table.values()
+    vertices = list(table.values())
     del table
     # Accumulate sorted vertices in the SORTED list.
     zeroes = []
@@ -134,7 +134,7 @@ These sublists taken whole are still topologically sorted within the result.
                 and after not in before.followers):
             before.followers.append(after)
             after.predecessor_count += 1
-    vertices = table.values()
+    vertices = list(table.values())
     del table
     # Accumulate sorted vertices in the SORTED list.
     sorted = []

@@ -17,7 +17,7 @@ import sys
 try:
     import ERRNO
 except ImportError:
-    raise ImportError,'you need to generate ERRNO.py from Tools/scripts/h2py.py in the Python distribution'
+    raise ImportError('you need to generate ERRNO.py from Tools/scripts/h2py.py in the Python distribution')
 
 # look what I can get away with... 8^)
 socket.socket_map = {}
@@ -38,7 +38,7 @@ def readables (sock_fds):
 	def readable_test (fd, sm=sm):
 		sock = sm[fd]
 		return sock.connected or sock.accepting
-	return filter (readable_test, sock_fds)
+	return list(filter (readable_test, sock_fds))
 
 # only those fd's we are 'write blocked' on, -OR-
 # those sockets we are waiting for a connection on.
@@ -47,13 +47,13 @@ def writables (sock_fds):
 	def writable_test (fd, sm=sm):
 		sock = sm[fd]
 		return sock.write_blocked or not sock.connected
-	return filter (writable_test, sock_fds)
+	return list(filter (writable_test, sock_fds))
 
 def loop(timeout=DEFAULT_TIMEOUT):
 	loop_running = 1
 	try:
 		while 1:
-			sock_fds = socket.socket_map.keys()
+			sock_fds = list(socket.socket_map.keys())
 
 			read_fds = readables (sock_fds)
 			write_fds = writables (sock_fds)
@@ -65,7 +65,7 @@ def loop(timeout=DEFAULT_TIMEOUT):
 										write_fds,
 										expt_fds,
 										timeout)
-			print read_fds,write_fds,expt_fds
+			print(read_fds,write_fds,expt_fds)
 			try:
 				for x in expt_fds:
 					socket.socket_map[x].handle_expt_event()
@@ -78,7 +78,7 @@ def loop(timeout=DEFAULT_TIMEOUT):
 				# from the map by calling self.close().
 				pass
 	except stop_loop_exception:
-		print 'loop stopped'
+		print('loop stopped')
 
 class dispatcher:
 	def __init__ (self, sock=None):
@@ -100,9 +100,9 @@ class dispatcher:
 		socket.socket_map [self.fileno] = self
 
 	def del_channel (self):
-		if socket.socket_map.has_key (self.fileno):
+		if self.fileno in socket.socket_map:
 			del socket.socket_map [self.fileno]
-		if not len(socket.socket_map.keys()):
+		if not len(list(socket.socket_map.keys())):
 			raise stop_loop_exception
 
 	def create_socket (self, family, type):
@@ -112,7 +112,7 @@ class dispatcher:
 		self.add_channel()
 
 	def bind (self, *args):
-		return apply (self.socket.bind, args)
+		return self.socket.bind(*args)
 
 	def go (self):
 		if not loop_running:
@@ -128,12 +128,12 @@ class dispatcher:
 	def connect (self, host, port):
 		try:
 			self.socket.connect (host, port)
-		except socket.error, why:
+		except socket.error as why:
 			if type(why) == type(()) \
 			   and why[0] in (ERRNO.EINPROGRESS, ERRNO.EALREADY, ERRNO.EWOULDBLOCK):
 				return
 			else:
-				raise socket.error, why
+				raise socket.error(why)
 		self.connected = 1
 		self.handle_connect()
 
@@ -145,12 +145,12 @@ class dispatcher:
 			else:
 				self.write_blocked = 0
 			return result
-		except socket.error, why:
+		except socket.error as why:
 			if type(why) == type(()) and why[0] == ERRNO.EWOULDBLOCK:
 				self.write_blocked = 1
 				return 0
 			else:
-				raise socket.error, why
+				raise socket.error(why)
 			return 0
 
 	def recv (self, buffer_size):
@@ -171,14 +171,14 @@ class dispatcher:
 	def log (self, message):
 		#self.log_queue.append ('%s:%d %s' %
 		#					   (self.__class__.__name__, self.fileno, message))
-		print 'log:', message
+		print('log:', message)
 
 	def done (self):
 		self.print_log()
 
 	def print_log (self):
 		for x in self.log_queue:
-			print x
+			print(x)
 
 	def handle_read_event (self):
 		# getting a read implies that we are connected
@@ -260,7 +260,7 @@ class dispatcher_with_send (dispatcher):
 # ---------------------------------------------------------------------------
 
 def close_all ():
-	for x in socket.socket_map.items():
+	for x in list(socket.socket_map.items()):
 		x[1].socket.close()
 	socket.socket_map = {}
 

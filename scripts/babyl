@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 1991-92, 94, 96-00, 02 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, March 1992-03.
@@ -13,7 +13,7 @@
 # 2003-12: allow buffering one message in memory, use generators.
 # 2005-09: restore @ and . from at and dot.
 
-u"""\
+"""\
 Append messages or Usenet articles to a Babyl or UNIX mail file.
 Somehow handle slightly mangled input or output files.
 
@@ -51,12 +51,12 @@ def decoded_header(texte):
             if result:
                 result += ' '
             if charset is None:
-                result += unicode(fragment)
+                result += str(fragment)
             else:
-                result += unicode(fragment, charset)
+                result += str(fragment, charset)
         return result
     except UnicodeDecodeError:
-        return unicode(texte, 'ISO-8859-1')
+        return str(texte, 'ISO-8859-1')
 
 class Main:
 
@@ -169,26 +169,26 @@ class Main:
             if headers and headers[0] in ('BABYL OPTIONS:\n',
                                           'BABYL OPTIONS: -*- rmail -*-\n'):
                 if line not in (""'\37', ""'\37\f\n'):
-                    self.report(u"Invalid Babyl terminator.")
+                    self.report("Invalid Babyl terminator.")
                 return True
             return False
 
         def clean_message():
             if which is headers:
-                self.report(u"Message ended within headers.")
+                self.report("Message ended within headers.")
             if babyl_format:
                 if body and body[0] == '*** EOOH ***\n':
                     del body[0]
                     if headers and headers[0] and headers[0][0] in '01':
                         del headers[0]
                     else:
-                        print repr(headers)
-                        self.report(u"Invalid Babyl status header.")
+                        print(repr(headers))
+                        self.report("Invalid Babyl status header.")
                 else:
                     try:
                         index = headers.index('*** EOOH ***\n')
                     except ValueError:
-                        self.report(u"Missing EOOH separator in Babyl file.")
+                        self.report("Missing EOOH separator in Babyl file.")
                         index = None
                     if headers[0].startswith('0'):
                         if index is None:
@@ -200,7 +200,7 @@ class Main:
                             del headers[index:]
                         del headers[0]
                     else:
-                        self.report(u"Invalid Babyl status header.")
+                        self.report("Invalid Babyl status header.")
             for counter, line in enumerate(headers):
                 headers[counter] = (line.replace(""' at ', ""'@')
                                     .replace(""' dot ', ""'.'))
@@ -220,12 +220,12 @@ class Main:
             incomplete_line = prefix_of_delimiter(line)
             if incomplete_line is not None:
                 if incomplete_line:
-                    self.report(u"Incomplete line.")
+                    self.report("Incomplete line.")
                     which.append(incomplete_line + '\n')
                 if headers or body:
                     if is_babyl(headers, line):
                         if message_count > 0:
-                            self.report(u"Babyl header not at beginning·")
+                            self.report("Babyl header not at beginning·")
                         babyl_format = True
                     else:
                         clean_message()
@@ -240,13 +240,13 @@ class Main:
                 continue
             if line in (""'\37', ""'\37\f\n'):
                 if not babyl_format:
-                    self.report(u"Unexpected Babyl terminator.")
+                    self.report("Unexpected Babyl terminator.")
                     babyl_format = True
             which.append(line)
         if headers or body:
             if is_babyl(headers, line):
                 if message_count > 0:
-                    self.report(u"Babyl header not at beginning·")
+                    self.report("Babyl header not at beginning·")
                 return
             clean_message()
             yield start_line, headers, body
@@ -283,7 +283,8 @@ class SummaryOutput(Output):
         sys.stdout.write('\n%s\n' % input_name)
         self.message_count = 0
 
-    def process_message(self, (start, headers, body)):
+    def process_message(self, xxx_todo_changeme):
+        (start, headers, body) = xxx_todo_changeme
         self.message_count += 1
         originator = '-----'
         date = '---- -- --'
@@ -355,7 +356,8 @@ class BabylOutput(Output):
                        'Note:    it means the file has no messages in it.\n'
                        '\37')
 
-    def process_message(self, (start, headers, body)):
+    def process_message(self, xxx_todo_changeme1):
+        (start, headers, body) = xxx_todo_changeme1
         write = self.write
         write('\f\n'
               '0, unseen,,\n'
@@ -377,7 +379,8 @@ class MboxOutput(Output):
         else:
             self.write = file(output_name, 'wb').write
 
-    def process_message(self, (start, headers, body)):
+    def process_message(self, xxx_todo_changeme2):
+        (start, headers, body) = xxx_todo_changeme2
         write = self.write
         # Process headers.
         originator = 'unknown'
@@ -450,7 +453,8 @@ class PrintOutput(Output):
         self.input_name = input_name
         self.message_count = 0
 
-    def process_message(self, (start, headers, body)):
+    def process_message(self, xxx_todo_changeme3):
+        (start, headers, body) = xxx_todo_changeme3
         self.message_count += 1
         write = subprocess.Popen(
                 ['enscript', '-G', '-Email',

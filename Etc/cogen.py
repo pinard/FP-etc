@@ -65,7 +65,7 @@ All generators below have the following properties in common:
 # Les spécifications ne sont pas encore figées, mais je ne crois pas qu'elles
 # aient à beaucoup changer.  On ne peut tout prévoir, bien sûr! :-)
 
-from __future__ import generators
+
 
 def cartesian(*sequences):
     """\
@@ -143,17 +143,17 @@ as a list holding zero or more elements from the original sequence.
 """
     # Adapted from Eric Raymond.
     length = len(sequence)
-    pairs = zip([1 << position for position in range(length)],
-                sequence)
+    pairs = list(zip([1 << position for position in range(length)],
+                sequence))
     pairs.reverse()
-    for selector in xrange(1 << length):
+    for selector in range(1 << length):
         yield [element for mask, element in pairs if mask & selector]
 
 def powerset(base):
     """Powerset of an iterable, yielding lists."""
     # From Eric Raymond.
     pairs = [(2**i, x) for i, x in enumerate(base)]
-    for n in xrange(2**len(pairs)):
+    for n in range(2**len(pairs)):
         yield [x for m, x in pairs if m&n]
 
 def combinations(sequence, number):
@@ -232,33 +232,33 @@ Generate all permutations from list SEQUENCE.
 
 def test():
     if False:
-        print '\nTesting CARTESIAN.'
+        print('\nTesting CARTESIAN.')
         for result in cartesian((5, 7), [8, 9], 'abc'):
-            print result
+            print(result)
     if True:
-        print '\nTesting SUBSETS.'
-        for result in subsets(range(1, 5)):
-            print result
+        print('\nTesting SUBSETS.')
+        for result in subsets(list(range(1, 5))):
+            print(result)
     if False:
-        print '\nTesting COMBINATIONS.'
-        sequence = range(1, 5)
+        print('\nTesting COMBINATIONS.')
+        sequence = list(range(1, 5))
         length = len(sequence)
         for counter in range(length + 2):
-            print "%d-combs of %s:" % (counter, sequence)
+            print("%d-combs of %s:" % (counter, sequence))
             for result in combinations(sequence, counter):
-                print "   ", result
+                print("   ", result)
     if False:
-        print '\nTesting ARRANGEMENTS.'
-        sequence = range(1, 5)
+        print('\nTesting ARRANGEMENTS.')
+        sequence = list(range(1, 5))
         length = len(sequence)
         for counter in range(length + 2):
-            print "%d-arrs of %s:" % (counter, sequence)
+            print("%d-arrs of %s:" % (counter, sequence))
             for result in arrangements(sequence, counter):
-                print "   ", result
+                print("   ", result)
     if False:
-        print '\nTesting PERMUTATIONS.'
-        for permutation in permutations(range(1, 5)):
-            print permutation
+        print('\nTesting PERMUTATIONS.')
+        for permutation in permutations(list(range(1, 5))):
+            print(permutation)
 
 if __name__ == '__main__':
     test()

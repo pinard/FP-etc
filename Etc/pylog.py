@@ -8,6 +8,7 @@
 
 __metaclass__ = type
 import sys
+import collections
 
 class Error(Exception):
     pass
@@ -19,7 +20,7 @@ class Message_X(object):
         self.args = args
 
     def content(self):
-        return ' '.join(map(unicode, self.args))
+        return ' '.join(map(str, self.args))
 
     def prefix(self):
         return '[%s] ' % (':'.join(self.keywords))
@@ -42,7 +43,7 @@ class Producer(object):
     keywords2consumer = {}
 
     def __init__(self, keywords):
-        if isinstance(keywords, unicode):
+        if isinstance(keywords, str):
             keywords = tuple(keywords.split('.'))
         self.keywords = keywords
 
@@ -51,7 +52,7 @@ class Producer(object):
 
     def __getattr__(self, name):
         if '_' in name:
-            raise AttributeError, name
+            raise AttributeError(name)
         producer = self.__class__(self.keywords + (name,))
         setattr(self, name, producer)
         return producer
@@ -82,7 +83,7 @@ def _setstate(state):
     Producer.keywords2consumer.update(state)
 
 def default_consumer(msg):
-    sys.stdout.write(unicode(msg) + '\n')
+    sys.stdout.write(str(msg) + '\n')
 
 Producer.keywords2consumer['default'] = default_consumer
 
@@ -97,7 +98,7 @@ class File(object):
         self._file = f
 
     def __call__(self, msg):
-        self._file.write(unicode(msg) + '\n')
+        self._file.write(str(msg) + '\n')
 
 class Path(object):
 
@@ -118,28 +119,28 @@ class Path(object):
     def __call__(self, msg):
         if not hasattr(self, '_file'):
             self._openfile()
-        self._file.write(unicode(msg) + '\n')
+        self._file.write(str(msg) + '\n')
 
 def STDOUT(msg):
-    sys.stdout.write(unicode(msg) + '\n')
+    sys.stdout.write(str(msg) + '\n')
 
 def STDERR(msg):
     progression.preparer_interruption()
-    sys.stderr.write(unicode(msg) + '\n')
+    sys.stderr.write(str(msg) + '\n')
 
 def ERROR(msg):
-    raise Error(unicode(msg) + '\n')
+    raise Error(str(msg) + '\n')
 
 def setconsumer(keywords, consumer):
-    if isinstance(keywords, unicode):
-        keywords = tuple(map(None, keywords.split('.')))
+    if isinstance(keywords, str):
+        keywords = tuple(list(keywords.split('.')))
     elif hasattr(keywords, 'keywords'):
         keywords = keywords.keywords
     elif not isinstance(keywords, tuple):
-        raise TypeError(u"key %r is not a string or tuple" % (keywords,))
-    if consumer is not None and not callable(consumer):
+        raise TypeError("key %r is not a string or tuple" % (keywords,))
+    if consumer is not None and not isinstance(consumer, collections.Callable):
         if not hasattr(consumer, 'write'):
-            raise TypeError(u"%r should be None, callable or file-like"
+            raise TypeError("%r should be None, callable or file-like"
                             % (consumer,))
         consumer = File(consumer)
     Producer(keywords).set_consumer(consumer)
@@ -155,10 +156,10 @@ class Message(object):
         self.keywords = (processor.logger._ident, processor.name)
 
     def strcontent(self):
-        return ' '.join(map(unicode, self.content))
+        return ' '.join(map(str, self.content))
 
     def strprefix(self):
-        return '[%s] ' % ':'.join(map(unicode, self.keywords))
+        return '[%s] ' % ':'.join(map(str, self.keywords))
 
     def __unicode__(self):
         return self.strprefix() + self.strcontent()
@@ -188,11 +189,11 @@ class Logger(object):
         self._keywords = ()
 
     def set_sub(self, **kwargs):
-        for name, value in kwargs.iteritems():
+        for name, value in kwargs.items():
             self._setsub(name, value)
 
     def ensure_sub(self, **kwargs):
-        for name, value in kwargs.iteritems():
+        for name, value in kwargs.items():
             if not hasattr(self, name):
                 self._setsub(name, value)
 
@@ -267,7 +268,7 @@ class Progression:
             if (self.majeur is not None
                     and self.compteur != 0
                     and self.compteur % self.majeur == 0):
-                self.annoter(unicode(self.compteur))
+                self.annoter(str(self.compteur))
             else:
                 self.annoter('.')
         self.compteur += 1

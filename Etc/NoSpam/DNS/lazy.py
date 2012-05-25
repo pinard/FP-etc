@@ -1,6 +1,6 @@
 # $Id: lazy.py,v 1.1 2001/01/24 15:33:01 michael Exp $
 # routines for lazy people.
-import Base
+from . import Base
 
 def revlookup(name): 
     "convenience routine for doing a reverse lookup of an address"
@@ -18,7 +18,7 @@ def mxlookup(name):
     """
        
     a = Base.DnsRequest(name, qtype = 'mx').req().answers
-    l = map(lambda x:x['data'], a)
+    l = [x['data'] for x in a]
     l.sort()
     return l
 

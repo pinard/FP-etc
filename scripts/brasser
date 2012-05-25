@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Copyright © 1997, 98, 00, 01, 02, 03 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1997.
 
-u"""\
+"""\
 Shuffle input lines.
 
 Usage: shuffle [FICHIER]...

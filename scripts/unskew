@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Copyright © 1999, 2000, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1999.
 
-u"""\
+"""\
 Réajustement des estampilles d'une distribution.
 
 Usage: unskew [OPTION] [RÉPERTOIRE]...
@@ -43,7 +43,7 @@ def main(*arguments):
             delta = None
 
     if delta:
-        sys.stderr.write(u"ATTENTION: Ajustement de %d secondes\n" % delta)
+        sys.stderr.write("ATTENTION: Ajustement de %d secondes\n" % delta)
         if not dryrun:
             if arguments:
                 for argument in arguments:
@@ -51,7 +51,7 @@ def main(*arguments):
             else:
                 os.path.walk(os.getcwd(), adjust_walker, delta)
     else:
-        sys.stderr.write(u"Aucun ajustement requis\n")
+        sys.stderr.write("Aucun ajustement requis\n")
 
 def lurk_walker(latest, dirname, bases):
     for base in bases:

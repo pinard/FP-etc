@@ -3,27 +3,27 @@
 # Copyright © 1999, 2000, 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1998, 2001.
 
-u"""\
+"""\
 Schemes for packing files.
 """
 
 import os, re, tempfile, types
-import tools
+from . import tools
 
 forwarded_pattern = re.compile(
-    u"( and with the following headers:\n--+"
-    u"| undelivered message follows \n--+"
-    u"|--+ Below this line is a copy of the message."
-    u"|--+ Enclosed is a copy of the request I received."
-    u"|--+ Original Message Header --+"
-    u"|--+ Original [Mm]essage [Ff]ollows --+"
-    u"|--+ This is a copy of the message, including all the headers. --+"
-    u"|--+ [0-9]+ or so are included here."
-    u"|Last-Attempt-Date: .*"
-    u"|The headers from the E-mail are:"
-    u"|\\.\\. letter returned to .* \\.\\. \n--+"
-    u"|\\|--+ Message text follows: \\(body too large, truncated\\) --+\\|"
-    u"|your original message appears below"
+    "( and with the following headers:\n--+"
+    "| undelivered message follows \n--+"
+    "|--+ Below this line is a copy of the message."
+    "|--+ Enclosed is a copy of the request I received."
+    "|--+ Original Message Header --+"
+    "|--+ Original [Mm]essage [Ff]ollows --+"
+    "|--+ This is a copy of the message, including all the headers. --+"
+    "|--+ [0-9]+ or so are included here."
+    "|Last-Attempt-Date: .*"
+    "|The headers from the E-mail are:"
+    "|\\.\\. letter returned to .* \\.\\. \n--+"
+    "|\\|--+ Message text follows: \\(body too large, truncated\\) --+\\|"
+    "|your original message appears below"
     ')\n+'
     )
 
@@ -71,23 +71,23 @@ class Unpacker:
                         for archiver in all():
                             if archiver.check(buffer, name, hint):
                                 path = tempfile.mktemp()
-                                os.mkdir(path, 0700)
+                                os.mkdir(path, 0o700)
                                 os.chdir(path)
                                 directory_stack.append(path)
                                 self.checker.report(
-                                    u"NOTE: %s file %s -> %s/"
+                                    "NOTE: %s file %s -> %s/"
                                     % (archiver.name, base, path))
                                 try:
                                     if not archiver.unpack(buffer, name,
                                                            self.checker):
                                         self.checker.report(
-                                            u"WARNING: `%s' failed"
-                                            u" (while handling `%s')."
+                                            "WARNING: `%s' failed"
+                                            " (while handling `%s')."
                                             % (archiver.program, name))
                                 except Archiver.Program_Not_Found:
                                     self.checker.report(
-                                        u"WARNING: Don't know how to handle"
-                                        u" `%s' (archiver `%s' not found)."
+                                        "WARNING: Don't know how to handle"
+                                        " `%s' (archiver `%s' not found)."
                                         % (name, archiver.program))
             os.chdir(original_directory)
             self.fully_unpacked = True
@@ -98,10 +98,10 @@ class Unpacker:
             self.tmpdir = tempfile.mktemp()
             if self.run.keep:
                 import sys
-                sys.stderr.write(u"* Work files under `%s'.\n" % self.tmpdir)
+                sys.stderr.write("* Work files under `%s'.\n" % self.tmpdir)
             self.saved_tempdir = tempfile.tempdir
             tempfile.tempdir = self.tmpdir
-            os.mkdir(self.tmpdir, 0700)
+            os.mkdir(self.tmpdir, 0o700)
             text = self.message.as_string()
             file(os.path.join(self.tmpdir, 'original'), 'w').write(text)
             self.mime_parts = []
@@ -109,14 +109,14 @@ class Unpacker:
             try:
                 message = message_from_string(text)
             except Errors.MessageParseError:
-                self.checker.reject(u"Invalid message structure.")
+                self.checker.reject("Invalid message structure.")
                 self.mime_parts = []
             else:
                 self.mime_parts = list(message.walk())
             index = 0
             while index < len(self.mime_parts):
                 if len(self.mime_parts) > 30:
-                    self.checker.reject(u"Message has more than 30 parts.")
+                    self.checker.reject("Message has more than 30 parts.")
                     break
                 message = self.mime_parts[index]
                 mimetype = message.get_content_type()
@@ -206,8 +206,8 @@ class Unpacker:
 
 def all(instances=[]):
     if not instances:
-        for object in globals().itervalues():
-            if (type(object) is types.ClassType
+        for object in globals().values():
+            if (type(object) is type
                 and issubclass(object, Archiver)
                 and object not in (Archiver, Self_Extracting)
                 ):
@@ -228,7 +228,7 @@ class Archiver:
     def get_path(self):
         path = tools.get_program_path(self.program)
         if path is None:
-            raise self.Program_Not_Found, self.program
+            raise self.Program_Not_Found(self.program)
         return path
 
 class TNEF(Archiver):

@@ -3,7 +3,7 @@
 # Copyright © 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2003-06.
 
-u"""\
+"""\
 Ce module regroupe quelques déclarations utiles.
 """
 
@@ -35,9 +35,9 @@ class Chronometre:
         from time import time
         delta = time() - self.depart
         if self.titre:
-            info.chrono(u"%s : %.1f secondes." % (self.titre, delta))
+            info.chrono("%s : %.1f secondes." % (self.titre, delta))
         else:
-            info.chrono(u"%.1f secondes." % delta)
+            info.chrono("%.1f secondes." % delta)
 
 class Profilage:
     deja = False
@@ -65,10 +65,10 @@ class Profilage:
 
     def rapport(self):
         if self.profileur is None:
-            return u"\n   Pas de rapport: le profilage n'a pas eu lieu.\n"
+            return "\n   Pas de rapport: le profilage n'a pas eu lieu.\n"
         stats = self.Stats(self.profileur.getstats())
         stats.sort('inlinetime')
-        from StringIO import StringIO
+        from io import StringIO
         tampon = StringIO()
         tampon.write('\n')
         stats.pprint(20, tampon)

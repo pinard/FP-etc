@@ -24,7 +24,7 @@ and disabled, the enabled status is restored to what it was.
     def measure():
         wall_start = time.time()
         cpu_start = time.clock()
-        for counter in xrange(repeat):
+        for counter in range(repeat):
             test()
         return ((time.clock() - cpu_start) / repeat - calibration[0],
                 (time.time() - wall_start) / repeat - calibration[1])
@@ -34,7 +34,7 @@ and disabled, the enabled status is restored to what it was.
         loops = 100000
         wall_start = time.time()
         cpu_start = time.clock()
-        for counter in xrange(loops):
+        for counter in range(loops):
             calibrate()
         calibration.append((time.clock() - cpu_start) / loops)
         calibration.append((time.time() - wall_start) / loops)
@@ -76,23 +76,23 @@ and disabled, the enabled status is restored to what it was.
 
 def test():
     #from Local.benchmark import benchmark
-    list1 = range(0, 10000) + range(5000, 15000) + range(90000, 100000)
-    list2 = range(0, 2000) + range(40000, 50000) + range(95000, 105000)
+    list1 = list(range(0, 10000)) + list(range(5000, 15000)) + list(range(90000, 100000))
+    list2 = list(range(0, 2000)) + list(range(40000, 50000)) + list(range(95000, 105000))
 
     def comprehension():
-        dict([(k,1) for k in list1+list2]).keys()
+        list(dict([(k,1) for k in list1+list2]).keys())
 
     def zip_and_update():
-        result = dict(zip(list1, list1))
-        result.update(dict(zip(list2, list2)))
-        result.keys()
+        result = dict(list(zip(list1, list1)))
+        result.update(dict(list(zip(list2, list2))))
+        list(result.keys())
 
     def zip_with_none():
-        dict(zip(list1 + list2, [None] * (len(list1) + len(list2)))).keys()
+        list(dict(list(zip(list1 + list2, [None] * (len(list1) + len(list2))))).keys())
 
     def zip_with_self():
         both = list1 + list2
-        dict(zip(both, both)).keys()
+        list(dict(list(zip(both, both))).keys())
 
     benchmark(comprehension)
     benchmark(zip_and_update)

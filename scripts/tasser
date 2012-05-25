@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Copyright © 1990, 97, 98, 00, 02, 03 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, mai 1989.
 
-u"""\
+"""\
 Tasser une liste sur plusieurs colonnes si possible.
 
 Usage: tasse [OPTION]... [FICHIER]...

@@ -59,7 +59,7 @@ class Fixup(Traversal):
         text = element.text
         if text is None:
             # TODO: Se produisait avec ``xmartin``
-            print '** internal = None'
+            print('** internal = None')
             return
         text_sans = pretty_title(text)
         note = Note.registry.get(text)

@@ -23,10 +23,10 @@ be a list, or a list of values to display vertically one under another.
                 if isinstance(values, list):
                     for value in values:
                         widths[counter] = max(
-                                widths[counter], len(unicode(value)))
+                                widths[counter], len(str(value)))
                 else:
                     widths[counter] = max(
-                            widths[counter], len(unicode(values)))
+                            widths[counter], len(str(values)))
 
     # Produce the table itself.
     for line in table:
@@ -42,18 +42,18 @@ be a list, or a list of values to display vertically one under another.
             while more:
                 more = False
                 write('|')
-                for values, width in map(None, line, widths):
+                for values, width in zip(line, widths):
                     if values is None:
                         text = ''
                     elif isinstance(values, list):
                         if index < len(values):
-                            text = unicode(values[index])
+                            text = str(values[index])
                             if index + 1 < len(values):
                                 more = True
                         else:
                             text = ''
                     elif index == 0:
-                        text = unicode(values)
+                        text = str(values)
                     else:
                         text = ''
                     write(' %*s |' % (-width, text))

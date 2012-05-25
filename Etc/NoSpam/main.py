@@ -3,7 +3,7 @@
 # Copyright © 1998, 99, 00, 01, 02, 03 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1998.
 
-u"""\
+"""\
 This tool scans one or many messages for possible SPAM, and if a message
 is found to be SPAM-like, adds `X-Junk:' headers to explain what was found.
 
@@ -177,9 +177,9 @@ For more information, visit:
  
 # Main program.
 
-from __future__ import generators
+
 import os, sys
-import tools
+from . import tools
 
 PACKAGE = 'NoSpam'
 VERSION = '0.23'
@@ -227,11 +227,11 @@ class Main:
             elif option == '-m':
                 self.format = 'mailbox'
         if self.empty or self.update:
-            import dbhash
+            import dbm.bsd
             if self.empty:
-                map = dbhash.open(self.empty, 'n')
+                map = dbm.bsd.open(self.empty, 'n')
             else:
-                map = dbhash.open(self.update, 'c')
+                map = dbm.bsd.open(self.update, 'c')
             for argument in arguments:
                 for key in tools.map_keys(argument):
                     map[key] = tools.map_get(argument, key)
@@ -242,7 +242,7 @@ class Main:
                 if os.path.exists(name):
                     self.nospamrc = name
                 else:
-                    write(u"* Missing configuration file")
+                    write("* Missing configuration file")
             self.read_nospamrc(self.nospamrc)
             if arguments:
                 for argument in arguments:
@@ -333,18 +333,18 @@ class Checker:
         self.kill_diagnostics = []
         try:
             if message:
-                import checks
+                from . import checks
                 checks.Check(message, run, self)
             else:
-                self.reject(u"Invalid message structure.")
+                self.reject("Invalid message structure.")
         except Checker.Map_Exception:
             pass
         write = sys.stdout.write
         if run.debug:
             diagnostics = (
-                [u"ACCEPT: " + diagnostic
+                ["ACCEPT: " + diagnostic
                  for diagnostic in self.accept_diagnostics]
-                + [u"KILL: " + diagnostic
+                + ["KILL: " + diagnostic
                    for diagnostic in self.kill_diagnostics]
                 + self.reject_diagnostics + self.report_diagnostics)
             if diagnostics:
@@ -381,7 +381,7 @@ class Checker:
     def get_value(self, map_name, key, diagnostic):
         value = tools.map_get(map_name, key)
         if value == 'ACCEPT':
-            diagnostic = u"`%s' by `%s'." % (key, map_name)
+            diagnostic = "`%s' by `%s'." % (key, map_name)
             if diagnostic not in self.accept_diagnostics:
                 self.accept_diagnostics.append(diagnostic)
             if not run.debug:

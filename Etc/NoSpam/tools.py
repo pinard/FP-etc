@@ -3,7 +3,7 @@
 # Copyright © 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2001.
 
-u"""\
+"""\
 Miscellaneous service routines.
 """
 
@@ -12,9 +12,9 @@ import os, re, sys
 ## Finding words in text.
 
 def find_words(text,
-               regexp=re.compile(u"[^-a-z\300-\377]*"
-                                 u"([-a-z\300-\377]+)"
-                                 u"[^-a-z\300-\377]*$")):
+               regexp=re.compile("[^-a-z\300-\377]*"
+                                 "([-a-z\300-\377]+)"
+                                 "[^-a-z\300-\377]*$")):
     words = []
     for word in text.lower().split():
         if len(word) < 25:
@@ -32,11 +32,11 @@ def map_get(map_name, key):
         # I would prefer "return read_cached_map(map_name).get(key)", but
         # this is not accepted by `dbhash'.  So let's write it the long way.
         map = read_cached_map(map_name)
-        if map.has_key(key):
+        if key in map:
             return map[key]
 
 def map_keys(map_name):
-    return read_cached_map(map_name).keys()
+    return list(read_cached_map(map_name).keys())
 
 def read_cached_map(map_name):
     map = map_cache.get(map_name)
@@ -69,28 +69,28 @@ def read_cached_map(map_name):
                     or fields[1] not in ('OK',  'ACCEPT', 'REJECT', 'KILL',
                                          'RELAY')
                     ):
-                    sys.stderr.write(u"Dubious `%s' line: %s" % (name, line))
+                    sys.stderr.write("Dubious `%s' line: %s" % (name, line))
                 else:
                     key, value = fields
                     key = fields[0].lower()
-                    if map.has_key(key):
+                    if key in map:
                         sys.stderr.write(
-                            u"In `%s', `%s' reset from `%s' to `%s'\n"
+                            "In `%s', `%s' reset from `%s' to `%s'\n"
                             % (name, key, map[key], fields[1]))
                     map[key] = fields[1]
         elif method == 'hash':
-            import dbhash
-            map = map_cache[map_name] = dbhash.open(
+            import dbm.bsd
+            map = map_cache[map_name] = dbm.bsd.open(
                 os.path.expanduser(name), 'r')
         else:
-            assert False, u"Unknown method for `%s'" % map_name
+            assert False, "Unknown method for `%s'" % map_name
     return map
 
 ## Executing system commands.
 
 def get_program_path(name,
                      search_path=os.environ['PATH'].split(':'), cache={}):
-    if cache.has_key(name):
+    if name in cache:
         return cache[name]
     for directory in search_path:
         path = os.path.join(directory, name)
@@ -101,7 +101,7 @@ def get_program_path(name,
 
 def run_program(command, write):
     write('\n%s--->\n' % ('-' * 60))
-    write(u"Running %s\n" % command)
+    write("Running %s\n" % command)
     process = os.popen(command)
     write(process.read())
     status = process.close()
@@ -109,6 +109,6 @@ def run_program(command, write):
         status = 0
     else:
         status = status >> 8
-    write(u"Returned %d\n" % status)
+    write("Returned %d\n" % status)
     write('%s---<\n' % ('-' * 60))
     return status

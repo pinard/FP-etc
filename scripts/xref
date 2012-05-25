@@ -1,9 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 # Copyright © 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2002-12.
 
-u"""\
+"""\
 Table de références pour les classes et méthodes Python d'une hiérarchie.
 
 Usage: xref [OPTION]... RÉPERTOIRE...
@@ -53,7 +53,7 @@ Si `-g' est spécifié ou présumé, alors `-n', `-p' et `-r' sont ignorés.
 __metaclass__ = type
 
 couleurs = 'lavenderblush2', 'lightyellow', 'ivory'
-MODULE, CLASS, DEF = range(3)
+MODULE, CLASS, DEF = list(range(3))
 
 class Main:
 
@@ -224,14 +224,14 @@ class Main:
     def rapporter_declarations_selon_identificateur(self, write):
         # Rapport en ordre alphabétique.
         table = self.declarations_selon_position
-        for (fichier, ligne), noeud in table.iteritems():
+        for (fichier, ligne), noeud in table.items():
             centre = len(fichier.nom) + len(str(ligne))
         centre += 3
         table = self.declarations_selon_identificateur
-        items = table.items()
+        items = list(table.items())
         items.sort()
         fichier_precedent = None
-        write(u'\nClasses et méthodes en ordre alphabétique.\n\n')
+        write('\nClasses et méthodes en ordre alphabétique.\n\n')
         for identificateur, liste in items:
             liste.sort()
             gauche = identificateur
@@ -260,14 +260,14 @@ class Main:
     def rapporter_declarations_selon_position(self, write):
         # Rapport en ordre textuel.
         table = self.declarations_selon_position
-        for (fichier, ligne), noeud in table.iteritems():
+        for (fichier, ligne), noeud in table.items():
             centre = len(fichier.nom) + len(str(ligne))
         centre += 3
-        items = table.items()
+        items = list(table.items())
         items.sort()
         fichier_precedent = None
         fragments_precedent = []
-        write(u'\nClasses et méthodes en ordre textuel.\n\n')
+        write('\nClasses et méthodes en ordre textuel.\n\n')
         for (fichier, ligne), noeud in items:
             if fichier != fichier_precedent:
                 nom_fichier = fichier.nom
@@ -305,7 +305,7 @@ class Main:
         # Calculer l'imbrication des noeuds.
         registre = Noeud.registre
         modules = []
-        for fragments, noeud in registre.items():
+        for fragments, noeud in list(registre.items()):
             while fragments:
                 fragments = fragments[:-1]
                 if fragments:
@@ -336,14 +336,14 @@ class Main:
         for noeud in modules:
             noeud.produire_pour_graphviz(write)
         # Produire les flèches de synonymie.
-        for liste in self.declarations_selon_identificateur.itervalues():
+        for liste in self.declarations_selon_identificateur.values():
             precedent = None
             for noeud in liste:
                 if precedent is not None:
                     write('  %s -> %s [style=dotted];\n' % (precedent, noeud))
                 precedent = noeud
         # Produire les flèches de références.
-        for noeud in registre.itervalues():
+        for noeud in registre.values():
             sources = {}
             for source, lineno in noeud.references:
                 if source is not None:
@@ -351,7 +351,7 @@ class Main:
                         sources[source].append(lineno)
                     else:
                         sources[source] = [lineno]
-            for source, linenos in sources.iteritems():
+            for source, linenos in sources.items():
                 write('  %s -> %s [label="%s"];\n'
                       % (source, noeud, ','.join(map(str, linenos))))
         write('}\n')

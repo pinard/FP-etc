@@ -3,7 +3,7 @@
 # Copyright © 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2003-10.
 
-u"""\
+"""\
 Vérifier et critiquer les fichiers et sources Python présents.
 
 pypoux [OPTION]... [ARGUMENT]...
@@ -50,7 +50,7 @@ class Main:
                 if fichier != courant:
                     courant = marge = fichier
                 write('%d. %s %s\n'
-                      % (compteur + 1, marge, test.im_func.__name__))
+                      % (compteur + 1, marge, test.__func__.__name__))
                 marge = ' ' * len(marge)
             try:
                 test(fichier)
@@ -94,34 +94,34 @@ class Test_Poux:
     def verifier_tabs(self, fichier):
         self.garantir_tampon(fichier)
         self.position = self.tampon.find('\t')
-        assert self.position < 0, self.rapporter(u"Caractère TAB.")
+        assert self.position < 0, self.rapporter("Caractère TAB.")
 
     def ligne_blanche_debut(self, fichier):
         self.garantir_tampon(fichier)
         self.position = 0
         assert not self.tampon.startswith('\n'), (
-                self.rapporter(u"Ligne blanche au début."))
+                self.rapporter("Ligne blanche au début."))
 
     def ligne_blanche_fin(self, fichier):
         self.garantir_tampon(fichier)
         self.position = len(self.tampon)
         assert not self.tampon.endswith('\n\n'), (
-                self.rapporter(u"Ligne blanche à la fin."))
+                self.rapporter("Ligne blanche à la fin."))
 
     def blancs_suffixes(self, fichier):
         self.garantir_tampon(fichier)
         self.position = self.tampon.find(' \n')
-        assert self.position < 0, self.rapporter(u"Espace blanc suffixe.")
+        assert self.position < 0, self.rapporter("Espace blanc suffixe.")
 
     def double_ligne_blanche(self, fichier):
         self.garantir_tampon(fichier)
         self.position = self.tampon.find('\n\n\n')
-        assert self.position < 0, self.rapporter(u"Double ligne blanche.")
+        assert self.position < 0, self.rapporter("Double ligne blanche.")
 
     def commentaire_vide(self, fichier):
         self.garantir_tampon(fichier)
         self.position = self.tampon.find('#\n')
-        assert self.position < 0, self.rapporter(u"Commentaire vide.")
+        assert self.position < 0, self.rapporter("Commentaire vide.")
 
     def ligne_blanche_manquante(self, fichier):
         self.garantir_tampon(fichier)
@@ -134,11 +134,11 @@ class Test_Poux:
                     if (len(mots) == 1 and mots[0][0] == '@'
                             and mots[0][1].isalpha()):
                         assert blanche, self.rapporter(
-                            u"Ligne blanche manquante.")
+                            "Ligne blanche manquante.")
                         blanche = True
                     elif mots and mots[0] in ('class', 'def'):
                         assert blanche, self.rapporter(
-                            u"Ligne blanche manquante.")
+                            "Ligne blanche manquante.")
                         blanche = False
                     else:
                         blanche = False
@@ -157,7 +157,7 @@ class Test_Poux:
         self.position = self.tampon.find('# -*- coding: UTF-8 -*-\n')
         if self.position < 0:
             self.position = 0
-            assert False, self.rapporter(u"Biscuit coding manquant.")
+            assert False, self.rapporter("Biscuit coding manquant.")
 
     def metaclasse_manquant(self, fichier):
         self.garantir_tampon(fichier)
@@ -166,14 +166,14 @@ class Test_Poux:
         self.position = self.tampon.find('__metaclass__ = type\n')
         if self.position < 0:
             self.position = 0
-            assert False, self.rapporter(u"Méta-classe n'est pas `type'.")
+            assert False, self.rapporter("Méta-classe n'est pas `type'.")
 
     ## Syntaxe Python correcte.
 
     def chaines_unicode(self, fichier):
         import token, tokenize
         # Attention: cStringIO ne traite pas Unicode.  Grrr!
-        from StringIO import StringIO
+        from io import StringIO
         erreur = None
         self.garantir_tampon(fichier)
         # Noter la position de chaque ligne.
@@ -195,7 +195,7 @@ class Test_Poux:
                 self.position = self.lignes[srow] + scol
                 if categ != token.STRING:
                     if chaine_vide is not None:
-                        diagnostic = self.rapporter(u"Chaîne vide non Unicode.")
+                        diagnostic = self.rapporter("Chaîne vide non Unicode.")
                         if erreur is None:
                             erreur = diagnostic
                         chaine_vide = None
@@ -215,12 +215,12 @@ class Test_Poux:
                 if jeton in ('\'\'', '""'):
                     chaine_vide = jeton
                     continue
-                diagnostic = self.rapporter(u"Chaîne `%s' non Unicode." % jeton)
+                diagnostic = self.rapporter("Chaîne `%s' non Unicode." % jeton)
                 if erreur is None:
                     erreur = diagnostic
                 self.position = self.lignes[erow] + ecol
-        except tokenize.TokenError, exception:
-            assert False, self.rapporter(u"Erreur de jeton: %s." % exception)
+        except tokenize.TokenError as exception:
+            assert False, self.rapporter("Erreur de jeton: %s." % exception)
         assert erreur is None, erreur
 
     def verifier_syntaxe(self, fichier):
@@ -234,8 +234,8 @@ class Test_Poux:
             py_compile.compile(fichier.encode('UTF-8'),
                                os.path.join(run.repertoire, pyc),
                                doraise=True)
-        except py_compile.PyCompileError, exception:
-            sys.stdout.write(unicode(exception))
+        except py_compile.PyCompileError as exception:
+            sys.stdout.write(str(exception))
             assert False
 
     ## Services.
@@ -287,7 +287,7 @@ def est_fichier_acceptable(base):
         return False
     if os.path.splitext(base)[1] in (
             # REVOIR: .c66 ne devrait pas être là!!
-            '.703', '.c66', u'défi', '.doc', '.gif', '.jpg', '.pdf',
+            '.703', '.c66', 'défi', '.doc', '.gif', '.jpg', '.pdf',
             '.pickle', '.png', '.pyc', '.tmp', '.zip'):
         return False
     return True

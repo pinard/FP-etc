@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # François Pinard <pinard@iro.umontreal.ca>, 1991, 2004.
 # D'après Tom Christiansen <tchrist@convex.com>, alt.sources 1990-12-08.
 
-u"""\
+"""\
 Renommer les fichiers selon un thème de transformation fourni.
 
 Usage: rename [OPTION]... TRANSFORMATION FICHIER...
@@ -45,14 +45,14 @@ def main(*arguments):
         try:
             _ = eval(operation)
         except SyntaxError:
-            exec operation
+            exec(operation)
         if _ != argument:
             if verbeux:
                 sys.stderr.write('%s -> %s\n' % (argument, _))
             assert not os.path.exists(_), (argument, _)
             try:
                 os.rename(argument, _)
-            except IOError, diagnostic:
+            except IOError as diagnostic:
                 sys.stderr.write('* %s: %s\n' % (argument, diagnostic))
 
 if __name__ == '__main__':

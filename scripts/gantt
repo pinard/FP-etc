@@ -1,9 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 # Copyright © 1985, 2004 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1985-01, 2004-12.
 
-u"""\
+"""\
 Gantt - Éditeur de diagrammes de Gantt.
 
 Usage: gantt [OPTION]... [FICHIER]...
@@ -39,7 +39,7 @@ une liste de nombres entiers séparés par des virgules, ou une virgule seule.
 
 # REVOIR: Implanter les dépendances sur des sous-arbres complets.
 
-from __future__ import division
+
 
 __metaclass__ = type
 import bisect, codecs, datetime, math, os, re, sys, time
@@ -49,8 +49,8 @@ from Etc.Allout import allout
 largeur_marges = 12
 
 # Jours de la semaine.
-semaine = (u"Lundi", u"Mardi", u"Mercredi", u"Jeudi", u"Vendredi",
-           u"Samedi", u"Dimanche")
+semaine = ("Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi",
+           "Samedi", "Dimanche")
 
 # Pour toute erreur durant l'analyse ou l'exécution.
 class Erreur(Exception):
@@ -103,7 +103,7 @@ class Main:
                 if valeur == ',':
                     tranches = []
                 else:
-                    tranches = map(int, valeur.split(','))
+                    tranches = list(map(int, valeur.split(',')))
                 tranches.sort()
                 assert tranches[0] > 0, tranches
                 assert tranches[-1] < 24, tranches
@@ -189,12 +189,12 @@ class Projet:
         if len(fichiers) < 2:
             if len(fichiers) == 0:
                 if run.option_verbeuse:
-                    sys.stderr.write(u"Lecture de <stdin>...\n")
+                    sys.stderr.write("Lecture de <stdin>...\n")
                 structure = allout.read()
                 run.titres.append(structure[0] or '<stdin>')
             else:
                 if run.option_verbeuse:
-                    sys.stderr.write(u"Lecture de %s...\n" % fichiers[0])
+                    sys.stderr.write("Lecture de %s...\n" % fichiers[0])
                 structure = allout.read(fichiers[0])
                 run.titres.append(structure[0] or fichiers[0])
             activites = self.digerer(structure)
@@ -207,7 +207,7 @@ class Projet:
             paires = []
             for compteur, fichier in enumerate(fichiers):
                 if run.option_verbeuse:
-                    sys.stderr.write(u"Lecture de %s...\n" % fichier)
+                    sys.stderr.write("Lecture de %s...\n" % fichier)
                 structure = allout.read(fichier)
                 run.titres.append(structure[0] or fichier)
                 activites = self.digerer(structure, [fichier])
@@ -217,7 +217,7 @@ class Projet:
                 for ordinal_parcours, activite in enumerate(activites):
                     paires.append(((ordinal_parcours, compteur), activite))
             if run.option_verbeuse:
-                sys.stderr.write(u"Parallélisation...\n")
+                sys.stderr.write("Parallélisation...\n")
             paires.sort()
             activites = [paire[1] for paire in paires]
         self.finaliser_projet(activites)
@@ -240,7 +240,7 @@ class Projet:
             options_activite = run.options_activite
         if isinstance(structure, list) and len(structure) == 1:
             structure = structure[0]
-        if isinstance(structure, unicode):
+        if isinstance(structure, str):
             if structure in ('', 'vim:ft=allout', 'vim: ft=allout'):
                 return []
             fichier = structure
@@ -276,18 +276,18 @@ class Projet:
                     options['description'] = description + [gauche.rstrip()]
                     activite = self.digerer_activite(options,
                                                      ': ' + droite.lstrip())
-                    activite.executants = self.executant_local.values()
+                    activite.executants = list(self.executant_local.values())
                 else:
                     options['description'] = description + [structure]
-                    activite = apply(Activite, (), options)
-                    activite.executants = self.executant_local.values()
+                    activite = Activite(*(), **options)
+                    activite.executants = list(self.executant_local.values())
                 if run.option_y_compris_termine or activite.fraction < 1.0:
                     return [activite]
                 return []
         if structure[0]:
             if structure[0].startswith(': '):
                 if '=@' in structure[0]:
-                    raise Erreur(u"Options implicites `%s' invalides."
+                    raise Erreur("Options implicites `%s' invalides."
                                  % structure[0])
                 options_activite = dict(options_activite)
                 # DIGÉRER_ACTIVITÉ n'est exécutée que pour son effet de bord
@@ -358,14 +358,14 @@ class Projet:
                 try:
                     info = time.strptime(match.group(2), '%Y-%m-%d')
                 except ValueError:
-                    raise Erreur(u"Date `%s' invalide." % match.group(2))
+                    raise Erreur("Date `%s' invalide." % match.group(2))
                 date = datetime.datetime(*info[:3])
                 if  match.group(3):
                     heure = match.group(3).lstrip()
                     try:
                         time.strptime(heure, '%H:%M')
                     except ValueError:
-                        raise Erreur(u"Heure `%s' invalide." % heure)
+                        raise Erreur("Heure `%s' invalide." % heure)
                     options['description'].append(heure)
                     date += datetime.timedelta(
                         bisect.bisect(run.points_de_tranche, heure)
@@ -414,7 +414,7 @@ class Projet:
                 try:
                     datetime.date(annee or 2001, mois or 1, jour or 1)
                 except ValueError:
-                    raise Erreur(u"Gabarit de date `%s' invalide."
+                    raise Erreur("Gabarit de date `%s' invalide."
                                  % match.group(1))
                 if match.group(5):
                     heure = match.group(5).lstrip()
@@ -441,7 +441,7 @@ class Projet:
                     continue
                 executant = self.executant_local.get(responsable)
                 if executant is None:
-                    raise Erreur(u"Responsable `%s' non déclaré." % responsable)
+                    raise Erreur("Responsable `%s' non déclaré." % responsable)
                 options['responsable'] = executant
                 continue
             match = re.match(r'\*(%s)\s+' % gabarit_nombre, texte)
@@ -450,18 +450,18 @@ class Projet:
                 if 0. <= fraction <= 1.:
                     options['fraction'] = fraction
                     continue
-            raise Erreur(u"Clause `%s' non reconnue." % texte)
+            raise Erreur("Clause `%s' non reconnue." % texte)
         # Valider la déclaration de l'activité.
-        activite = apply(Activite, (), options)
+        activite = Activite(*(), **options)
         if 'maximum' in options and options['maximum'] is None:
             activite.maximum = (activite.minimum
                                 + datetime.timedelta(activite.fixe))
         if conge:
             if activite.minimum is None:
-                raise Erreur(u"Date requise pour congé %s." % activite)
+                raise Erreur("Date requise pour congé %s." % activite)
             if (activite.duree != 0
                   or activite.fixe != run.tranches_par_jour):
-                raise Erreur(u"Durée invalide pour congé %s." % activite)
+                raise Erreur("Durée invalide pour congé %s." % activite)
             self.conges.append(activite.minimum)
             return
         for preseance in preseances:
@@ -469,7 +469,7 @@ class Projet:
                 if preseance[compteur] is None:
                     preseance[compteur] = activite
             self.preseances.append(preseance)
-        activite.executants = self.executant_local.values()
+        activite.executants = list(self.executant_local.values())
         return activite
 
     def digerer_executant(self, options, texte):
@@ -493,19 +493,19 @@ class Projet:
                 if vitesse > 0.:
                     options['vitesse'] = vitesse
                     continue
-            raise Erreur(u"Clause `%s' non reconnue." % texte)
-        return apply(Executant, (), options)
+            raise Erreur("Clause `%s' non reconnue." % texte)
+        return Executant(*(), **options)
 
     def finaliser_projet(self, activites):
         if run.option_verbeuse:
-            sys.stderr.write(u"Finalisation...\n")
+            sys.stderr.write("Finalisation...\n")
         # Fixer le calendrier.
         self.tranche_maintenant = self.tranche_selon_date(
             datetime.datetime.today())
         # Préparer un exécutant pour les activités qui n'en ont pas.
         options = dict(run.options_executant)
-        options['description'] = [u"Exécutant"]
-        executant = apply(Executant, (), options)
+        options['description'] = ["Exécutant"]
+        executant = Executant(*(), **options)
         self.executant_global[None] = executant
         # Finaliser les activités.
         codes = set()
@@ -513,7 +513,7 @@ class Projet:
             activite.ordinal_parcours = compteur
             if activite.code is not None:
                 if activite.code in codes:
-                    raise Erreur(u"Activité `%s' répétée." % activite.code)
+                    raise Erreur("Activité `%s' répétée." % activite.code)
                 codes.add(activite.code)
             if activite.minimum is None:
                 activite.minimum = 0
@@ -526,7 +526,7 @@ class Projet:
             self.activites.append(activite)
         for preseance in self.preseances:
             for compteur, libelle in enumerate(preseance):
-                if isinstance(libelle, unicode):
+                if isinstance(libelle, str):
                     libelle = libelle[:run.option_largeur_libelle]
                     for curseur in activites:
                         if libelle == curseur.code:
@@ -539,21 +539,21 @@ class Projet:
                             if (description[:run.option_largeur_libelle]
                                   == libelle):
                                 if activite:
-                                    raise Erreur(u"Activité `%s' ambiguë."
+                                    raise Erreur("Activité `%s' ambiguë."
                                                  % libelle)
                                 activite = curseur
                         if not activite:
-                            raise Erreur(u"Activité `%s' inconnue." % libelle)
+                            raise Erreur("Activité `%s' inconnue." % libelle)
                         preseance[compteur] = activite
             if preseance[0].recurrence is not None:
-                raise Erreur(u"Ne peut dépendre de `%s' récurrente."
+                raise Erreur("Ne peut dépendre de `%s' récurrente."
                              % preseance[0])
             preseance[1].dependances.append(preseance[0])
         self.activites.sort()
 
     def ordonnancer(self):
         if run.option_verbeuse:
-            sys.stderr.write(u"Ordonnancement...\n")
+            sys.stderr.write("Ordonnancement...\n")
         # Ordonnancer toutes les activités non récurrentes, tout en
         # préparant le corps des diagrammes.
         for activite in self.activites:
@@ -582,27 +582,27 @@ class Projet:
 
     def produire_tableau_attributions(self, write):
         if run.option_verbeuse:
-            sys.stderr.write(u"Tableau des attributions...\n")
+            sys.stderr.write("Tableau des attributions...\n")
         write('\n'
-              u"+-%s-+-%s-+-------+------------+\n"
-              u"| %s | %s | J.-p. |  Date fin  |\n"
-              u"+-%s-+-%s-+-------+------------+\n"
+              "+-%s-+-%s-+-------+------------+\n"
+              "| %s | %s | J.-p. |  Date fin  |\n"
+              "+-%s-+-%s-+-------+------------+\n"
               % ('-' * run.option_largeur_libelle,
                  '-' * run.option_largeur_libelle,
-                 u'Activité'.ljust(run.option_largeur_libelle),
+                 'Activité'.ljust(run.option_largeur_libelle),
                  'Responsable'.ljust(run.option_largeur_libelle),
                  '-' * run.option_largeur_libelle,
                  '-' * run.option_largeur_libelle))
         total = 0.
-        paires = [(unicode(activite), activite)
+        paires = [(str(activite), activite)
                   for activite in self.activites
-                  if not (unicode(activite).startswith('%')
-                          or unicode(activite.responsable).startswith('%'))]
+                  if not (str(activite).startswith('%')
+                          or str(activite.responsable).startswith('%'))]
         paires.sort()
         for libelle, activite in paires:
             write('| %*s | %*s | %5.2f | %s |\n'
                   % (-run.option_largeur_libelle, libelle,
-                     -run.option_largeur_libelle, unicode(activite.responsable),
+                     -run.option_largeur_libelle, str(activite.responsable),
                      activite.duree + activite.fixe,
                      self.date_selon_tranche(activite.fin - 1).isoformat()))
             total += activite.duree + activite.fixe
@@ -620,9 +620,9 @@ class Projet:
     def produire_diagramme(self, write, mode_activites):
         if run.option_verbeuse:
             if mode_activites:
-                sys.stderr.write(u"Diagramme des activités...\n")
+                sys.stderr.write("Diagramme des activités...\n")
             else:
-                sys.stderr.write(u"Diagramme des exécutants...\n")
+                sys.stderr.write("Diagramme des exécutants...\n")
         # Possiblement produire les titres avant le diagramme.
         if not (run.option_sans_description
                 or run.option_intercaler_descriptions):
@@ -632,7 +632,7 @@ class Projet:
         # Planifier l'ordre des lignes et le libellé pour chacune.
         triplets = []
         if mode_activites:
-            largeur_ordinal = len(unicode(Activite.ordinal_creation))
+            largeur_ordinal = len(str(Activite.ordinal_creation))
             for activite in self.activites:
                 code = activite.code or '%.*d' % (largeur_ordinal,
                                                   activite.ordinal_creation)
@@ -650,12 +650,12 @@ class Projet:
                          activite.ordinal_creation, activite.maximum),
                         code, activite))
         else:
-            for executant in self.executant_global.itervalues():
+            for executant in self.executant_global.values():
                 if executant.code.startswith('%'):
                     continue
                 triplets.append((executant.code, executant.code, executant))
         if not triplets:
-            sys.stdout.write(u"Diagramme vide.\n")
+            sys.stdout.write("Diagramme vide.\n")
             return
         triplets.sort()
 
@@ -663,9 +663,9 @@ class Projet:
             write('\n'
                   '+-%s-+-%s-+\n'
                   % ('-' * largeur_libelle, ''.join(regle)))
-            for compteur, (chiffre, date) in enumerate(zip(
-                  unicode(self.date_selon_tranche(tranche_debut).year),
-                  dates)):
+            for compteur, (chiffre, date) in enumerate(list(zip(
+                  str(self.date_selon_tranche(tranche_debut).year),
+                  dates))):
                 if jour is not None and compteur == 1:
                     marge = (semaine[(self.depart + datetime.timedelta(jour))
                                      .weekday()]
@@ -703,7 +703,7 @@ class Projet:
                                // run.tranches_par_jour * run.tranches_par_jour)
         if largeur_en_tranches < 10:
             raise Erreur(
-                u"Option `-mN' ou `-tN' trop grande, ou `-wN' trop petite.")
+                "Option `-mN' ou `-tN' trop grande, ou `-wN' trop petite.")
         # Imprimer les blocs du diagramme, tour à tour, chacun allant de
         # sons propre TRANCHE_DÉBUT à son propre TRANCHE_FIN.
         description = {}
@@ -764,8 +764,8 @@ class Projet:
                         fond1.append(':')
                         fond2.append(':')
                     elif date.weekday() == 6:
-                        regle.append(u'·')
-                        fond1.append(u'·')
+                        regle.append('·')
+                        fond1.append('·')
                         fond2.append(' ')
                     else:
                         regle.append('-')
@@ -875,7 +875,7 @@ class Activite:
     def __init__(self, **definitions):
         Activite.ordinal_creation += 1
         self.ordinal_creation = Activite.ordinal_creation
-        for nom, valeur in definitions.iteritems():
+        for nom, valeur in definitions.items():
             setattr(self, nom, valeur)
         self.dependances = []
         self.diagramme = {}
@@ -890,7 +890,7 @@ class Activite:
         # plus nombreuses, les délais les plus petits, l'ordre de parcours
         # parallélisé.  Une échéance absente équivaut à une échéance infinie.
         # Un délai absent est considéré nul.
-        return (cmp(self.maximum or sys.maxint, other.maximum or sys.maxint)
+        return (cmp(self.maximum or sys.maxsize, other.maximum or sys.maxsize)
                 or cmp(len(self.dependances), len(other.dependances))
                 or cmp(self.minimum, other.minimum)
                 or cmp(self.ordinal_parcours, other.ordinal_parcours))
@@ -903,8 +903,8 @@ class Activite:
             for dependance in self.dependances:
                 if dependance in incomplets:
                     raise Erreur(
-                        u"Boucle de dépendances parmi: %s."
-                        % ', '.join([unicode(activite)
+                        "Boucle de dépendances parmi: %s."
+                        % ', '.join([str(activite)
                                     for activite in incomplets]))
                 if dependance.debut is None:
                     dependance.decider_cedule(incomplets)
@@ -1073,7 +1073,7 @@ class Executant:
     disponibles = None
 
     def __init__(self, **definitions):
-        for nom, valeur in definitions.iteritems():
+        for nom, valeur in definitions.items():
             setattr(self, nom, valeur)
         self.diagramme = {}
         self.disponibles = set()

@@ -11,7 +11,7 @@ Usage: from Etc.UniVim import vim
 
 __metaclass__ = type
 
-charset = u'UTF-8'
+charset = 'UTF-8'
 
 class Wrapper:
     import vim
@@ -48,7 +48,7 @@ class Buffer(Wrapper):
         self.object[low:high] = [value.encode(charset) for value in sequence]
 
     def append(self, value):
-        if isinstance(value, unicode):
+        if isinstance(value, str):
             self.object.append(value.encode(charset))
         elif isinstance(value, list):
             self.object.append([text.encode(charset) for text in value])

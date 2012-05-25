@@ -3,7 +3,7 @@
 # Copyright © 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2001.
 
-u"""\
+"""\
 Un fichier `allout', pour lequel existe un mode Emacs, permet de représenter
 une organisation hiérarchique de l'information contenue, avec la possibilité
 d'un court libellé au sommet de chaque hiérarchie ou sous-hiérarchie.  Le
@@ -34,7 +34,7 @@ Report bugs or suggestions to François Pinard <pinard@iro.umontreal.ca>.
 __metaclass__ = type
 
 import sys
-string = str, unicode
+string = str, str
 
 class UsageError(Exception):
     pass
@@ -60,18 +60,18 @@ def read(input=sys.stdin):
         # au-delà ont terminé leur croissance: on peut donc immédiatement
         # imbriquer ces structures dans l'arbre en construction.
         while len(stack) < level:
-            stack.append([u''])
+            stack.append([''])
         while len(stack) > level:
             structure = stack.pop()
-            while len(structure) > 1 and structure[-1] == u'':
+            while len(structure) > 1 and structure[-1] == '':
                 del structure[-1]
-            if len(structure) == 2 and structure[0] == u'':
+            if len(structure) == 2 and structure[0] == '':
                 structure = structure[1]
             else:
                 margin = None
                 for line in structure[1:]:
                     if isinstance(line, string) and line:
-                        count = re.match(u' *', line).end(0)
+                        count = re.match(' *', line).end(0)
                         if margin is None or count < margin:
                             margin = count
                 if margin is not None:
@@ -87,7 +87,7 @@ def read(input=sys.stdin):
     import re
     stack = []
     for line in buffer.splitlines():
-        match = re.match(ur'(\*|\. *[-*+@#.:,;])', line)
+        match = re.match(r'(\*|\. *[-*+@#.:,;])', line)
         if match:
             level = match.end(0)
             collapse()
@@ -102,7 +102,7 @@ def read(input=sys.stdin):
                 stack.append([line])
     level = 1
     collapse()
-    if len(stack[0]) == 2 and stack[0][0] == u'':
+    if len(stack[0]) == 2 and stack[0][0] == '':
         stack[0] = stack[0][1]
     return stack[0]
 
@@ -111,19 +111,19 @@ def write(structure, output=sys.stdout.write):
     # écrit sur OUTPUT, qui doit être une fonction d'écriture ou encore, le
     # nom d'un fichier à créer.
     if isinstance(output, string):
-        write_recursive(structure, file(output, u'w').write, 0)
+        write_recursive(structure, file(output, 'w').write, 0)
     else:
         write_recursive(structure, output, 0)
 
 def write_recursive(structure, write, level):
     if isinstance(structure, string):
-        write(u'%*s %s\n' % (level, u'', structure))
+        write('%*s %s\n' % (level, '', structure))
         return
     if level == 0:
-        write(u'* %s\n' % structure[0])
+        write('* %s\n' % structure[0])
     elif level == 1:
-        write(u'.. %s\n' % structure[0])
+        write('.. %s\n' % structure[0])
     else:
-        write(u'.%*s %s\n' % (level, u'.:,;'[(level-1) % 4], structure[0]))
+        write('.%*s %s\n' % (level, '.:,;'[(level-1) % 4], structure[0]))
     for branch in structure[1:]:
         write_recursive(branch, write, level+1)

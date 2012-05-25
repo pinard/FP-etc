@@ -1,12 +1,12 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 
 # Code adapté en partant de:
 #   http://joker.linuxstuff.pl/files/rest2trac-rev14.tar.gz
 #   Author: Michal Kwiatkowski
 #   Contact: ruby@joker.linuxstuff.pl
 
-u"""\
+"""\
 A minimal front end to the Docutils Publisher, producing Trac Wiki output.
 """
 
@@ -26,7 +26,7 @@ class TracWriter(writers.Writer):
         self.output = self.visitor.astext()
 
 class TracTranslator(nodes.NodeVisitor):
-    u"""\
+    """\
 Write output in Trac Wiki format.
 
 References:
@@ -78,11 +78,11 @@ References:
         return ''.join(self.content)
 
     def unknown_visit(self, node):
-        raise Exception(u"Unknown visit on line %s: %s."
+        raise Exception("Unknown visit on line %s: %s."
                         % (node.line, repr(node)))
 
     def unknown_departure(self, node):
-        raise Exception(u"Unknown departure on line %s: %s."
+        raise Exception("Unknown departure on line %s: %s."
                         % (node.line, repr(node)))
 
     def visit_generated(self, node):
@@ -158,11 +158,11 @@ References:
         self.section_level -= 1
 
     def visit_reference(self, node):
-        if node.has_key('name'):
+        if 'name' in node:
             self._add('[%s ' % node['refuri'])
 
     def depart_reference(self, node):
-        if node.has_key('name'):
+        if 'name' in node:
             self._add(']')
 
     def visit_literal_block(self, node):

@@ -5,7 +5,7 @@
 __metaclass__ = type
 import codecs, os
 from lxml import etree
-import convert, tools
+from . import convert, tools
 
 class Site:
     registry = {}
@@ -108,7 +108,7 @@ class Site:
 
         # Make an inventory of the output directories.
         self.output_names = set()
-        for url, directory in self.notebook_info.itervalues():
+        for url, directory in self.notebook_info.values():
             if os.path.isdir(directory):
                 for base in os.listdir(directory):
                     if base.endswith('.html'):
@@ -131,7 +131,7 @@ class Site:
         # Create a full note index, another one for recent entries.
         self.run.entertain("Generating note index")
         entries = etree.Element('entries')
-        for note in tools.Note.registry.itervalues():
+        for note in tools.Note.registry.values():
             if self.run.site.is_kept(note):
                 url, directory = self.url_directory(note.notebook)
                 etree.SubElement(entries, 'entry',
@@ -209,43 +209,43 @@ class Site_Phenix(Site):
             None: (
                 'http://pinard.progiciels-bpi.ca/notes',
                 os.path.expanduser('~/fp/web/notes')),
-            u"Cabot": (
+            "Cabot": (
                 'http://cabot.progiciels-bpi.ca/notes',
                 os.path.expanduser(
                     '~/entretien/cabot/web/notes')),
-            u"Edily": (
+            "Edily": (
                 'http://edily.progiciels-bpi.ca/notes',
                 os.path.expanduser(
                     '~/entretien/edily/web/notes')),
-            u"FP etc.": (
+            "FP etc.": (
                 'http://fp-etc.progiciels-bpi.ca/notes',
                 os.path.expanduser(
                     '~/entretien/fp-etc/web/notes')),
-            u"Paxutils": (
+            "Paxutils": (
                 'http://paxutils.progiciels-bpi.ca/notes',
                 os.path.expanduser(
                     '~/entretien/paxutils/web/notes')),
-            u"Pymacs": (
+            "Pymacs": (
                 'http://pymacs.progiciels-bpi.ca/notes',
                 os.path.expanduser(
                     '~/entretien/pymacs/web/notes')),
-            u"Recode": (
+            "Recode": (
                 'http://recode.progiciels-bpi.ca/notes',
                 os.path.expanduser(
                     '~/entretien/recode/web/notes')),
-            u"Recodec": (
+            "Recodec": (
                 'http://recodec.progiciels-bpi.ca/notes',
                 os.path.expanduser(
                     '~/entretien/codes/web/notes')),
-            u"TweeTabs": (
+            "TweeTabs": (
                 'http://tweetabs.progiciels-bpi.ca/notes',
                 os.path.expanduser(
                     '~/entretien/tweetabs/web/notes')),
-            u"Wdiff": (
+            "Wdiff": (
                 'http://wdiff.progiciels-bpi.ca/notes',
                 os.path.expanduser(
                     '~/entretien/wdiff/web/notes')),
-            u"xxml": (
+            "xxml": (
                 'http://xxml.progiciels-bpi.ca/notes',
                 os.path.expanduser(
                     '~/entretien/xxml/web/notes')),
