@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2007 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2008.
 
@@ -22,7 +21,6 @@ subséquents dans Allout font des des énumérations imbriquées dans
 le Wiki.
 """
 
-__metaclass__ = type
 import sys
 from Etc.Allout import allout
 

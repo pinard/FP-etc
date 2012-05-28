@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2004 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2004.
 
@@ -21,7 +20,6 @@ La sortie sera nommée d'après l'entrée, en remplaçant l'extension ``.txt``
 par ``.ps``.
 """
 
-__metaclass__ = type
 import os, subprocess, sys
 
 class Main:

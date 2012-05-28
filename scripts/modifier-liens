@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2000, 2002, 2003, 2006 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2000.
 
@@ -21,7 +20,6 @@ de AVANT.  Un ":" ne peut apparaître dans aucun AVANT, APRÈS ou FICHIER.
 Si aucun FICHIER n'est fourni, le répertoire courant est présumé.
 """
 
-__metaclass__ = type
 import os, sys
 
 class Main:

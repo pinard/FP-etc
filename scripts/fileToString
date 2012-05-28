@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2008 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2008.
 
@@ -7,7 +6,6 @@
 Convert a textual file into a Java string.
 """
 
-__metaclass__ = type
 import sys
 
 class Main:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 1996, 1999, 2000, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1996.
 
@@ -26,7 +25,6 @@ I also have some Emacs code to colorize each level differently.  One can hide
 a whole hierarchy with `C-c h', and reveal one level at a time with `C-c i'.
 """
 
-__metaclass__ = type
 import os, subprocess, sys
 
 class Main:

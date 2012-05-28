@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2007 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2007.
 
@@ -7,7 +6,6 @@
 Approximate a ChangeLog from "git log".
 """
 
-__metaclass__ = type
 import os, re, subprocess, sys
 
 GET_AUTHOR, GET_EMAIL, GET_FIRST, WAS_NON_WHITE, WAS_WHITE = list(range(5))

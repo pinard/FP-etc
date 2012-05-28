@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8
 # Copyright © 2004 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2004.
 
@@ -7,7 +6,6 @@
 Épuration d'un fichier créé oar le programme `script'.
 """
 
-__metaclass__ = type
 import re, sys
 
 class Main:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2005 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2005.
 
@@ -17,7 +16,6 @@ Tous les fichiers sont reformattés sur la sortie standard.
 L'option `-s' n'est honorée qu'en l'absence de `-m'.
 """
 
-__metaclass__ = type
 import sys
 
 class Main:

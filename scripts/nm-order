@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8
 # Copyright © 1991, 97, 98, 99, 00, 01, 02, 03 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, April 1991.
 
@@ -28,7 +27,6 @@ The `#' prefix indicates a definition, the `=' prefix indicates an entry
 point, and the `/' indicates an common symbol.
 """
 
-__metaclass__ = type
 import os, subprocess, sys
 
 class run:

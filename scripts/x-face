@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 1996, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1996.
 
@@ -20,7 +19,6 @@ Decompilation
 Adapted from faces 1.6.1's filters/fstoikon.
 """
 
-__metaclass__ = type
 import os, subprocess, sys
 
 class run:

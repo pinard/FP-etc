@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 1990, 97, 98, 00, 02, 03 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, mai 1989.
 
@@ -27,7 +26,6 @@ Les valeurs implicites pour LARGEUR et LONGUEUR proviennent de COLUMNS et
 LINES dans l'environnement, ou 80 et 60 si non définis.
 """
 
-__metaclass__ = type
 import os, sys
 
 class run:

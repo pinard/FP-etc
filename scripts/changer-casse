@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 1990, 2000, 2002, 2003, 2006 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1990-10.
 
@@ -20,7 +19,6 @@ Usage: changer-casse [OPTION]... [FICHIER]...
 Si ni `-l' ni `-u' ne sont fournis, le code du nom sera celui du terminal.
 """
 
-__metaclass__ = type
 import os, sys
 
 class Main:

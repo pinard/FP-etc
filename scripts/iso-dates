@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 1996, 97, 98, 99, 00, 03 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, juin 1996.
 
@@ -11,7 +10,6 @@ Usage: iso-dates [OPTION] [FICHIER]...
   -l  Traiter la sortie de `ls' ou `pax'.
 """
 
-__metaclass__ = type
 import fileinput, sys
 from Etc import isodate
 

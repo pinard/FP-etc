@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2009 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2009.
 
@@ -12,7 +11,6 @@ If OUTPUT is not given, it defaults to the base name of FILE
 in the current directory.
 """
 
-__metaclass__ = type
 import os, sys
 
 class Main:

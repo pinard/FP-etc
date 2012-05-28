@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2005 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2005.
 
@@ -20,7 +19,6 @@ Si aucun fichier n'est fourni, lire l'entrée standard.
 Toujours produire le résultat sur la sortie standard.
 """
 
-__metaclass__ = type
 import sys
 
 class Main:

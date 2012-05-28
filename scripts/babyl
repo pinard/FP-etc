@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 1991-92, 94, 96-00, 02 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, March 1992-03.
 
@@ -37,7 +36,6 @@ or reconstruct a good Babyl file out of a damaged one.  To get an
 inventory of some folder file, merely use `babyl -s FOLDER'.
 """
 
-__metaclass__ = type
 import os, re, subprocess, sys
 
 def decoded_header(texte):

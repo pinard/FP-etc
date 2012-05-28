@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2005 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2005.
 
@@ -39,7 +38,6 @@ least one such failed test, the return status of this program is non-zero.
 # excellent Codespeak's py.test, at a time I really needed py.test to be
 # more Unicode-aware.
 
-__metaclass__ = type
 import inspect, os, sys, time, traceback
 from io import StringIO
 

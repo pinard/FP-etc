@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 """\
 Study dependencies between a group of Java sources.
@@ -34,7 +33,6 @@ For -g, FILE extension may be .dot for a dot-format graph description,
 or .ps for a PostScript file (the "dot" program is used to make it).
 """
 
-__metaclass__ = type
 import subprocess, sys
 from Etc import graph, spark
 

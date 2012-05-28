@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 1985, 2004 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1985-01, 2004-12.
 
@@ -41,7 +40,6 @@ une liste de nombres entiers séparés par des virgules, ou une virgule seule.
 
 
 
-__metaclass__ = type
 import bisect, codecs, datetime, math, os, re, sys, time
 from Etc.Allout import allout
 

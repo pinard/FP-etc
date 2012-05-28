@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 1992, 97, 98, 00, 02, 03, 05 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, janvier 1992.
 
@@ -22,7 +21,6 @@ Output format selection:
 Filter standard input if no FILE given.  Results always on standard output.
 """
 
-__metaclass__ = type
 import sys
 
 # Aussi examiner ce qui suit, de http://arker.homelinux.org/~dcraven/vim-pager

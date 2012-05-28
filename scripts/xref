@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2002-12.
 
@@ -50,7 +49,6 @@ Si `-C', `-M' ou `-R' est spécifié, alors `-g' est présumé.
 Si `-g' est spécifié ou présumé, alors `-n', `-p' et `-r' sont ignorés.
 """
 
-__metaclass__ = type
 
 couleurs = 'lavenderblush2', 'lightyellow', 'ivory'
 MODULE, CLASS, DEF = list(range(3))

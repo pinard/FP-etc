@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2004 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2004.
 
@@ -9,7 +8,6 @@ Afficher un fichier au ralenti.
 Usage: slowcat [-s CPS] [FICHIER]...
 """
 
-__metaclass__ = type
 import sys
 
 class Main:

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, mai 2002.
 
@@ -13,7 +12,6 @@ NOM est le nom d'une fonte PostScript.  Si NOM est "toutes", alors
 toutes les fontes disponibles sont présentées.
 """
 
-__metaclass__ = type
 import os, subprocess, sys
 
 def main(*arguments):

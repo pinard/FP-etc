@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 # Copyright © 2008 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2008.
 
@@ -22,7 +21,6 @@ If -g and no explicit OUTPUT file name, there is no standard output.
 Without -lp, use the orientation which best fit the diagram.
 """
 
-__metaclass__ = type
 import sys
 
 page_dx = int(72 * 8.5)
