@@ -42,7 +42,7 @@ class Main:
             largeur = max(list(map(len, arguments))) + 2
             for argument in arguments:
                 try:
-                    tampon = open(argument).read()
+                    tampon = open(argument, 'rb').read()
                 except IOError as exception:
                     write('%*s%s\n' % (-largeur, argument, exception))
                 else:
@@ -66,7 +66,7 @@ class Main:
             else:
                 return charset
         import re
-        if not re.search('[\x80-\x9f]', tampon):
+        if not re.search(b'[\x80-\x9f]', tampon):
             return 'ISO-8859-1'
         return '[Inconnu]'
 
@@ -82,12 +82,12 @@ class Main:
         unix = False
         macintosh = False
         windows = False
-        if '\r\n' in tampon:
+        if b'\r\n' in tampon:
             windows = True
             tampon = tampon.replace('\r\n', '')
-        if '\r' in tampon:
+        if b'\r' in tampon:
             macintosh = True
-        if '\n' in tampon:
+        if b'\n' in tampon:
             unix = True
         if unix + macintosh + windows != 1:
             return '/[inconnu]'
