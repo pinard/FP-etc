@@ -117,7 +117,7 @@ def all_groups(arguments):
         size = info[stat.ST_SIZE]
         if (sum == current_sum
             and ((dev == current_dev and ino == current_ino)
-                 or file(current_name).read() == file(name).read())):
+                 or open(current_name).read() == open(name).read())):
             group.append((name, dev, ino, nlink, size))
         else:
             if len(group) > 1:

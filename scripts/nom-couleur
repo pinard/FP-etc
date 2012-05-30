@@ -47,7 +47,7 @@ def main(*arguments):
     nom_selon_rgb = {}
     rgb_selon_nom = {}
     fouille = []
-    for ligne in file('/usr/lib/X11/rgb.txt'):
+    for ligne in open('/usr/lib/X11/rgb.txt'):
         if ligne[0] in '!\n':
             continue
         champs = ligne.split()

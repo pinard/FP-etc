@@ -49,7 +49,7 @@ class Main:
         assert not (self.majuscules and self.minuscules)
         if arguments:
             for argument in arguments:
-                self.transformer(file(argument))
+                self.transformer(open(argument))
         else:
             self.transformer(sys.stdin)
 

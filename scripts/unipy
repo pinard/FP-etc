@@ -54,10 +54,10 @@ class Main:
             import stat
             for argument in arguments:
                 if self.galop_essai:
-                    self.transformer(file(argument), None, argument)
+                    self.transformer(open(argument), None, argument)
                 else:
-                    self.transformer(file(argument),
-                                      file(argument + '+', 'w'),
+                    self.transformer(open(argument),
+                                      open(argument + '+', 'w'),
                                       argument)
                     mode = os.stat(argument)[stat.ST_MODE]
                     os.remove(argument)

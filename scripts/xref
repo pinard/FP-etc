@@ -189,7 +189,7 @@ class Main:
         niveau = 0
         declaration = None
         for (code, texte, (lineno, colno), fin, ligne
-             ) in generate_tokens(file(nom).readline):
+             ) in generate_tokens(open(nom).readline):
             if code not in (COMMENT, NL):
                 #print '.', fragments, lineno, tok_name[code], repr(texte)
                 if code == NAME:

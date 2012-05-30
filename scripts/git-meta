@@ -31,7 +31,7 @@ class Main:
 
     def doit(self, tag, arguments):
         tempname = tempfile.mktemp()
-        write = file(tempname, 'w').write
+        write = open(tempname, 'w').write
         if arguments:
             for argument in arguments:
                 base = os.path.basename(argument)

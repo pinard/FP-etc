@@ -21,7 +21,7 @@ class Main:
                 self.delai = 1 / float(valeur)
         if arguments:
             for argument in arguments:
-                self.traiter(file(argument))
+                self.traiter(open(argument))
         else:
             self.traiter(sys.stdin)
 

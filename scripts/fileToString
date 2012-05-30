@@ -17,7 +17,7 @@ class Main:
             pass
         if arguments:
             for argument in arguments:
-                self.convert(file(argument))
+                self.convert(open(argument))
         else:
             self.convert(sys.stdin)
 

@@ -213,7 +213,7 @@ class Main:
         start_line = 1
         which = headers = []
         body = []
-        for line in file(input_name, 'rb'):
+        for line in open(input_name, 'rb'):
             self.line_counter += 1
             incomplete_line = prefix_of_delimiter(line)
             if incomplete_line is not None:
@@ -340,9 +340,9 @@ class BabylOutput(Output):
 
     def __init__(self, output_name):
         if os.path.isfile(output_name):
-            self.write = file(output_name, 'ab').write
+            self.write = open(output_name, 'ab').write
         else:
-            self.write = file(output_name, 'wb').write
+            self.write = open(output_name, 'wb').write
             if run.verbose:
                 feedback.write('making new Babyl file: %s\n'
                                % self.output_name)
@@ -373,9 +373,9 @@ class MboxOutput(Output):
 
     def __init__(self, output_name):
         if os.path.isfile(output_name):
-            self.write = file(output_name, 'ab').write
+            self.write = open(output_name, 'ab').write
         else:
-            self.write = file(output_name, 'wb').write
+            self.write = open(output_name, 'wb').write
 
     def process_message(self, xxx_todo_changeme2):
         (start, headers, body) = xxx_todo_changeme2

@@ -137,7 +137,7 @@ def icon_from(input):
     return ''.join(fragments)
 
 def dimensions(name):
-    for line in file(name):
+    for line in open(name):
         if line[0] not in '#\n':
             return list(map(int, line.split()))
 

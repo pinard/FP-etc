@@ -28,7 +28,7 @@ class Main:
             output = os.path.basename(executable)
         assert not os.path.exists(output)
 
-        write = file(output, 'w').write
+        write = open(output, 'w').write
         write('#!/bin/sh\n'
               'exec %s "$@"\n'
               % executable)

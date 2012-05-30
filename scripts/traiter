@@ -117,12 +117,12 @@ def main(*arguments):
                     ['w3m', '-T', 'text/html', '-dump'],
                     stdin=subprocess.PIPE).stdin
             try:
-                Traiter(file(fichier_a_traiter), contexte, output.write,
+                Traiter(open(fichier_a_traiter), contexte, output.write,
                         docutils=option_docutils, tracage=option_tracage)
             finally:
                 output.close()  # Grrr!  REVOIR: pourquoi?
         else:
-            Traiter(file(fichier_a_traiter), contexte, sys.stdout.write,
+            Traiter(open(fichier_a_traiter), contexte, sys.stdout.write,
                     docutils=option_docutils, tracage=option_tracage)
     except Interruption:
         # Retourner un statut d'erreur si hors d'un contexte CGI.
@@ -790,7 +790,7 @@ class Traiter:
         if nom_fichier is None:
             self.erreur("Ne peut lire le fichier `%s'." % nom_fichier)
             return
-        Traiter(file(os.path.expanduser(nom_fichier)), self.contexte,
+        Traiter(open(os.path.expanduser(nom_fichier)), self.contexte,
                 self.write, self.write_errors)
 
     def executer_sauver(self, limite, nom):
@@ -927,7 +927,7 @@ class Traiter:
             self.dans_page_erreur = True
             self.contexte['petit_diagnostic'] = petit_diagnostic
             self.contexte['gros_diagnostic'] = tampon.getvalue()
-            self.compiler(file(os.path.expanduser(nom_fichier)).read(),
+            self.compiler(open(os.path.expanduser(nom_fichier)).read(),
                           nom_fichier)
             self.executer()
         raise Interruption

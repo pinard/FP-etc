@@ -92,13 +92,13 @@ class Main:
         buffers = []
         if arguments:
             for argument in arguments:
-                buffers.append(Buffer(argument, file(argument)))
+                buffers.append(Buffer(argument, open(argument)))
         elif not self.xargs:
             buffers.append(Buffer('<stdin>', sys.stdin))
         if self.xargs:
             for line in sys.stdin:
                 argument = line.rstrip()
-                buffers.append(Buffer(argument, file(argument)))
+                buffers.append(Buffer(argument, open(argument)))
         if self.verbose:
             buffer_count = len(buffers)
             token_count = 0

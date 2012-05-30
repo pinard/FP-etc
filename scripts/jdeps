@@ -103,7 +103,7 @@ class Main:
                     for line in sys.stdin:
                         arguments2.append(line.strip())
                 else:
-                    for line in file(arguments[1:]):
+                    for line in open(arguments[1:]):
                         arguments2.append(line.strip())
             else:
                 arguments2.append(argument)
@@ -113,7 +113,7 @@ class Main:
             self.produce_report(arguments2, elapsed, sys.stdout.write)
         if self.graph_file is not None:
             if self.graph_file.endswith('.dot'):
-                handle = file(self.graph_file, 'w')
+                handle = open(self.graph_file, 'w')
             else:
                 handle = subprocess.Popen(
                         'dot -Tps > %s' % self.graph_file, shell=True,
@@ -132,7 +132,7 @@ class Main:
                     sys.stderr.write(
                             '%d/%d%s. %s\n'
                             % (counter + 1, len(arguments), letter, argument))
-                text = file(argument).read()
+                text = open(argument).read()
                 if not self.pass_2:
                     self.total_lines += text.count('\n')
                 try:

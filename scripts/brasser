@@ -14,7 +14,7 @@ def main(*arguments):
     if arguments:
         lines = []
         for name in arguments:
-            lines += file(name).readlines()
+            lines += open(name).readlines()
     else:
         lines = sys.stdin.readlines()
     import random

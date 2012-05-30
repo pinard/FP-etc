@@ -51,7 +51,7 @@ class Main:
             prefixe = original[:-4]
         else:
             prefixe = original
-        texte = file(original).read()
+        texte = open(original).read()
         overrides = {'language': 'fr',
                      'output_encoding': 'latin1',
                      'output_encoding_error_handler': 'backslashreplace',
@@ -66,20 +66,20 @@ class Main:
         from docutils.core import publish_string
         if self.latex:
             # Transformer le document en LaTeX.
-            texte = publish_string(source=file(original).read(),
+            texte = publish_string(source=open(original).read(),
                                    writer_name='latex',
                                    settings_overrides=overrides)
-            file('%s-tmp.tex' % prefixe, 'w').write(texte)
+            open('%s-tmp.tex' % prefixe, 'w').write(texte)
             # Produire le PostScript.
             subprocess.call(['latex', '%s-tmp.tex' % prefixe])
             subprocess.call(['dvips', '%s-tmp.dvi' % prefixe])
             os.rename('%s-tmp.ps' % prefixe, '%s.ps' % prefixe)
         else:
             # Transformer le document en HTML.
-            texte = publish_string(source=file(original).read(),
+            texte = publish_string(source=open(original).read(),
                                    writer_name='html',
                                    settings_overrides=overrides)
-            file('%s-tmp.html' % prefixe, 'w').write(texte)
+            open('%s-tmp.html' % prefixe, 'w').write(texte)
             # Produire le PostScript.
             subprocess.call(['htmldoc', '--webpage', '-f',
                              '%s-tmp.ps' % prefixe, '%s-tmp.html' % prefixe])

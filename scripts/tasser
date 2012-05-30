@@ -57,7 +57,7 @@ def main(*arguments):
             if fichier == '-':
                 sortie.fichier(sys.stdin)
             else:
-                sortie.fichier(file(fichier))
+                sortie.fichier(open(fichier))
     else:
         sortie.fichier(sys.stdin)
 

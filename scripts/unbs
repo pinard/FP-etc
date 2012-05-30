@@ -62,7 +62,7 @@ class Main:
             handler = Dumb()
         if arguments:
             for name in arguments:
-                handler.replace_backspaces(file(name).read(), sys.stdout.write)
+                handler.replace_backspaces(open(name).read(), sys.stdout.write)
         else:
             handler.replace_backspaces(sys.stdin.read(), sys.stdout.write)
 

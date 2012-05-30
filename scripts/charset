@@ -42,7 +42,7 @@ class Main:
             largeur = max(list(map(len, arguments))) + 2
             for argument in arguments:
                 try:
-                    tampon = file(argument).read()
+                    tampon = open(argument).read()
                 except IOError as exception:
                     write('%*s%s\n' % (-largeur, argument, exception))
                 else:

@@ -37,7 +37,7 @@ def main(*arguments):
             continue
         if run.verbose:
             error('%s...' % folder)
-        date = find_best_date(file(folder).read())
+        date = find_best_date(open(folder).read())
         if date is None:
             if run.verbose:
                 error(' No date found...')

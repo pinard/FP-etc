@@ -66,7 +66,7 @@ class Main:
         if self.output is None:
             output_file = sys.stdout
         else:
-            output_file = file(self.output, 'wb')
+            output_file = open(self.output, 'wb')
         self.writer = csv.writer(output_file, 'excel-tab')
         self.columns = 'pid stat pcpu rss vsize size cmd'.split()
         self.writer.writerow(['date', 'time'] + self.columns)

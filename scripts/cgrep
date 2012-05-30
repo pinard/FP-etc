@@ -128,7 +128,7 @@ class Main:
             else:
                 search = modele.search
             compteur = 0
-            messages = file(fichier).read().split(""'\nFrom ')
+            messages = open(fichier).read().split(""'\nFrom ')
             for message in messages:
                 if search(message):
                     compteur += 1
@@ -163,7 +163,7 @@ class Main:
             try:
                 import tempfile
                 muttrc = tempfile.mktemp()
-                file(muttrc, 'w').write('source ~/.mutt/muttrc\n'
+                open(muttrc, 'w').write('source ~/.mutt/muttrc\n'
                                         'color body black brightgreen "%s"\n'
                                         'folder-hook . "push \'l%s^m \'"\n'
                                         % (gabarit, gabarit))
@@ -237,13 +237,13 @@ class Main:
                     commande = 't'
                 else:
                     commande = 'd'
-                file(muttrc, 'w').write(
+                open(muttrc, 'w').write(
                         'source ~/.mutt/muttrc\n'
                         'folder-hook . "push \'on%s%d^m\'"\n'
                         % (''.join(['%d^m%s' % (ordinal, commande)
                                     for ordinal, _ in valeur]),
                            valeur[0][0]))
-                #sys.stdout.write(file(muttrc).read())
+                #sys.stdout.write(open(muttrc).read())
                 subprocess.call(['mutt', '-F', muttrc, '-f', fichier])
             finally:
                 if muttrc is not None:
@@ -255,7 +255,7 @@ class Main:
     def chaque_message(self, repertoires):
         self.nombre_selon_fichier = {}
         for fichier in self.chaque_fichier(repertoires):
-            messages = file(fichier).read().split('\nFrom ')
+            messages = open(fichier).read().split('\nFrom ')
             self.nombre_selon_fichier[fichier] = len(messages)
             for compteur in range(2, len(messages)):
                 messages[compteur] = 'From ' + messages[compteur]

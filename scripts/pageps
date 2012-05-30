@@ -63,7 +63,7 @@ class Main:
         if self.input is None:
             buffer = sys.stdin.read()
         else:
-            buffer = file(self.input).read()
+            buffer = open(self.input).read()
         prefix = '%%BoundingBox:'
         begin = buffer.rfind('%%BoundingBox:')
         if begin < 0:

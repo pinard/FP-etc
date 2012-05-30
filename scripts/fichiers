@@ -123,7 +123,7 @@ class Main:
         for argument in arguments:
             tags = os.path.join(argument, 'tags')
             if os.path.exists(tags):
-                for ligne in file(tags):
+                for ligne in open(tags):
                     if not ligne.startswith('!'):
                         champs = ligne.split(None, 2)
                         assert len(champs) == 3, ligne

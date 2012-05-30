@@ -212,7 +212,7 @@ class Main:
                        % (text, time.time() - start_time))
             write(summary)
         if self.save:
-            write = file(self.save, 'w').write
+            write = open(self.save, 'w').write
             for ordinal in self.failures:
                 write('%d\n' % ordinal)
         else:

@@ -23,7 +23,7 @@ def main(*arguments):
             transform = isodate.unposix
     if arguments:
         for name in arguments:
-            for line in file(name):
+            for line in open(name):
                 write(transform(line))
     else:
         for line in sys.stdin:
