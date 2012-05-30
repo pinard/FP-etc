@@ -1,5 +1,4 @@
-#!/usr/bin/python
-# -*- coding: ISO-8859-1 -*-
+#!/usr/bin/python3
 # Copyright © 2001, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2001.
 

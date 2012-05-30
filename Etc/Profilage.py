@@ -1,13 +1,10 @@
-#!/usr/bin/python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 # Copyright © 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2003-06.
 
 """\
 Ce module regroupe quelques déclarations utiles.
 """
-
-__metaclass__ = type
 
 def garantir_repertoire(nom):
     import os

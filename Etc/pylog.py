@@ -1,12 +1,9 @@
-# -*- coding: utf-8 -*-
-
 ### Adapté à partir de codespeak/log/producer.py
 ### ============================================
 
 # REVOIR: Détecter que plusieurs journaux sont dirigés dans un seul
 # et même fichier, et fusionner correctement dans ce cas.
 
-__metaclass__ = type
 import sys
 import collections
 

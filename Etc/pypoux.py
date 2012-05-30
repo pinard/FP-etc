@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 # Copyright © 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2003-10.
 
@@ -24,7 +23,6 @@ répertoire courant, ainsi que tous ses sous-répertoires, récursivement.
 # un fichier nommé "test_*.py", dans le projet à vérifier, qui
 # contienne la ligne: "from Local.pypoux import *".
 
-__metaclass__ = type
 import sys
 
 class Main:

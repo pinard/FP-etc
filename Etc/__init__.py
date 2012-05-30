@@ -1,7 +1,3 @@
-# -*- coding: UTF-8 -*-
-
-__metaclass__ = type
-
 class _py:
 
     def __getattr__(self, attribut):

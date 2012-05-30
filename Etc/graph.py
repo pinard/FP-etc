@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 # Copyright © 1999, 2000, 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1999.
 
@@ -8,8 +7,6 @@ A graph is made from a set of vertices, and a set of oriented arcs.
 
 Each vertex should be immutable and not None.  An oriented arc is an instance of an Arc,  as below.
 """
-
-__metaclass__ = type
 
 def path(before, after, arcs):
     """\

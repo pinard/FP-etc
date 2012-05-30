@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: Latin-1 -*-
+#!/usr/bin/env python3
 # Copyright © 1990, 2003 Free Software Foundation, Inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1988.
 

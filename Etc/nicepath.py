@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: Latin-1 -*-
+#!/usr/bin/env python3
 # Copyright © 2000, 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2000.
 

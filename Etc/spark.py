@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 #  Copyright (c) 1998-2002 John Aycock
 
 #  Permission is hereby granted, free of charge, to any person obtaining
@@ -20,7 +19,6 @@
 #  TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 #  SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-__metaclass__ = type
 __version__ = 'SPARK-0.7 (pre-alpha-7)'
 
 import re

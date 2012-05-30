@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 # Copyright © 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, décembre 2002.
 
@@ -9,7 +8,6 @@ un programme.  Une attention particulière est donnée aux problèmes de
 déperdition de mémoire, puisque c'est le besoin à l'origine de ce module.
 """
 
-__metaclass__ = type
 import os, sys
 
 ## Examen de l'usage de la mémoire.

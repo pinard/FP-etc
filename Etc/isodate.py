@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: Latin-1 -*-
+#!/usr/bin/env python3
 # Copyright © 1996-2000, 2003, 2004 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 1996-06.
 
@@ -7,7 +6,6 @@
 Convert dates from some American formats to ISO format.
 """
 
-__metaclass__ = type
 import re, time
 
 class Rule:

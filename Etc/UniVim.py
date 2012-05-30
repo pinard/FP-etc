@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+#!/usr/bin/env python3
 # Copyright © 2007 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2007.
 
@@ -8,8 +7,6 @@ Unicode wrapper for "import vim" within Python-enabled Vim.
 
 Usage: from Etc.UniVim import vim
 """
-
-__metaclass__ = type
 
 charset = 'UTF-8'
 

@@ -1,7 +1,5 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python3
 
-__metaclass__ = type
 import sys
 
 def print_table(table, write=sys.stdout.write):
