@@ -59,17 +59,19 @@ class Main:
                 + self.deviner_surface(tampon))
 
     def deviner_charset(self, tampon):
-        for charset in 'ASCII', 'UTF-8':
-            try:
-                tampon.decode(charset)
-            except UnicodeDecodeError:
-                pass
-            else:
-                return charset
-        import re
-        if not re.search(b'[\x80-\x9f]', tampon):
-            return 'ISO-8859-1'
-        return '[Inconnu]'
+        if tampon:
+            for charset in 'ASCII', 'UTF-8':
+                try:
+                    tampon.decode(charset)
+                except UnicodeDecodeError:
+                    pass
+                else:
+                    return charset
+            import re
+            if not re.search(b'[\x80-\x9f]', tampon):
+                return 'ISO-8859-1'
+            return '[Inconnu]'
+        return '[Vide]'
 
     def deviner_capitalisation(self, tampon):
         texte = ''
@@ -80,22 +82,23 @@ class Main:
         return texte
 
     def deviner_surface(self, tampon):
-        unix = False
-        macintosh = False
-        windows = False
-        if b'\r\n' in tampon:
-            windows = True
-            tampon = tampon.replace('\r\n', '')
-        if b'\r' in tampon:
-            macintosh = True
-        if b'\n' in tampon:
-            unix = True
-        if unix + macintosh + windows != 1:
-            return '/[inconnu]'
-        if windows:
-            return '/windows'
-        if macintosh:
-            return '/macintosh'
+        if tampon:
+            unix = False
+            macintosh = False
+            windows = False
+            if b'\r\n' in tampon:
+                windows = True
+                tampon = tampon.replace(b'\r\n', b'')
+            if b'\r' in tampon:
+                macintosh = True
+            if b'\n' in tampon:
+                unix = True
+            if unix + macintosh + windows != 1:
+                return '/[inconnu]'
+            if windows:
+                return '/windows'
+            if macintosh:
+                return '/macintosh'
         return ''
 
 run = Main()
