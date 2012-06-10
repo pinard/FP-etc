@@ -4,8 +4,10 @@
 
 import os
 
+
 def canonical(path, viewpoint=None):
     return '/'.join(canonical_parts(path, viewpoint))
+
 
 def nicest(path, viewpoint=None, relative=False):
     if viewpoint is None:
@@ -19,12 +21,13 @@ def nicest(path, viewpoint=None, relative=False):
             break
     else:
         counter = maximum
-    if relative or len(eye_parts) < 2*counter:
+    if relative or len(eye_parts) < 2 * counter:
         return '/'.join((['..'] * (len(eye_parts) - counter)
                          + path_parts[counter:]))
     if path[0] != '/':
         return os.path.join(os.getcwd(), path)
     return path
+
 
 def canonical_parts(path, viewpoint=None):
 
@@ -45,14 +48,14 @@ def canonical_parts(path, viewpoint=None):
     parts = split_and_append([], path)
     counter = 0
     while counter < len(parts):
-        name = '/'.join(parts[:1+counter])
+        name = '/'.join(parts[:1 + counter])
         if name and os.path.islink(name):
             link = os.readlink(name)
             if link[0] == '/':
                 link_parts = split_and_append([], link)
             else:
                 link_parts = split_and_append(parts[:counter], link)
-            parts = link_parts + parts[1+counter:]
+            parts = link_parts + parts[1 + counter:]
             counter = 0
         else:
             counter += 1

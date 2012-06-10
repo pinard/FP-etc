@@ -21,6 +21,7 @@ Toujours produire le résultat sur la sortie standard.
 
 import sys
 
+
 class Main:
     majuscules = False
     minuscules = False
@@ -76,9 +77,9 @@ class Main:
             elif ligne[0] == '-':
                 write('\n\n' + ligne[1:] + '\n')
             elif ligne[0] == '1':
-                write('\f' + ligne[1:] +  '\n')
+                write('\f' + ligne[1:] + '\n')
             elif ligne[0] == '+':
-                write('\r' + ligne[1:] +  '\n')
+                write('\r' + ligne[1:] + '\n')
             elif ligne[0] == '\x1a':
                 # Le Ctrl-Z de MS-DOS? !!!
                 break

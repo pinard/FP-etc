@@ -22,7 +22,11 @@ Usage: link-dups [OPTION]... [PATH]...
 
 # Voir aussi: http://www.homepages.lu/pu/fdups.html
 
-import os, stat, subprocess, sys
+import os
+import stat
+import subprocess
+import sys
+
 
 class Main:
     dry = False
@@ -94,10 +98,12 @@ class Main:
 
 main = Main().main
 
+
 def sorted_groups(arguments):
     groups = list(all_groups(arguments))
     groups.sort()
     return iter(groups)
+
 
 def all_groups(arguments):
     current_sum = current_name = None
@@ -131,6 +137,7 @@ def all_groups(arguments):
         group.sort()
         yield group
 
+
 def nicest_path(start, goal, absolute=False, relative=False):
 
     def get_parts(path):
@@ -149,8 +156,9 @@ def nicest_path(start, goal, absolute=False, relative=False):
                 break
         else:
             counter = maximum
-        if relative or len(starts) < 2*counter:
-            return '/'.join(['..']*(len(starts)-counter) + goals[counter:])
+        if relative or len(starts) < 2 * counter:
+            return '/'.join(['..'] * (len(starts) - counter)
+                            + goals[counter:])
     if goal[0] != '/':
         return '%s/%s' % (os.getcwd(), goal)
     return goal

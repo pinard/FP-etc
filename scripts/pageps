@@ -27,6 +27,7 @@ page_dx = int(72 * 8.5)
 page_dy = int(72 * 11.0)
 margin = int(72 * 0.5)
 
+
 class Main:
     input = None
     output = None
@@ -71,7 +72,7 @@ class Main:
         begin += len(prefix)
         end = buffer.find('\n', begin)
         assert end > 0
-        llx, lly, urx, ury = list(map(int, buffer[begin :end].split()))
+        llx, lly, urx, ury = list(map(int, buffer[begin:end].split()))
 
         # It seems that pstoedit does shifting, scaling, rotation in that
         # order, regardless of option position.  Let's plan accordingly.

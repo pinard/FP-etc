@@ -65,7 +65,6 @@ All generators below have the following properties in common:
 # aient à beaucoup changer.  On ne peut tout prévoir, bien sûr! :-)
 
 
-
 def cartesian(*sequences):
     """\
 Generate the `cartesian product' of all SEQUENCES.  Each member of the
@@ -93,6 +92,7 @@ product is a list containing an element taken from each original sequence.
         for result in cartesian(*head):
             for last in tail:
                 yield result + [tail]
+
 
 def subsets(sequence):
     """\
@@ -135,6 +135,7 @@ as a list holding zero or more elements from the original sequence.
             if len(result) > 0:
                 yield result
 
+
 def subsets2(sequence):
     """\
 Generate all subsets of a given SEQUENCE.  Each subset is delivered
@@ -148,12 +149,14 @@ as a list holding zero or more elements from the original sequence.
     for selector in range(1 << length):
         yield [element for mask, element in pairs if mask & selector]
 
+
 def powerset(base):
     """Powerset of an iterable, yielding lists."""
     # From Eric Raymond.
-    pairs = [(2**i, x) for i, x in enumerate(base)]
-    for n in range(2**len(pairs)):
-        yield [x for m, x in pairs if m&n]
+    pairs = [(2 ** i, x) for i, x in enumerate(base)]
+    for n in range(2 ** len(pairs)):
+        yield [x for m, x in pairs if m & n]
+
 
 def combinations(sequence, number):
     """\
@@ -168,12 +171,13 @@ Generate all combinations of NUMBER elements from list SEQUENCE.
     else:
         head, tail = sequence[0], sequence[1:]
         # Some combinations retain HEAD.
-        for result in combinations(tail, number-1):
+        for result in combinations(tail, number - 1):
             result.insert(0, head)
             yield result
         # Some combinations do not retain HEAD.
         for result in combinations(tail, number):
             yield result
+
 
 def arrangements(sequence, number):
     """\
@@ -188,11 +192,12 @@ Generate all arrangements of NUMBER elements from list SEQUENCE.
     else:
         cut = 0
         for element in sequence:
-            for result in arrangements(sequence[:cut] + sequence[cut+1:],
-                                       number-1):
+            for result in arrangements(sequence[:cut] + sequence[cut + 1:],
+                                       number - 1):
                 result.insert(0, element)
                 yield result
             cut += 1
+
 
 def permutations(sequence):
     """\
@@ -224,10 +229,11 @@ Generate all permutations from list SEQUENCE.
     else:
         cut = 0
         for element in sequence:
-            for result in permutations(sequence[:cut] + sequence[cut+1:]):
+            for result in permutations(sequence[:cut] + sequence[cut + 1:]):
                 result.insert(0, element)
                 yield result
             cut += 1
+
 
 def test():
     if False:

@@ -42,11 +42,17 @@ Un argument PAGE vide, par exemple donné comme '', n'est pas considéré comme
 fourni.  Le résultat est toujours produit sur la sortie standard.
 """
 
-import cgi, os, sys
+import cgi
+import os
+import sys
+
 
 # Exception qui suit la production d'une page d'erreur dans Traiter.  Elle
 # est utilisée pour inhiber toute production HTML supplémentaire.
-class Interruption(Exception): pass
+
+class Interruption(Exception):
+    pass
+
 
 def main(*arguments):
     # Décoder l'appel.
@@ -117,6 +123,7 @@ def main(*arguments):
     except Interruption:
         pass
 
+
 def get_config(repertoire=None,
                cache={}):
     try:
@@ -184,6 +191,7 @@ def get_config(repertoire=None,
     # Retourner la configuration.
     cache[repertoire] = config
     return config
+
 
 class Traiter:
 
@@ -316,17 +324,17 @@ class Traiter:
             fin = curseur = position + len(self.delimiteur_fin)
             ligne += texte.count('\n', precedent, curseur)
             precedent = curseur
-            fragment = (texte[(debut + len(self.delimiteur_debut))
-                              :(fin - len(self.delimiteur_fin))]
+            fragment = (texte[(debut + len(self.delimiteur_debut)):
+                              (fin - len(self.delimiteur_fin))]
                         .strip())
             self.location = nom_fichier, ligne, fragment
-            fragments =  fragment.split(None, 1)
+            fragments = fragment.split(None, 1)
             compilateur = self.compilateurs.get(fragments[0])
             if compilateur:
                 if len(fragments) < 2:
                     compilateur('')
                 else:
-                    compilateur(fragment[len(fragments[0]):]) # FIXME: ???
+                    compilateur(fragment[len(fragments[0]):])  # FIXME: ???
                 continue
             self.erreur("Directive non reconnue")
         while self.pile:
@@ -716,7 +724,7 @@ class Traiter:
               '<br>\n')
 
     def executer_chacun(self, curseur, nom, code, compteur, valeurs):
-        arguments = self.code[self.curseur-1][2]
+        arguments = self.code[self.curseur - 1][2]
         if valeurs is None:
             # Entrée initiale dans la boucle, fixer la liste de valeurs.
             try:

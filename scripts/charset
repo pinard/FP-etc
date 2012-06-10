@@ -21,6 +21,7 @@ Si aucun FICHIER n'est fourni, étudier l'entrée standard.
 
 import sys
 
+
 class Main:
     majus = False
     minus = False

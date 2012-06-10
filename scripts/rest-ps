@@ -20,7 +20,10 @@ La sortie sera nommée d'après l'entrée, en remplaçant l'extension ``.txt``
 par ``.ps``.
 """
 
-import os, subprocess, sys
+import os
+import subprocess
+import sys
+
 
 class Main:
     latex = False
@@ -88,6 +91,7 @@ class Main:
         from glob import glob
         for nom in glob('%s-tmp.*' % prefixe):
             os.remove(nom)
+
 
 def deviner_charset(tampon):
     for charset in 'ASCII', 'UTF-8':

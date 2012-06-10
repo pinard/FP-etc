@@ -19,7 +19,9 @@ Usage: changer-casse [OPTION]... [FICHIER]...
 Si ni `-l' ni `-u' ne sont fournis, le code du nom sera celui du terminal.
 """
 
-import os, sys
+import os
+import sys
+
 
 class Main:
     galop_essai = False

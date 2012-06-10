@@ -25,6 +25,7 @@ répertoire courant, ainsi que tous ses sous-répertoires, récursivement.
 
 import sys
 
+
 class Main:
     volubile = False
 
@@ -59,13 +60,16 @@ class Main:
 run = Main()
 main = run.main
 
+
 def setup_module(module):
     import tempfile
     run.repertoire = tempfile.mkdtemp()
 
+
 def teardown_module(module):
     import shutil
     shutil.rmtree(run.repertoire)
+
 
 class Test_Poux:
     fichier = None
@@ -169,7 +173,8 @@ class Test_Poux:
     ## Syntaxe Python correcte.
 
     def chaines_unicode(self, fichier):
-        import token, tokenize
+        import token
+        import tokenize
         # Attention: cStringIO ne traite pas Unicode.  Grrr!
         from io import StringIO
         erreur = None
@@ -270,6 +275,7 @@ class Test_Poux:
                          % (self.fichier, ligne, colonne, diagnostic))
         return diagnostic
 
+
 def est_fichier_acceptable(base):
     if base in ('tags', 'TAGS'):
         return False
@@ -290,6 +296,7 @@ def est_fichier_acceptable(base):
         return False
     return True
 
+
 def est_repertoire_acceptable(base):
     if base in ('CVS', 'RCS'):
         return False
@@ -301,12 +308,14 @@ def est_repertoire_acceptable(base):
         return False
     return True
 
+
 def peut_avoir_tabs(fichier):
     if os.path.basename(fichier) in ('Makefile',):
         return True
     if os.path.splitext(fichier)[1] in ('.htm',):
         return True
     return False
+
 
 def est_python(fichier):
     if fichier.endswith('.py'):

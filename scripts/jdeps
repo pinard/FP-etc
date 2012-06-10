@@ -33,11 +33,13 @@ For -g, FILE extension may be .dot for a dot-format graph description,
 or .ps for a PostScript file (the "dot" program is used to make it).
 """
 
-import subprocess, sys
+import subprocess
+import sys
 from Etc import graph, spark
 
 # REVOIR, peut-être:
 # /tmp/servlets_2_3/javax/servlet ~/r-d/dev/modules/api/servlets/lib
+
 
 class Main:
     verbose = False
@@ -411,7 +413,7 @@ class Main:
             for here, away in self.arcs:
                 max_left = max(max_left, len(str(here)))
                 max_right = max(max_right, len(str(away)))
-            cut_column = compute_left_cut(max_left, max_right, 80 - 6)
+            #cut_column = compute_left_cut(max_left, max_right, 80 - 6)
             previous = None
             for here, away in self.arcs:
                 if previous is None or here != previous:
@@ -427,6 +429,7 @@ class Main:
 
 run = Main()
 main = run.main
+
 
 class Item:
     registry = {}
@@ -455,23 +458,29 @@ class Item:
     def __cmp__(self, other):
         return cmp(self.name, other.name)
 
+
 class Package(Item):
     shape = 'box3d'
     color = '#C0FFC0'
+
 
 class Class(Item):
     shape = 'ellipse'
     color = '#C0C0FF'
 
+
 class Interface(Item):
     shape = 'rectangle'
     color = '#FFC0C0'
 
+
 class Structural(graph.Arc):
     dot_text = ''
 
+
 class Dynamic(graph.Arc):
     dot_text = ' [color=brown, arrowhead=odiamond]'
+
 
 class Reference:
 
@@ -487,6 +496,7 @@ class Reference:
         return Reference(self.filename, self.line, self.column)
 
 ### Java scanner.
+
 
 class Scanner(spark.Scanner):
     # TODO: Handle \uWXYZ sequences on input.  Work in Unicode internally.
@@ -555,6 +565,7 @@ class Scanner(spark.Scanner):
         self.tokens.append(STRING(self.reference.clone(), value))
         self.reference.column += len(text)
 
+
 class Token:
 
     def __init__(self, reference, type):
@@ -573,6 +584,7 @@ class Token:
     def typestring(self):
         return self.type
 
+
 class IDENTIFIER(Token):
 
     def __init__(self, reference, name):
@@ -581,6 +593,7 @@ class IDENTIFIER(Token):
 
     def __repr__(self):
         return self.name
+
 
 class INTEGER(Token):
 
@@ -591,6 +604,7 @@ class INTEGER(Token):
     def __repr__(self):
         return str(self.value)
 
+
 class CHARACTER(Token):
 
     def __init__(self, reference, value):
@@ -599,6 +613,7 @@ class CHARACTER(Token):
 
     def __repr__(self):
         return self.value
+
 
 class STRING(Token):
 

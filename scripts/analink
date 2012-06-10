@@ -16,7 +16,9 @@ lui-même étudié, et l'information redondante est éliminée.
 # FIXME: Voir classe NicePath dans oc/src/scripts.py.
 # FIXME: Examiner les permissions, tout en remontant.
 
-import os, sys
+import os
+import sys
+
 
 def main(*arguments):
     if not arguments:
@@ -35,7 +37,7 @@ def main(*arguments):
     while pile:
         fragments = pile.pop()
         for compteur in range(len(fragments)):
-            nom = '/'.join(fragments[:1+compteur])
+            nom = '/'.join(fragments[:1 + compteur])
             if nom not in liens and os.path.islink(nom):
                 valeur = os.readlink(nom)
                 liens[nom] = valeur
@@ -45,6 +47,7 @@ def main(*arguments):
     items.sort()
     for nom, valeur in items:
         sys.stdout.write('%s -> %s\n' % (nom, valeur))
+
 
 def allonger(fragments, nom):
     if nom.endswith('/'):

@@ -6,10 +6,12 @@
 Facilitateur pour l'usage de `libglade'.
 """
 
+
 class Glade:
 
     def __init__(self, project, names, connections):
-        import libglade, os
+        import libglade
+        import os
         fichier_xml = project + '.glade'
         if not os.path.exists(fichier_xml):
             fichier_xml = '/usr/local/share/glade/' + fichier_xml

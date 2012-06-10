@@ -69,9 +69,14 @@ la suite qu'un petit script shell, plutôt facile à programmer.
 
 import sys
 
-def _(text): return text
 
-class BinOverflow(Exception): pass
+def _(text):
+    return text
+
+
+class BinOverflow(Exception):
+    pass
+
 
 # Main program.
 
@@ -118,6 +123,7 @@ def main(*arguments):
         for chunk in chunks:
             sys.stdout.write(chunk[1])
 
+
 def allocate(chunks, bin_size, chunk_overhead=False, allow_overflow=False):
     """\
 Allocate CHUNKS into bins, arranging so bins are maximally filled.  Each
@@ -138,7 +144,7 @@ list of chunks meant for that binset, sorted in increasing size.
     binsets = []
     while chunks:
         still_virgin = True
-        for counter in range(len(chunks)-1, -1, -1):
+        for counter in range(len(chunks) - 1, -1, -1):
             chunk = chunks[counter]
             if still_virgin:
                 subset = []

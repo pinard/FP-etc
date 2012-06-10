@@ -6,13 +6,15 @@
 Transmission de structures Python sur le réseau.
 """
 
-import marshal, struct
+import marshal
+import struct
 #import sys
 
 format_prefixe = '!I'
 grandeur_fragment = 30000
 
 Erreur = 'Erreur'
+
 
 def envoyer(socket, structure):
     #sys.stderr.write('Envoyer!\n')
@@ -24,6 +26,7 @@ def envoyer(socket, structure):
         if not transmis:
             raise Erreur("Connection rompue (vu par l'envoyeur).")
         reponse = reponse[transmis:]
+
 
 def recevoir(socket):
     #sys.stderr.write('Recevoir!\n')

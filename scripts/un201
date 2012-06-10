@@ -13,11 +13,14 @@ Usage: un201 [OPTION]... [FILE]...
 If no file is given, act as a filter.
 """
 
-import os, sys
+import os
+import sys
+
 
 class run:
     keep_one = 0
     verbose = 0
+
 
 def main(*arguments):
     if not arguments:
@@ -63,6 +66,7 @@ def main(*arguments):
                     pass
                 os.rename(argument, backup)
                 os.rename(work, argument)
+
 
 def process(buffer):
     fragments = []

@@ -8,6 +8,7 @@ Display ANSI colours.
 
 import sys
 
+
 def main(*arguments):
     assert not arguments
     write = sys.stdout.write

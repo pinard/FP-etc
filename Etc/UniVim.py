@@ -10,6 +10,7 @@ Usage: from Etc.UniVim import vim
 
 charset = 'UTF-8'
 
+
 class Wrapper:
     import vim
     buffer_type = type(vim.current.buffer)
@@ -26,6 +27,7 @@ class Wrapper:
         if isinstance(value, self.buffer_type):
             return Buffer(value)
         return Wrapper(value)
+
 
 class Buffer(Wrapper):
 
@@ -71,10 +73,12 @@ class Buffer(Wrapper):
 #
 #    def __init__(self): pass
 
+
 class Vim(Wrapper):
     import vim as object
 
-    def __init__(self): pass
+    def __init__(self):
+        pass
 
     def command(self, text):
         self.object.command(text.encode(charset))

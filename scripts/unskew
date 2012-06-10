@@ -15,7 +15,11 @@ L'option `-n' ne fait que diagnostiquer un écart de temps, sans l'ajuster.
 L'option `-d DELTA' force l'usage d'un DELTA précis, en secondes.
 """
 
-import os, stat, sys, time
+import os
+import stat
+import sys
+import time
+
 
 def main(*arguments):
     import getopt
@@ -51,6 +55,7 @@ def main(*arguments):
     else:
         sys.stderr.write("Aucun ajustement requis\n")
 
+
 def lurk_walker(latest, dirname, bases):
     for base in bases:
         path = os.path.join(dirname, base)
@@ -61,6 +66,7 @@ def lurk_walker(latest, dirname, bases):
             latest[0] = atime
         if mtime > latest[0]:
             latest[0] = mtime
+
 
 def adjust_walker(delta, dirname, bases):
     for base in bases:

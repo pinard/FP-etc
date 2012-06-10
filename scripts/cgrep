@@ -28,7 +28,12 @@ les répertoires.  Si CHEMIN est répété, les premières occurrences
 sont ignorées.  Si aucun CHEMIN, le répertoire courant est présumé.
 """
 
-import os, re, subprocess, sys, time
+import os
+import re
+import subprocess
+import sys
+import time
+
 
 class Main:
     eliminations = False
@@ -185,7 +190,7 @@ class Main:
                     if champ.lower() == 'message-id':
                         valeur = valeur.strip()
                         if not valeur:
-                            valeur = lignes[compteur+1].strip()
+                            valeur = lignes[compteur + 1].strip()
                         if not (valeur.startswith('<')
                                 and valeur.endswith('>')):
                             sys.stderr.write("%s:%d: Message-ID invalide\n"
@@ -204,9 +209,9 @@ class Main:
             if len(liste) > 1:
                 for compteur, (fichier, ordinal) in enumerate(liste):
                     if self.marques:
-                        copie = liste[:compteur] + liste[compteur+1:]
+                        copie = liste[:compteur] + liste[compteur + 1:]
                     elif compteur < len(liste) - 1:
-                        copie = liste[compteur+1:]
+                        copie = liste[compteur + 1:]
                     else:
                         continue
                     if fichier not in selon_fichier:
@@ -267,7 +272,7 @@ class Main:
                     yield fichier, compteur + 1, message, ''
                 else:
                     yield (fichier, compteur + 1,
-                           message[:position+1], message[position+1:])
+                           message[:position + 1], message[position + 1:])
 
     def chaque_fichier(self, repertoires):
         repertoires = list(repertoires)

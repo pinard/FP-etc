@@ -19,7 +19,10 @@ Sans options, les fichiers existant dans chaque CHEMIN sont listés.
 Si aucun CHEMIN n'est fourni, le répertoire courant est présumé.
 """
 
-import os, subprocess, sys
+import os
+import subprocess
+import sys
+
 
 class Main:
     absolutiser = False

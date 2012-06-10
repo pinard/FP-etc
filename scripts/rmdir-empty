@@ -10,7 +10,9 @@ Usage: rmdir-empty [DIRECTORY]...
 If not directory is given, the current directory is implied.
 """
 
-import os, sys
+import os
+import sys
+
 
 def main(*arguments):
     if arguments:
@@ -18,6 +20,7 @@ def main(*arguments):
             os.path.walk(argument, walker, None)
     else:
         os.path.walk('.', walker, None)
+
 
 def walker(dummy, directory, bases):
     while not bases:

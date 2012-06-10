@@ -13,6 +13,7 @@ Usage: iso-dates [OPTION] [FICHIER]...
 import fileinput, sys
 from Etc import isodate
 
+
 def main(*arguments):
     transform = isodate.normalize
     write = sys.stdout.write

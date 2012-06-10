@@ -7,4 +7,5 @@ Recherche et diagnostic de poux stylistiques dans une hiérarchie Python.
 """
 
 from Etc.pypoux import main
+
 main(*sys.argv[1:])

@@ -2,6 +2,7 @@
 
 import sys
 
+
 def print_table(table, write=sys.stdout.write):
     """\
 Print TABLE according to Org format conventions, using WRITE.

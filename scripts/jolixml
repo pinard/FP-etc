@@ -18,6 +18,7 @@ L'option `-s' n'est honorée qu'en l'absence de `-m'.
 
 import sys
 
+
 class Main:
     codage = 'UTF-8'
     par_niveau = '  '
@@ -62,6 +63,7 @@ run = Main()
 main = run.main
 
 from xml.sax.saxutils import XMLGenerator
+
 
 class SaxWriter(XMLGenerator):
 

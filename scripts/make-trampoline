@@ -11,7 +11,9 @@ If OUTPUT is not given, it defaults to the base name of FILE
 in the current directory.
 """
 
-import os, sys
+import os
+import sys
+
 
 class Main:
 

@@ -38,9 +38,13 @@ une liste de nombres entiers séparés par des virgules, ou une virgule seule.
 
 # REVOIR: Implanter les dépendances sur des sous-arbres complets.
 
-
-
-import bisect, codecs, datetime, math, os, re, sys, time
+import bisect
+import datetime
+import math
+import os
+import re
+import sys
+import time
 from Etc.Allout import allout
 
 # Largeur prise par l'ensemble des marges.
@@ -50,7 +54,9 @@ largeur_marges = 12
 semaine = ("Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi",
            "Samedi", "Dimanche")
 
+
 # Pour toute erreur durant l'analyse ou l'exécution.
+
 class Erreur(Exception):
 
     def __str__(self):
@@ -58,6 +64,7 @@ class Erreur(Exception):
 
     #def __unicode__(self):
     #    return self.args[0].encode(u'Latin-1', u'backslashreplace')
+
 
 class Main:
     option_tableau_des_attributions = False
@@ -153,6 +160,7 @@ class Main:
             self.projet.produire_diagramme(sys.stdout.write, True)
 
 gabarit_nombre = r'\.[0-9]+|[0-9]+\.?[0-9]*'
+
 
 class Projet:
     def __init__(self, *fichiers):
@@ -667,7 +675,7 @@ class Projet:
                 if jour is not None and compteur == 1:
                     marge = (semaine[(self.depart + datetime.timedelta(jour))
                                      .weekday()]
-                                    [:largeur_libelle-2])
+                                    [:largeur_libelle - 2])
                 else:
                     marge = ''
                 write('| %*s%s | %s |\n' % (-(largeur_libelle - 1),
@@ -698,7 +706,8 @@ class Projet:
         largeur_libelle = max([len(triplet[1]) for triplet in triplets])
         largeur_en_tranches = ((run.option_nombre_maximal_de_colonnes
                                 - largeur_marges - largeur_libelle)
-                               // run.tranches_par_jour * run.tranches_par_jour)
+                               // run.tranches_par_jour
+                               * run.tranches_par_jour)
         if largeur_en_tranches < 10:
             raise Erreur(
                 "Option `-mN' ou `-tN' trop grande, ou `-wN' trop petite.")
@@ -815,7 +824,7 @@ class Projet:
                 for tranche in range(tranche_debut, tranche_fin):
                     symbole = diagramme.get(tranche)
                     if symbole is None:
-                        write(fond[tranche-tranche_debut])
+                        write(fond[tranche - tranche_debut])
                     else:
                         if symbole == '@':
                             defoncer = None
@@ -830,6 +839,7 @@ class Projet:
                     imprimer_descriptions(libelles)
                     libelles = set()
         imprimer_descriptions(libelles)
+
 
 class Activite:
     # Compteur de structures `Activite', dans l'ordre de création.
@@ -925,7 +935,8 @@ class Activite:
         else:
             if run.option_y_compris_termine:
                 tranches = self.ceduler(debut, limite, self.duree, self.fixe)
-                tranches_faites = int(math.floor(len(tranches) * self.fraction))
+                tranches_faites = int(
+                    math.floor(len(tranches) * self.fraction))
             else:
                 # Céduler, ne serait-ce que pour assigner un exécutant.
                 tranches = self.ceduler(max(0, debut), limite,
@@ -995,7 +1006,7 @@ class Activite:
             # Retourner cette valeur, ou None si ça n'est pas possible.
             if jour is None:
                 try:
-                    return date.replace(day=date.day+1)
+                    return date.replace(day=date.day + 1)
                 except ValueError:
                     date = date.replace(day=1)
             if mois is None:
@@ -1008,7 +1019,7 @@ class Activite:
                         pass
                 date = date.replace(month=1)
             if annee is None:
-                return date.replace(year=date.year+1)
+                return date.replace(year=date.year + 1)
 
         if self.recurrence is None:
             # Pas de récurrence.
@@ -1052,6 +1063,7 @@ class Activite:
                     break
                 yield debut
                 date = avancer_date(date)
+
 
 class Executant:
     # Nom de l'individu ou de l'organisation.
@@ -1134,7 +1146,8 @@ main = run.main
 
 if __name__ == '__main__':
     if False:
-        import profile, pstats
+        import profile
+        import pstats
         profile.run('main(*sys.argv[1:])', 'profile-data')
         stats = pstats.Stats('profile-data')
         stats.strip_dirs().sort_stats('time', 'cumulative').print_stats(10)

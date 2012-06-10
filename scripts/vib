@@ -34,28 +34,28 @@ Copyright 2004, 2005 Wari Wahab
 """
 __version__ = "$Id: editfile.py 883 2006-03-24 03:43:42Z willhelm $"
 
-EDITOR='vim -c "set tabstop=4 shiftwidth=4 expandtab"'
+EDITOR = 'vim -c "set tabstop=4 shiftwidth=4 expandtab"'
 from os import environ
-EDITOR=environ.get('VISUAL')
+EDITOR = environ.get('VISUAL')
 
-from os import stat, path, spawnl, utime, P_WAIT
-import sys, time
+from os import stat, spawnl, utime, P_WAIT
+import sys
 
 if len(sys.argv) > 1:
-   filename = sys.argv[1]
-   print("Editing file %s" % filename)
+    filename = sys.argv[1]
+    print("Editing file %s" % filename)
 else:
-   filename = input("filename? ")
+    filename = input("filename? ")
 
 if not filename:
-   print("No filename given.  Quitting.")
-   sys.exit(1)
+    print("No filename given.  Quitting.")
+    sys.exit(1)
 
 try:
-   filestats = stat(filename)
+    filestats = stat(filename)
 except:
-   print("File not found.  Quitting.")
-   sys.exit(1)
+    print("File not found.  Quitting.")
+    sys.exit(1)
 
 atime, mtime = filestats[7:9]
 
@@ -63,8 +63,8 @@ spawnl(P_WAIT, EDITOR, EDITOR, filename)
 
 print("Setting back the time")
 try:
-   utime(filename, (atime, mtime + 60))
+    utime(filename, (atime, mtime + 60))
 except Exception as e:
-   print("Failed to set the new time.", e)
-   print("Quitting.")
-   sys.exit(1)
+    print("Failed to set the new time.", e)
+    print("Quitting.")
+    sys.exit(1)

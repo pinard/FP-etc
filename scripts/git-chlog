@@ -6,9 +6,12 @@
 Approximate a ChangeLog from "git log".
 """
 
-import os, re, subprocess, sys
+import re
+import subprocess
+import sys
 
 GET_AUTHOR, GET_EMAIL, GET_FIRST, WAS_NON_WHITE, WAS_WHITE = list(range(5))
+
 
 class Main:
 

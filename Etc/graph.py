@@ -5,8 +5,10 @@
 """\
 A graph is made from a set of vertices, and a set of oriented arcs.
 
-Each vertex should be immutable and not None.  An oriented arc is an instance of an Arc,  as below.
+Each vertex should be immutable and not None.  An oriented arc is an instance
+of an Arc, as below.
 """
+
 
 def path(before, after, arcs):
     """\
@@ -47,6 +49,7 @@ is there is no such path.
         path.append(arc)
         arc = table[arc.after].best_forward
     return path
+
 
 def sort(vertices, arcs):
     """\
@@ -103,6 +106,7 @@ involved into some cycle.
         del vertex.followers
     return sorted, cycles
 
+
 def sort2(vertices, arcs):
     """\
 Topologically sort VERTICES, while obeying the constraints described
@@ -114,8 +118,8 @@ These sublists taken whole are still topologically sorted within the result.
 
     class Vertex(list):
 
-        predecessor_count = property(make_getter(1), make_setter(1))
         vertex = property(make_getter(0), make_setter(0))
+        predecessor_count = property(make_getter(1), make_setter(1))
         followers = property(make_getter(2), make_setter(2), make_deleter(2))
 
     # With each vertex, associate a predecessor count and the set of all
@@ -162,6 +166,7 @@ These sublists taken whole are still topologically sorted within the result.
             sorted.append(sublist)
     return sorted
 
+
 ## Code for naming tuple or list elements.
 
 def make_getter(index):
@@ -171,6 +176,7 @@ def make_getter(index):
 
     return getter
 
+
 def make_setter(index):
 
     def setter(self, value):
@@ -178,12 +184,14 @@ def make_setter(index):
 
     return setter
 
+
 def make_deleter(index):
 
     def deleter(self):
         del self[index]
 
     return deleter
+
 
 class Arc(tuple):
     """\

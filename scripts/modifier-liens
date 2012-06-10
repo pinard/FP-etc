@@ -20,7 +20,9 @@ de AVANT.  Un ":" ne peut apparaître dans aucun AVANT, APRÈS ou FICHIER.
 Si aucun FICHIER n'est fourni, le répertoire courant est présumé.
 """
 
-import os, sys
+import os
+import sys
+
 
 class Main:
     galop_essai = False
@@ -31,7 +33,8 @@ class Main:
             sys.stdout.write(__doc__)
             return
         # Décoder les arguments.
-        import getopt, re
+        import getopt
+        import re
         options, arguments = getopt.getopt(arguments, 'nv')
         for option, valeur in options:
             if option == '-n':

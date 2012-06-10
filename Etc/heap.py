@@ -91,6 +91,7 @@ rewinding time.  Believe me, real good tape sorts were quite spectacular
 to watch!  From all times, sorting has always been a Great Art! :-)
 """
 
+
 class Heap:
 
     def __init__(self, compare=cmp):
@@ -131,7 +132,7 @@ Add ITEM to the current heap instance.
         array.append(item)
         high = len(array) - 1
         while high > 0:
-            low = (high-1)/2
+            low = (high - 1) / 2
             if compare(array[low], array[high]) <= 0:
                 break
             array[low], array[high] = array[high], array[low]
@@ -150,19 +151,20 @@ Remove and return the smallest item from the current heap instance.
             array[0] = array.pop()
             low, high = 0, 1
             while high < len(array):
-                if ((high+1 < len(array)
-                     and compare(array[high], array[high+1]) > 0)):
-                    high = high+1
+                if ((high + 1 < len(array)
+                     and compare(array[high], array[high + 1]) > 0)):
+                    high = high + 1
                 if compare(array[low], array[high]) <= 0:
                     break
                 array[low], array[high] = array[high], array[low]
-                low, high = high, 2*high+1
+                low, high = high, 2 * high + 1
         return item
+
 
 def test(n=2000):
     heap = Heap()
-    for k in range(n-1, -1, -1):
+    for k in range(n - 1, -1, -1):
         heap.push(k)
     for k in range(n):
-        assert k+len(heap) == n
+        assert k + len(heap) == n
         assert k == heap.pop()

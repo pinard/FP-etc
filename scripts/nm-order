@@ -27,7 +27,9 @@ The `#' prefix indicates a definition, the `=' prefix indicates an entry
 point, and the `/' indicates an common symbol.
 """
 
-import os, subprocess, sys
+import os
+import sys
+
 
 class run:
     locals = False
@@ -35,6 +37,7 @@ class run:
     ignore = []
     map = {}
     column = 0
+
 
 def main(*arguments):
     if not arguments:
@@ -53,6 +56,7 @@ def main(*arguments):
     for argument in arguments:
         study(argument)
     print_references(sys.stdout.write)
+
 
 def study(name):
     module = None
@@ -123,6 +127,7 @@ def study(name):
         # Else, this is an error.
         sys.stderr.write('<%s> %s\n' % (module, line))
 
+
 def print_references(write):
     needs = {}
     diagnostics = []
@@ -189,6 +194,7 @@ def print_references(write):
         for diagnostic in diagnostics:
             write(diagnostic)
 
+
 def print_begin(write, word):
     write(word)
     run.column = len(word)
@@ -197,6 +203,7 @@ def print_begin(write, word):
     while run.column < 24:
         write('\t')
         run.column = run.column / 8 * 8 + 8
+
 
 def print_item(write, word):
     if run.column == 24:
@@ -210,6 +217,7 @@ def print_item(write, word):
         write('\n\t\t\t')
         write(word)
         run.column = 24 + len(word)
+
 
 def print_end(write):
     write('\n')

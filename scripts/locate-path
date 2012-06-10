@@ -12,7 +12,10 @@ Options:
   -r  Patterns are regular expressions, not substrings.
 """
 
-import os, subprocess, sys
+import os
+import subprocess
+import sys
+
 
 class Main:
 

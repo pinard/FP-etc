@@ -26,13 +26,16 @@ Les valeurs implicites pour LARGEUR et LONGUEUR proviennent de COLUMNS et
 LINES dans l'environnement, ou 80 et 60 si non définis.
 """
 
-import os, sys
+import os
+import sys
+
 
 class run:
     mode_paragraphe = False
     largeur_page = int(os.environ.get('COLUMNS', 80)) - 1
     longueur_page = int(os.environ.get('LINES', 60)) - 1
     separateur = ' | '
+
 
 def main(*arguments):
     if not arguments:
@@ -60,6 +63,7 @@ def main(*arguments):
                 sortie.fichier(open(fichier))
     else:
         sortie.fichier(sys.stdin)
+
 
 class Sortie:
 
@@ -125,7 +129,7 @@ class Sortie:
             self.nouveau_paragraphe(paragraphe, largeur)
 
     def nouveau_paragraphe(self, lignes, largeur):
-        if len(colonne) + len(lignes) > run.longueur_page:
+        if len(self.colonne) + len(lignes) > run.longueur_page:
             self.nouvelle_colonne()
         self.colonne += lignes
         self.largeur_colonne = max(self.largeur_colonne, largeur)

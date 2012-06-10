@@ -24,7 +24,9 @@ précédée d'une chaîne vide ne gagne ni ne perd son préfixe `u',
 mais ce préfixe est rapporté avant la chaîne vide.
 """
 
-import os, sys
+import os
+import sys
+
 
 class Main:
     galop_essai = False
@@ -110,7 +112,8 @@ class Main:
         # Transformer les chaînes.
         fragments = []
         write = fragments.append
-        import token, tokenize
+        import token
+        import tokenize
         row = 1
         col = 0
         vide = None
@@ -148,7 +151,8 @@ class Main:
         lignes = ''.join(fragments).splitlines(True)
         # En mode volubile, produire une analyse des différences.
         if self.volubile:
-            import difflib, time
+            import difflib
+            import time
             originales = entree.getvalue().splitlines(True)
             maintenant = time.ctime()
             if nom:

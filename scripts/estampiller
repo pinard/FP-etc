@@ -12,11 +12,14 @@ Options:
   -v  List files as they are processed.
 """
 
-import os, sys
+import os
+import sys
+
 
 class run:
     verbose = False
     older = False
+
 
 def main(*arguments):
     if not arguments:
@@ -44,12 +47,14 @@ def main(*arguments):
             else:
                 error("WARNING: %s: no date found\n" % folder)
         else:
-            import stat, time
+            import stat
+            import time
             atime = os.stat(folder)[stat.ST_ATIME]
             mtime = time.mktime(date)
             os.utime(folder, (atime, mtime))
         if run.verbose:
             error(' done\n')
+
 
 def find_best_date(buffer):
     prefix = '\nDate:'
@@ -75,6 +80,7 @@ def find_best_date(buffer):
                 or (not run.older and current > best)):
                 best = current
     return best
+
 
 def find_date(buffer):
     from email.Utils import parsedate

@@ -134,17 +134,25 @@ History, references.
 """
 
 
-
 ### Global definitions.
 
-DEFAULT_MAX_FILES = 15          # maximum number of intermediate work files
-DEFAULT_HEAP_SIZE = (1<<14)-1   # maximum number of records in memory heap
+DEFAULT_MAX_FILES = 15              # maximum number of intermediate work files
+DEFAULT_HEAP_SIZE = (1 << 14) - 1   # maximum number of records in memory heap
 
-class Error(Exception): pass
-class Unexpected_Get(Error): pass
-class Unexpected_Put(Error): pass
+
+class Error(Exception):
+    pass
+
+
+class Unexpected_Get(Error):
+    pass
+
+
+class Unexpected_Put(Error):
+    pass
 
 ### Work files input/output routines.
+
 
 # Work file maker classes are all derived from File.  We currently have
 # Marshal, Pickle and String, each having strengths and limitations.
@@ -155,9 +163,9 @@ class File:
     def __init__(self):
         import tempfile
         self.file_name = tempfile.mktemp()
-        self.file = None        # None if file not opened
-        self.end_of_file = True # when False, RECORD is meaningful on read
-        self.record = None      # last record read or written on this file
+        self.file = None         # None if file not opened
+        self.end_of_file = True  # when False, RECORD is meaningful on read
+        self.record = None       # last record read or written on this file
 
     def __del__(self):
         if self.file is not None:
@@ -186,6 +194,7 @@ class File:
         # Return one record from this work file and prepare for next record.
         # Raise EOFError if there is no more record left in file.
         pass                    # meant to be overridden
+
 
 class Marshall(File):
 
@@ -220,6 +229,7 @@ class Marshall(File):
         except EOFError:
             self.end_of_file = True
         return record
+
 
 class Pickle(File):
 
@@ -256,6 +266,7 @@ class Pickle(File):
             self.end_of_file = True
         return record
 
+
 class String(File):
 
     def open_write(self):
@@ -288,6 +299,7 @@ class String(File):
         return record
 
 ### Main polyphasing class.
+
 
 class Polyphase:
     def __init__(self, compare=None, file_maker=Pickle, verbose=None,
@@ -596,7 +608,8 @@ class Polyphase:
         # run coming out of the tournament sort.  Distribute runs in such a
         # way that later merging passes will use files efficiently.
         if self.verbose is None:
-            import os, sys
+            import os
+            import sys
             if os.isatty(sys.stderr.fileno()):
                 write = sys.stderr.write
             else:
@@ -612,7 +625,7 @@ class Polyphase:
         # file, otherwise they are returned to the calling program.
         self.merging_passes = 1
         self.files = []
-        for counter in range(self.max_files-1):
+        for counter in range(self.max_files - 1):
             # Create work files as needed, lazily, one run each.  IDEAL_RUNS
             # is the maximum number of real runs at the current merge level,
             # while DUMMY_RUNS is the number of fake, unexisting runs.  The
@@ -632,7 +645,7 @@ class Polyphase:
             for counter in range(len(self.files)):
                 total_runs = total_runs_added
                 if counter < len(self.files) - 1:
-                    total_runs += self.files[counter+1].total_runs
+                    total_runs += self.files[counter + 1].total_runs
                 file = self.files[counter]
                 file.dummy_runs = total_runs - file.total_runs
                 file.total_runs = total_runs
@@ -643,7 +656,8 @@ class Polyphase:
                 for counter in range(len(self.files)):
                     file = self.files[counter]
                     if counter < len(self.files) - 1:
-                        if file.dummy_runs < self.files[counter+1].dummy_runs:
+                        if (file.dummy_runs
+                            < self.files[counter + 1].dummy_runs):
                             break
                     if file.dummy_runs == 0:
                         break
@@ -683,32 +697,32 @@ class Polyphase:
 
     def percolate_records(self, left, right):
         # Percolate records until HEAP[LEFT:RIGHT] reconstituted.
-        # The heap invariant already holds within HEAP[LEFT+1:RIGHT].
+        # The heap invariant already holds within HEAP[LEFT + 1:RIGHT].
         heap = self.heap
         temp = heap[left]
         i = left
-        j = 2*i + 1
+        j = 2 * i + 1
         compare = self.compare
         if compare is None:
             while j < right:
-                if j < right-1 and heap[j+1] < heap[j]:
+                if j < right - 1 and heap[j + 1] < heap[j]:
                     j += 1
                 if heap[j] < temp:
                     heap[i] = heap[j]
                 else:
                     break
                 i = j
-                j = 2*i + 1
+                j = 2 * i + 1
         else:
             while j < right:
-                if j < right-1 and compare(heap[j+1], heap[j]) < 0:
+                if j < right - 1 and compare(heap[j + 1], heap[j]) < 0:
                     j += 1
                 if compare(heap[j], temp) < 0:
                     heap[i] = heap[j]
                 else:
                     break
                 i = j
-                j = 2*i + 1
+                j = 2 * i + 1
         heap[i] = temp
 
     def heapify_files(self, right):
@@ -721,34 +735,35 @@ class Polyphase:
 
     def percolate_files(self, left, right):
         # Percolate files until HEAP[LEFT:RIGHT] reconstituted.
-        # The heap invariant already holds within HEAP[LEFT+1:RIGHT].
+        # The heap invariant already holds within HEAP[LEFT + 1:RIGHT].
         heap = self.heap
         temp = heap[left]
         i = left
-        j = 2*i + 1
+        j = 2 * i + 1
         compare = self.compare
         if compare is None:
             while j < right:
-                if j < right-1 and heap[j+1].record < heap[j].record:
+                if j < right - 1 and heap[j + 1].record < heap[j].record:
                     j += 1
                 if heap[j].record < temp.record:
                     heap[i] = heap[j]
                 else:
                     break
                 i = j
-                j = 2*i + 1
+                j = 2 * i + 1
         else:
             while j < right:
-                if (j < right-1
-                    and compare(heap[j+1].record, heap[j].record) < 0):
+                if (j < right - 1
+                    and compare(heap[j + 1].record, heap[j].record) < 0):
                     j += 1
                 if compare(heap[j].record, temp.record) < 0:
                     heap[i] = heap[j]
                 else:
                     break
                 i = j
-                j = 2*i + 1
+                j = 2 * i + 1
         heap[i] = temp
+
 
 class Display_Runs:
     def __init__(self, write):

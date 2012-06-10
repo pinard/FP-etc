@@ -19,11 +19,14 @@ pas, un fichier de même nom est présumé dans le répertoire en question.
 Le résultat de la comparaison est produit sur la sortie standard.
 """
 
-import os, subprocess, sys
+import os
+import subprocess
+import sys
 from curses.ascii import NUL, SOH, ESC
 nul = chr(NUL)
 soh = chr(SOH)
 esc = chr(ESC)
+
 
 class Main:
     def __init__(self):
@@ -43,6 +46,7 @@ class Main:
 
 main = Main().main
 
+
 class Wdiff:
 
     def __init__(self, gauche, droite):
@@ -61,6 +65,7 @@ class Wdiff:
         arguments.append(droite)
         self.execute(arguments)
 
+
 class Wdiff_Ansi(Wdiff):
     start_delete = esc + '[1;31m'
     end_delete = esc + '[0m'
@@ -69,6 +74,7 @@ class Wdiff_Ansi(Wdiff):
 
     def execute(self, arguments):
         os.execlp('wdiff', *arguments)
+
 
 class Wdiff_Postscript(Wdiff):
     start_delete = soh + 'bggray{.88}'

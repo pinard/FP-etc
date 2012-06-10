@@ -8,6 +8,7 @@ Convert a textual file into a Java string.
 
 import sys
 
+
 class Main:
 
     def main(self, *arguments):

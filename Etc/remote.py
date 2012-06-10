@@ -67,7 +67,9 @@ To get `cliff' to compute `2 + 3', a Python expression, one uses this:
     server.close()
 """
 
-import base64, threading, zlib
+import base64
+import threading
+import zlib
 import pickle as pickle
 from io import StringIO
 
@@ -97,7 +99,8 @@ TELNET_STTY_NO_OPOST = False
 INDIRECT_CODE, APPLY_CODE, EVAL_CODE, EXECUTE_CODE = list(range(4))
 INDIRECT_RETURN, NORMAL_RETURN, ERROR_RETURN = list(range(3))
 
-import os, sys
+import os
+import sys
 
 if DEBUG:
     def debug(message):
@@ -110,10 +113,22 @@ else:
 
 ### Client side.
 
-class error(Exception): pass
-class CreationError(error): pass
-class ServerError(error): pass
-class UploadError(error): pass
+
+class error(Exception):
+    pass
+
+
+class CreationError(error):
+    pass
+
+
+class ServerError(error):
+    pass
+
+
+class UploadError(error):
+    pass
+
 
 def Server(path=None, trace=0):
     """\
@@ -139,9 +154,11 @@ Decide which kind of server is needed for PATH, then create and return it.
 
 Serveur = Server
 
+
 def make_local_server(path, trace, insist=False):
     if path is None:
         return Local_Server(trace)
+
 
 class Local_Server:
 
@@ -213,6 +230,7 @@ Execute TEXT as Python statements on the remote server.  Return None.
             sys.stderr.write('%s: > %s\n' % (self.host, short_repr(reply)))
 
     executer = execute
+
 
 class Remote_Server:
 
@@ -311,6 +329,7 @@ class Remote_Server:
             raise ServerError(value)
         return value
 
+
 def make_ssh_server(path, trace, insist=False):
     user, host, remainder = split_path(path)
     try:
@@ -334,6 +353,7 @@ def make_ssh_server(path, trace, insist=False):
                     return SSH_Server(path, trace)
     if insist:
         pass                            # Ne sait pas comment insister
+
 
 class SSH_Server(Remote_Server):
 
@@ -396,6 +416,7 @@ class SSH_Server(Remote_Server):
         self.child.tochild.write(text + '\n')
         self.child.tochild.flush()
 
+
 def make_telnet_server(path, trace, insist=False):
     user, host, remainder = split_path(path)
     import netrc
@@ -406,7 +427,7 @@ def make_telnet_server(path, trace, insist=False):
     if triple is not None:
         login, account, password = triple
     elif insist:
-        login = account = password = None
+        login = password = None
         while not login:
             sys.stderr.write("Login: ")
             login = sys.stdin.readline().strip().lower()
@@ -415,6 +436,7 @@ def make_telnet_server(path, trace, insist=False):
     else:
         return None
     return Telnet_Server(host, trace, login, password)
+
 
 class Telnet_Server(Remote_Server):
 
@@ -557,6 +579,7 @@ class Telnet_Server(Remote_Server):
                     text = text[:-1]
                 assert line == text, (line, text)
 
+
 def split_path(path):
     """\
 Return (USER, HOST, REMAINDER) where `USER@HOST' is the first PATH
@@ -574,6 +597,7 @@ returned as None if not specified in first PATH component.
     return user, host, remainder
 
 ### Server side.
+
 
 class Main:
     def __init__(self):
@@ -684,6 +708,7 @@ An empty request produces an empty reply and the termination of this server.
 
 main = Main().main
 
+
 class Server_Agent(threading.Thread):
 
     def __init__(self, dispatcher):
@@ -761,6 +786,7 @@ class Server_Agent(threading.Thread):
                     pass
             self.previous_indirect_file_name = name
         return name
+
 
 def short_repr(value):
     text = repr(value)

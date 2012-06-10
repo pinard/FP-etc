@@ -22,7 +22,11 @@ copie que le contenu de cette région.
 Si IMAGE n'est pas fourni, gnome-screenshot est utilisé plutôt que import.
 """
 
-import os, sys, time
+import os
+import subprocess
+import sys
+import time
+
 
 class Main:
     delay = 3

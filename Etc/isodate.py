@@ -6,7 +6,8 @@
 Convert dates from some American formats to ISO format.
 """
 
-import re, time
+import re
+
 
 class Rule:
 
@@ -17,7 +18,7 @@ class Rule:
     which_zone = {
         'PST': '-08:00', 'PDT': '-07:00', 'MST': '-07:00', 'MDT': '-06:00',
         'CST': '-06:00', 'CDT': '-05:00', 'EST': '-05:00', 'EDT': '-04:00',
-        'AST': '-04:00', 'NST': '-03:30', 'UT' : '+00:00', 'GMT': '+00:00',
+        'AST': '-04:00', 'NST': '-03:30', 'UT':  '+00:00', 'GMT': '+00:00',
         'BST': '+01:00', 'MET': '+01:00', 'EET': '+02:00', 'JST': '+09:00',
         'GMT+1': '+01:00', 'GMT+2': '+02:00', 'GMT+3': '+03:00',
         'GMT+4': '+04:00', 'GMT+5': '+05:00', 'GMT+6': '+06:00',
@@ -43,6 +44,7 @@ class Rule:
             return 1900 + year
         return 2000 + year
 
+
 # Frequent cases.
 
 class Rule_Slashed(Rule):
@@ -55,6 +57,7 @@ class Rule_Slashed(Rule):
                                  int(match.group(1)),
                                  int(match.group(2)))
 
+
 class Rule_Email(Rule):
     def __init__(self):
         self.search = (re.compile(
@@ -66,6 +69,7 @@ class Rule_Email(Rule):
         return '%d-%02d-%02d' % (self.which_year(match.group(5)),
                                  self.which_month[match.group(4)],
                                  int(match.group(3)))
+
 
 class Rule_Other_1(Rule):
     def __init__(self):
@@ -80,6 +84,7 @@ class Rule_Other_1(Rule):
                                     int(match.group(2)),
                                     match.group(3))
 
+
 class Rule_Other_2(Rule):
     def __init__(self):
         self.search = (re.compile(
@@ -92,6 +97,7 @@ class Rule_Other_2(Rule):
                                  int(match.group(2)),
                                  match.group(3))
 
+
 class Rule_Zone_1(Rule):
     def __init__(self):
         self.search = re.compile(
@@ -100,6 +106,7 @@ class Rule_Zone_1(Rule):
     def replace(self, match):
         return '%s %s' % (match.group(1), self.which_zone(match.group(2)))
 
+
 class Rule_Zone_2(Rule):
     def __init__(self):
         self.search = re.compile(
@@ -107,6 +114,7 @@ class Rule_Zone_2(Rule):
 
     def replace(self, match):
         return '%s %s:%s' % match.group(1, 2, 3)
+
 
 # POSIX horrors, as in `ls' and `pax'.  Just drop the time.
 
@@ -124,6 +132,7 @@ class Rule_Posix_1(Rule):
                                   self.which_month[match.group(1)],
                                   int(match.group(2)))
 
+
 class Rule_Posix_2(Rule):
     def __init__(self):
         self.search = (re.compile(
@@ -135,6 +144,7 @@ class Rule_Posix_2(Rule):
         return '%d-%02d-%02d ' % (int(match.group(3)),
                                   self.which_month[match.group(1)],
                                   int(match.group(2)))
+
 
 # Do it all.
 
@@ -153,15 +163,18 @@ class Application:
             text = ''.join(fragments)
         return text
 
+
 class Normalize(Application):
     def __init__(self):
         self.rules = (Rule_Slashed(), Rule_Email(),
                       Rule_Other_1(), Rule_Other_2(),
                       Rule_Zone_1(), Rule_Zone_2())
 
+
 class Unposix(Application):
     def __init__(self):
         self.rules = Rule_Posix_1(), Rule_Posix_2()
+
 
 # External API.
 normalize = Normalize().transform

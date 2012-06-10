@@ -13,7 +13,11 @@ Option:
 If no FILEs, simulate a file named TAG with one line displaying TAG.
 """
 
-import os, subprocess, sys, tempfile
+import os
+import subprocess
+import sys
+import tempfile
+
 
 class Main:
     message = None
@@ -44,7 +48,8 @@ class Main:
             command = ('echo %s | git hash-object -w --path=%s --stdin'
                        % (shell_quoted(tag), shell_quoted(tag)))
             write('100644 blob %s\t%s\n'
-                  % (subprocess.check_output(command, shell=True).rstrip(), lstree_quoted(tag)))
+                  % (subprocess.check_output(command, shell=True).rstrip(),
+                     lstree_quoted(tag)))
         write = None
         tree = os.popen('git mktree < %s' % tempname).read().rstrip()
         os.remove(tempname)
@@ -54,8 +59,10 @@ class Main:
                 shell=True).rstrip()
         subprocess.call(['git', 'tag', tag, commit])
 
+
 def lstree_quoted(text):
     return text.replace('\\', '\\\\').replace('\t', '\\t').replace('\n', '\\n')
+
 
 def shell_quoted(text):
     return '"' + text.replace('\\', '\\\\').replace('"', '\\"') + '"'

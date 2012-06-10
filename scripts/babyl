@@ -36,7 +36,11 @@ or reconstruct a good Babyl file out of a damaged one.  To get an
 inventory of some folder file, merely use `babyl -s FOLDER'.
 """
 
-import os, re, subprocess, sys
+import os
+import re
+import subprocess
+import sys
+
 
 def decoded_header(texte):
     try:
@@ -55,6 +59,7 @@ def decoded_header(texte):
         return result
     except UnicodeDecodeError:
         return str(texte, 'ISO-8859-1')
+
 
 class Main:
 
@@ -192,7 +197,7 @@ class Main:
                         if index is None:
                             del headers[0]
                         else:
-                            del headers[:index+1]
+                            del headers[:index + 1]
                     elif headers[0].startswith('1'):
                         if index is not None:
                             del headers[index:]
@@ -264,6 +269,7 @@ class Main:
         sys.stderr.write(text)
         self.newline_needed = text[-1] != '\n'
 
+
 class Output:
 
     def __init__(self, output_name):
@@ -271,6 +277,7 @@ class Output:
 
     def start_input_file(self, input_name):
         pass
+
 
 class SummaryOutput(Output):
     MONTHS = {'Jan': 1, 'Feb': 2, 'Mar': 3, 'Apr': 4, 'May': 5,
@@ -336,6 +343,7 @@ class SummaryOutput(Output):
                     % (self.message_count, date, originator, subject))
         sys.stdout.write('%s\n' % line[0:79].rstrip())
 
+
 class BabylOutput(Output):
 
     def __init__(self, output_name):
@@ -368,6 +376,7 @@ class BabylOutput(Output):
         if body and not body[-1].endswith('\n'):
             write('\n')
         write('\37')
+
 
 class MboxOutput(Output):
 
@@ -441,6 +450,7 @@ class MboxOutput(Output):
         if body and not body[-1].endswith('\n'):
             write('\n')
         write('\n')
+
 
 class PrintOutput(Output):
 

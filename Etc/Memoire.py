@@ -8,7 +8,8 @@ un programme.  Une attention particulière est donnée aux problèmes de
 déperdition de mémoire, puisque c'est le besoin à l'origine de ce module.
 """
 
-import os, sys
+import os
+import sys
 
 ## Examen de l'usage de la mémoire.
 
@@ -19,6 +20,7 @@ import os, sys
 # tout premier, et séparément pour chacun des types, lorsque la quantité
 # d'objets de ce type a changé depuis le dernier appel, la fonction imprime
 # la grandeur du changement et la quantité résultante.
+
 
 class Inventaire:
 
@@ -117,11 +119,14 @@ class Inventaire:
 
     def essai(self):
 
-        class Bulgroz: pass
+        class Bulgroz:
+            pass
 
-        class Zorglub(object): pass
+        class Zorglub(object):
+            pass
 
-        def pause(): time.sleep(0.3)
+        def pause():
+            time.sleep(0.3)
 
         import time
         self.rapporter()
@@ -139,6 +144,7 @@ class Inventaire:
         essai = None
         self.rapporter('Rapport 4')
         pause()
+
 
 class Graphique:
 
@@ -237,7 +243,7 @@ class Graphique:
         write = self.fichier.write
         collection = collections[0]
         write('plot [%d:%d] [%d:%d] \'-\' title "%s"'
-              % (minx, maxx, miny, maxy+100, collection.titre))
+              % (minx, maxx, miny, maxy + 100, collection.titre))
         for collection in collections[1:]:
             write(', \'-\' title "%s"' % collection.titre)
         write('\n')
@@ -250,6 +256,7 @@ class Graphique:
                 write('%d %d\n' % (abcisse, ordonnee))
                 abcisse += 1
             write('e\n')
+
 
 class Collection:
 
@@ -269,6 +276,7 @@ class Collection:
                 self.array.pop(0)
                 self.points_elimines += 1
         self.array.append(valeur)
+
 
 class Inventaire_Vieux:
     ordinal = 0
@@ -318,8 +326,10 @@ class Inventaire_Vieux:
         self.compteurs = compteurs
         write('/' * 59 + '\n')
 
+
 def formater_point(valeur, format):
     return (format % valeur).replace(',', '.')
+
 
 def main(*arguments):
     Inventaire().essai()

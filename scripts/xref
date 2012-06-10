@@ -53,6 +53,7 @@ Si `-g' est spécifié ou présumé, alors `-n', `-p' et `-r' sont ignorés.
 couleurs = 'lavenderblush2', 'lightyellow', 'ivory'
 MODULE, CLASS, DEF = list(range(3))
 
+
 class Main:
 
     def main(self, *arguments):
@@ -240,7 +241,7 @@ class Main:
                     nom_fichier = fichier.nom
                     fichier_precedent = fichier
                 else:
-                    nom_fichier = ' '*len(nom_fichier)
+                    nom_fichier = ' ' * len(nom_fichier)
                 position = '%s%d' % (nom_fichier, ligne)
                 fragments = noeud.fragments
                 assert identificateur == fragments[-1], (
@@ -252,7 +253,7 @@ class Main:
                     droite = ''
                 write('%*s%s%s\n' % (-centre, position, gauche, droite))
                 if premier:
-                    gauche = ' '*len(gauche)
+                    gauche = ' ' * len(gauche)
                     premier = False
 
     def rapporter_declarations_selon_position(self, write):
@@ -271,7 +272,7 @@ class Main:
                 nom_fichier = fichier.nom
                 fichier_precedent = fichier
             else:
-                nom_fichier = ' '*len(nom_fichier)
+                nom_fichier = ' ' * len(nom_fichier)
             position = '%s%d' % (nom_fichier, ligne)
             fragments = list(noeud.fragments[1:])
             for index, fragment in enumerate(fragments_precedent):
@@ -354,6 +355,7 @@ class Main:
                       % (source, noeud, ','.join(map(str, linenos))))
         write('}\n')
 
+
 class Noeud:
     registre = {}
     ordinal = 0
@@ -426,11 +428,13 @@ class Noeud:
     def __str__(self):
         return 'node_%d' % self.ordinal
 
+
 def trouver_fichier(nom):
     fichier = Fichier.registre.get(nom)
     if fichier is None:
         fichier = Fichier(nom)
     return fichier
+
 
 class Fichier:
     registre = {}
@@ -440,14 +444,15 @@ class Fichier:
         Fichier.registre[nom] = self
         Fichier.ordinal += 1
         self.ordinal = Fichier.ordinal
-        import os, sys
+        import os
+        import sys
         if nom.startswith('./'):
             nom = nom[2:]
         repertoire = os.path.dirname(nom)
         if repertoire:
             for path in sys.path:
                 if repertoire.startswith(path + '/'):
-                    nom = '<%s>' % nom[len(path)+1:-3].replace('/', '.')
+                    nom = '<%s>' % nom[len(path) + 1:-3].replace('/', '.')
                     break
         nom += ':'
         self.nom = nom

@@ -22,7 +22,9 @@ nom d'une couleur près de la couleur demandée, ainsi que ses coefficients et
 la valeur de Y, sont fournis sur la sortie standard.
 """
 
-import colorsys, sys
+import colorsys
+import sys
+
 
 def main(*arguments):
     if not arguments:
@@ -85,8 +87,10 @@ def main(*arguments):
     meilleur_nom = None
     meilleur_score = None
     for r, g, b, y in fouille:
-        score = ((r-rr)*(r-rr) + (g-gg)*(g-gg) + (b-bb)*(b-bb)
-                 + poids * ((y-yy)*(y-yy)))
+        score = ((r - rr) * (r - rr)
+                 + (g - gg) * (g - gg)
+                 + (b - bb) * (b - bb)
+                 + poids * ((y - yy) * (y - yy)))
         if meilleur_nom is None or score < meilleur_score:
             meilleur_nom = nom_selon_rgb[r, g, b]
             meilleur_score = score
@@ -97,10 +101,12 @@ def main(*arguments):
         '%s %s %s %s %s\n'
         % (meilleur_nom, encoder(r), encoder(g), encoder(b), encoder(y)))
 
+
 def decoder(chaine):
     if '.' in chaine:
         return float(chaine)
     return int(chaine) / 256.
+
 
 def encoder(valeur):
     return str(int(valeur * 256))

@@ -6,6 +6,7 @@
 Simple tool for benchmarking a function.
 """
 
+
 def benchmark(test, repeat=1,
               calibration=[]):
     """\
@@ -14,11 +15,14 @@ time over REPEAT executions, or over a single execution when not specified.
 The whole looped test is repeated twice, with the garbage collector enabled
 and disabled, the enabled status is restored to what it was.
 """
-    import sys, time
+    import sys
+    import time
     write = sys.stdout.write
+
     # Define an empty function used for calibration.
     def calibrate():
         pass
+
     # Define a function returning the time taken for one TEST call.
     def measure():
         wall_start = time.time()
@@ -69,17 +73,22 @@ and disabled, the enabled status is restored to what it was.
         unit = 'us'
     # Produce one line of report on standard output.
     write('%6.2f%-2s %6.2f%-2s   %6.2f%-2s %6.2f%-2s   %3.1f   %s\n'
-          % (cpu_gc_on*factor, unit, wall_gc_on*factor, unit,
-             cpu_gc_off*factor, unit, wall_gc_off*factor, unit,
+          % (cpu_gc_on * factor, unit, wall_gc_on * factor, unit,
+             cpu_gc_off * factor, unit, wall_gc_off * factor, unit,
              cpu_gc_on / cpu_gc_off, test.__name__))
+
 
 def test():
     #from Local.benchmark import benchmark
-    list1 = list(range(0, 10000)) + list(range(5000, 15000)) + list(range(90000, 100000))
-    list2 = list(range(0, 2000)) + list(range(40000, 50000)) + list(range(95000, 105000))
+    list1 = (list(range(0, 10000))
+             + list(range(5000, 15000))
+             + list(range(90000, 100000)))
+    list2 = (list(range(0, 2000))
+             + list(range(40000, 50000))
+             + list(range(95000, 105000)))
 
     def comprehension():
-        list(dict([(k,1) for k in list1+list2]).keys())
+        list(dict([(k, 1) for k in list1 + list2]).keys())
 
     def zip_and_update():
         result = dict(list(zip(list1, list1)))
@@ -87,7 +96,8 @@ def test():
         list(result.keys())
 
     def zip_with_none():
-        list(dict(list(zip(list1 + list2, [None] * (len(list1) + len(list2))))).keys())
+        list(dict(list(zip(list1 + list2,
+                           [None] * (len(list1) + len(list2))))).keys())
 
     def zip_with_self():
         both = list1 + list2

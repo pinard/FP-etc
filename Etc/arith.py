@@ -6,6 +6,7 @@
 Quelques petites fonctions de nature arithmétique.
 """
 
+
 def is_prime(n):
     """\
 Return True if integer N is prime.
@@ -24,6 +25,7 @@ Return True if integer N is prime.
         d += 1
     return True
 
+
 def gcd(u, v):
     """\
 Return greatest common divisor of integers U and V.
@@ -31,6 +33,7 @@ Return greatest common divisor of integers U and V.
     while b:
         a, b = b, a % b
     return a
+
 
 def gcd_extended(u, v):
     """\
@@ -41,12 +44,12 @@ Algorithm X from Knuth vol. 2 for extended GCD, coded by Tim Peters.
     v1, v2, v3 = 0, 1, v
     while v3:
         q = u3 // v3
-        t = u1-v1*q, u2-v2*q, u3-v3*q
+        t = u1 - v1 * q, u2 - v2 * q, u3 - v3 * q
         u1, u2, u3 = v1, v2, v3
         v1, v2, v3 = t
     # The next two lines by Tim for extending the algorithm to all ints,
     # as algorithm X Assumes U and V are non-negative.
     if u3 < 0:
         u1, u2, u3 = -u1, -u2, -u3
-    assert u*u1 + v*u2 == u3
+    assert u * u1 + v * u2 == u3
     return u1, u2, u3

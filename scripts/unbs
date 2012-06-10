@@ -25,7 +25,9 @@ import sys
 
 # Aussi examiner ce qui suit, de http://arker.homelinux.org/~dcraven/vim-pager
 #cat $1 | col -b | vim -c 'se ft=man ro nomod nowrap ls=1 notitle ic' \
-#    -c 'nmap <Space> <C-F>' -c 'nmap b <C-B>' -c 'nmap q :q!<CR>' -c 'norm L' -
+#    -c 'nmap <Space> <C-F>' -c 'nmap b <C-B>' #
+#    -c 'nmap q :q!<CR>' -c 'norm L' -
+
 
 class Main:
 
@@ -66,6 +68,7 @@ class Main:
         else:
             handler.replace_backspaces(sys.stdin.read(), sys.stdout.write)
 
+
 class Handler:
 
     def replace_backspaces(self, text, write):
@@ -77,39 +80,40 @@ class Handler:
                 write(text[start:])
                 start = limit
             elif position > 0 and position < limit - 1:
-                if text[position-1] == text[position+1]:
-                    write(text[start:position-1])
-                    fragments = [text[position-1]]
+                if text[position - 1] == text[position + 1]:
+                    write(text[start:position - 1])
+                    fragments = [text[position - 1]]
                     start = position + 2
-                    while (start + 3 < limit and text[start] == text[start+2]
-                           and text[start+1] == '\b'):
+                    while (start + 3 < limit and text[start] == text[start + 2]
+                           and text[start + 1] == '\b'):
                         fragments.append(text[start])
                         start = start + 3
                     self.bold(''.join(fragments), write)
-                elif text[position-1] == '_':
-                    write(text[start:position-1])
-                    fragments = [text[position+1]]
+                elif text[position - 1] == '_':
+                    write(text[start:position - 1])
+                    fragments = [text[position + 1]]
                     start = position + 2
                     while (start + 3 < limit and text[start] == '_'
-                           and text[start+1] == '\b'):
-                        fragments.append(text[start+2])
+                           and text[start + 1] == '\b'):
+                        fragments.append(text[start + 2])
                         start = start + 3
                     self.underline(''.join(fragments), write)
-                elif text[position+1] == '_':
-                    write(text[start:position-1])
-                    fragments = [text[position-1]]
+                elif text[position + 1] == '_':
+                    write(text[start:position - 1])
+                    fragments = [text[position - 1]]
                     start = position + 2
-                    while (start + 3 < limit and text[start+1] == '\b'
-                           and text[start+2] == '_'):
+                    while (start + 3 < limit and text[start + 1] == '\b'
+                           and text[start + 2] == '_'):
                         fragments.append(text[start])
                         start = start + 3
                     self.underline(''.join(fragments), write)
                 else:
-                    write(text[start:position+1])
+                    write(text[start:position + 1])
                     start = position + 1
             else:
-                write(text[start:position+1])
+                write(text[start:position + 1])
                 start = position + 1
+
 
 class Ansi(Handler):
 
@@ -119,6 +123,7 @@ class Ansi(Handler):
     def underline(self, text, write):
         write('\033[4m%s\033[m' % text)
 
+
 class Ansi_Colour(Handler):
 
     def bold(self, text, write):
@@ -126,6 +131,7 @@ class Ansi_Colour(Handler):
 
     def underline(self, text, write):
         write('\033[1;34m%s\033[m' % text)
+
 
 class Dumb(Handler):
 
@@ -135,6 +141,7 @@ class Dumb(Handler):
     def underline(self, text, write):
         write(text)
 
+
 class Html(Handler):
 
     def bold(self, text, write):
@@ -142,6 +149,7 @@ class Html(Handler):
 
     def underline(self, text, write):
         write('<emph>%s</emph>' % text)
+
 
 class Info(Handler):
 
@@ -151,6 +159,7 @@ class Info(Handler):
     def underline(self, text, write):
         write('_%s_' % text)
 
+
 class Rest(Handler):
 
     def bold(self, text, write):
@@ -158,6 +167,7 @@ class Rest(Handler):
 
     def underline(self, text, write):
         write('*%s*' % text)
+
 
 class Texinfo(Handler):
 

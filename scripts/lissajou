@@ -21,15 +21,19 @@
 # As an exercise, in 2002, I converted this package to depend on Glade.
 # As another exercise, in 2009, I converted it to *not* depend on Glade!
 
-import math, sys
+import math
+import sys
 
 import pygtk
 pygtk.require('2.0')
-import gobject, gtk
+import gobject
+import gtk
+
 
 def main(*arguments):
     gui = Gui()
     gtk.main()
+
 
 def compute_math(hfactor, vfactor, phase, xmax, ymax, point_count):
     return [((int(xmax * math.sin(hfactor * counter)) + xmax) // 2,
@@ -37,12 +41,14 @@ def compute_math(hfactor, vfactor, phase, xmax, ymax, point_count):
             for counter in range(point_count)]
 compute_math.package = 'math'
 
+
 def compute_Numeric(hfactor, vfactor, phase, xmax, ymax, point_count):
     counter = Numeric.array(range(point_count), Numeric.Float)
     xvalues = .5 * (xmax * Numeric.sin(hfactor * counter) + xmax)
     yvalues = .5 * ((ymax * Numeric.sin(vfactor * counter - phase)) + ymax)
     return zip(xvalues.astype(Numeric.Int), yvalues.astype(Numeric.Int))
 compute_Numeric.package = 'Numeric'
+
 
 def compute_numpy(hfactor, vfactor, phase, xmax, ymax, point_count):
     counter = numpy.array(range(point_count), float)
@@ -62,6 +68,7 @@ except ImportError:
         compute = compute_Numeric
 else:
     compute = compute_numpy
+
 
 class Gui:
     gc_inited = False
@@ -103,10 +110,10 @@ class Gui:
         table.set_col_spacings(5)
         vbox.pack_start(table)
 
-        table.attach(gtk.Label("Fréq. hor."), 0,1, 0,1, 0, 0)
-        table.attach(gtk.Label("Fréq. ver."), 0,1, 1,2, 0, 0)
-        table.attach(gtk.Label("Phase"), 0,1, 2,3, 0, 0)
-        table.attach(gtk.Label("Densité"), 0,1, 3,4, 0, 0)
+        table.attach(gtk.Label("Fréq. hor."), 0, 1, 0, 1, 0, 0)
+        table.attach(gtk.Label("Fréq. ver."), 0, 1, 1, 2, 0, 0)
+        table.attach(gtk.Label("Phase"), 0, 1, 2, 3, 0, 0)
+        table.attach(gtk.Label("Densité"), 0, 1, 3, 4, 0, 0)
 
         scale_horizontal = gtk.HScale()
         scale_horizontal.set_digits(2)
@@ -115,7 +122,7 @@ class Gui:
         adjustment.connect('value_changed', self.need_redraw)
         table.attach(scale_horizontal, 1, 2, 0, 1, gtk.EXPAND | gtk.FILL, 0)
         self.adjustment_horizontal_frequency = adjustment
-    
+
         scale_vertical = gtk.HScale()
         scale_vertical.set_digits(2)
         adjustment = scale_vertical.get_adjustment()
@@ -218,14 +225,15 @@ class Gui:
             self.gc_inited = True
         pixmap = gtk.gdk.Pixmap(window, width, height)
         self.label_point_count.set_text('%d points' % point_count)
-        pixmap.draw_rectangle(self.white_gc, True, 0,0, width,height)
+        pixmap.draw_rectangle(self.white_gc, True, 0, 0, width, height)
         if fillable:
             if self.checkbutton_fill.get_active():
                 pixmap.draw_polygon(self.cyan_gc, 1, points)
             pixmap.draw_polygon(self.black_gc, 0, points)
         else:
             pixmap.draw_lines(self.black_gc, points)
-        window.draw_drawable(self.white_gc, pixmap, 0,0, 0,0, width,height)
+        window.draw_drawable(self.white_gc, pixmap, 0, 0, 0, 0, width, height)
+
 
 def gcd(a, b):
     while b:

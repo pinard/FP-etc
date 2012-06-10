@@ -6,6 +6,7 @@
 Ce module regroupe quelques déclarations utiles.
 """
 
+
 def garantir_repertoire(nom):
     import os
     base = os.path.dirname(nom)
@@ -13,6 +14,7 @@ def garantir_repertoire(nom):
         # REVOIR: Plante s'il existe déjà un fichier à ce nom.
         garantir_repertoire(base)
         os.mkdir(base)
+
 
 ## Profilage de l'exécution
 
@@ -35,6 +37,7 @@ class Chronometre:
             info.chrono("%s : %.1f secondes." % (self.titre, delta))
         else:
             info.chrono("%.1f secondes." % delta)
+
 
 class Profilage:
     deja = False

@@ -19,7 +19,10 @@ Decompilation
 Adapted from faces 1.6.1's filters/fstoikon.
 """
 
-import os, subprocess, sys
+import os
+import subprocess
+import sys
+
 
 class run:
     compile = None
@@ -27,6 +30,7 @@ class run:
     decompile = None
     show = False
     threshold = False
+
 
 def main(*arguments):
     if not arguments:
@@ -57,9 +61,10 @@ def main(*arguments):
         else:
             show(arguments[0])
 
+
 def compile(input, output):
-    graymap='/tmp/%s.compxf.pgm' % os.getpid()
-    bitmap='/tmp/%s.compxf.pbm' % os.getpid()
+    graymap = '/tmp/%s.compxf.pgm' % os.getpid()
+    bitmap = '/tmp/%s.compxf.pbm' % os.getpid()
     subprocess.call(['convert', input, graymap])
     #subprocess.call(['convert', '-geometry', '48x48', input, graymap])
     x, y = dimensions(graymap)
@@ -101,15 +106,18 @@ def compile(input, output):
     os.remove(graymap)
     os.remove(bitmap)
 
+
 def decompile(input, output):
     image = icon_from(input)
     subprocess.Popen('icontopbm > %s' % output, shell=True,
                      stdin=subprocess.PIPE).input.write(image)
 
+
 def show(input):
     image = icon_from(input)
     subprocess.Popen('icontopbm | xv -expand 3 -', shell=True,
                      stdin=subprocess.PIPE).input.write(image)
+
 
 def icon_from(input):
     fragments = []
@@ -135,6 +143,7 @@ def icon_from(input):
     if column > 0:
         write('\n')
     return ''.join(fragments)
+
 
 def dimensions(name):
     for line in open(name):

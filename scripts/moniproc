@@ -34,10 +34,16 @@ Example of analysis:
   plot(log$base, log$vsize, las=2)
   agg = aggregate(log[c('pcpu', 'rss', 'vsize', 'size')],
                   list(log$date, log$time),
-                  sum)  
+                  sum)
 """
 
-import csv, datetime, os, re, sys, time
+import csv
+import datetime
+import re
+import subprocess
+import sys
+import time
+
 
 class Main:
     output = None

@@ -24,6 +24,7 @@ le Wiki.
 import sys
 from Etc.Allout import allout
 
+
 class Main:
 
     def main(self, *arguments):

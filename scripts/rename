@@ -24,7 +24,9 @@ Exemples:
     rename 'if _[0] in "yY": print _; _ = _.replace("foo", "bar")' *
 """
 
-import os, re, sys
+import os
+import sys
+
 
 def main(*arguments):
     if not arguments:

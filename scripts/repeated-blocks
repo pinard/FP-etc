@@ -31,7 +31,9 @@ given are already sorted).  Without -f, output is sorted by decreasing
 block length in tokens, and then, by decreasing number of occurrences.
 """
 
-import re, sys
+import re
+import sys
+
 
 class Main:
     verbose = False
@@ -306,6 +308,7 @@ class Main:
         for block, reference in pairs:
             print(block.buffer.name, block.first, block.limit, bool(reference))
 
+
 class Buffer:
     ordinal = 0
 
@@ -341,6 +344,7 @@ class Buffer:
     def get(self, index):
         return self.text[self.start[index]:self.end[index]]
 
+
 class Block:
     nested = False
 
@@ -352,18 +356,18 @@ class Block:
     def __repr__(self):
         text = self.buffer.text
         start = self.buffer.start[self.first]
-        end = self.buffer.end[self.limit-1]
+        end = self.buffer.end[self.limit - 1]
         return '%r<%r>' % (self.buffer, text[start:end])
 
     def __str__(self):
         text = self.buffer.text
         start = self.buffer.start[self.first]
-        end = self.buffer.end[self.limit-1]
+        end = self.buffer.end[self.limit - 1]
         position = text.rfind('\n', 0, start)
-        if position > 0 and not text[position+1:start].strip():
+        if position > 0 and not text[position + 1:start].strip():
             start = position + 1
         if end < len(text) and text[end] == '\n':
-            return text[start:end+1]
+            return text[start:end + 1]
         return text[start:end] + '\n'
 
     def __cmp__(self, other):

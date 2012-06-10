@@ -6,7 +6,9 @@
 Épuration d'un fichier créé oar le programme `script'.
 """
 
-import re, sys
+import re
+import sys
+
 
 class Main:
     def __init__(self):

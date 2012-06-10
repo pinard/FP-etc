@@ -10,6 +10,7 @@ Usage: shuffle [FICHIER]...
 
 import sys
 
+
 def main(*arguments):
     if arguments:
         lines = []

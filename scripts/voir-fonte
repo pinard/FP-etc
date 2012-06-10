@@ -12,7 +12,9 @@ NOM est le nom d'une fonte PostScript.  Si NOM est "toutes", alors
 toutes les fontes disponibles sont présentées.
 """
 
-import os, subprocess, sys
+import subprocess
+import sys
+
 
 def main(*arguments):
     assert len(arguments) == 1, arguments
@@ -23,6 +25,7 @@ def main(*arguments):
         write('FontDirectory {pop DoFont} forall\n')
     else:
         write('/%s DoFont\n' % font)
+
 
 def copier_prfont_ps(write):
     for paquetage in 'gs_lib', 'ghostscript-library':

@@ -10,6 +10,7 @@ Usage: slowcat [-s CPS] [FICHIER]...
 
 import sys
 
+
 class Main:
     delai = None
 
@@ -37,8 +38,11 @@ class Main:
                 #while longueur_queue(sys.stderr) != 0:
                 #    sleep(.1)
 
+
 def longueur_queue(sortie):
-    import fcntl, struct, termios
+    import fcntl
+    import struct
+    import termios
     return struct.unpack('i', fcntl.ioctl(sortie, termios.TIOCOUTQ, "    "))[0]
 
 run = Main()

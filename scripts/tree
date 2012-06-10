@@ -25,7 +25,9 @@ I also have some Emacs code to colorize each level differently.  One can hide
 a whole hierarchy with `C-c h', and reveal one level at a time with `C-c i'.
 """
 
-import os, subprocess, sys
+import subprocess
+import sys
+
 
 class Main:
     def __init__(self):
@@ -83,7 +85,8 @@ class Main:
                 value[tuple(split)] = -size
             items = []
             for split, size in pairs:
-                items.append([(value[tuple(split[:counter+1])], split[counter])
+                items.append([(value[tuple(split[:counter + 1])],
+                               split[counter])
                               for counter in range(len(split))])
             items.sort()
             pairs = []
@@ -147,6 +150,7 @@ class Main:
                 else:
                     write('   ')
             write('\\_ %s\n' % split[-1])
+
 
 def clean(pairs):
     # The basename is always written.  Intermediate directories normally

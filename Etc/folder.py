@@ -6,11 +6,16 @@
 Traitements Babyl ou mbox fréquents: partie mise en commun.
 """
 
-import os, time, sys
+import os
+import time
+import sys
 from email import message_from_string
 from email.Errors import MessageError
 
-class Error(Exception): pass
+
+class Error(Exception):
+    pass
+
 
 def folder(file_name, strip201=False):
     if file_name:
@@ -34,6 +39,7 @@ def folder(file_name, strip201=False):
         if count > 0:
             folder.modified = True
     return folder
+
 
 class Folder:
     # If FILE_NAME is not None, that folder file is being read and written.
@@ -128,7 +134,8 @@ class Folder:
         file_name = self.file_name or '<stdin>'
         if index is None:
             raise Error('%s: %s' % (file_name, diagnostic))
-        raise Error('%s:%s: %s' % (file_name, index+1, diagnostic))
+        raise Error('%s:%s: %s' % (file_name, index + 1, diagnostic))
+
 
 class Babyl(Folder):
     folder_prefix = '''\
@@ -165,7 +172,7 @@ Note:    it means the file has no messages in it.
             self.error("Message does not end like a Babyl article.",
                        len(self.data) + len(data) - 1)
         if data[0].startswith('\f\n'):
-            data[0] = date[0][2:]
+            data[0] = data[0][2:]
         else:
             self.error("Message does not start like a Babyl article.",
                        len(self.data))
@@ -222,6 +229,7 @@ Note:    it means the file has no messages in it.
             self.error("Invalid Babyl flag.", index)
         return data, head_begin, head_end, body_begin, body_end
 
+
 class Mbox(Folder):
     folder_prefix = None
 
@@ -245,19 +253,19 @@ class Mbox(Folder):
             if newline < 0:
                 self.error("Unterminated envelope in Mbox folder.",
                            len(self.data) + len(data))
-            double_newline = buffer.find('\n\n', newline+1, end)
+            double_newline = buffer.find('\n\n', newline + 1, end)
             if double_newline < 0:
-                head = buffer[newline+1:end]
+                head = buffer[newline + 1:end]
                 if not head.endswith('\n'):
                     head += '\n'
                 body = ''
             else:
-                head = buffer[newline+1:double_newline+1]
-                body = buffer[double_newline+2:end]
+                head = buffer[newline + 1:double_newline + 1]
+                body = buffer[double_newline + 2:end]
                 if body.endswith('\n\n'):
                     body = body.rstrip() + '\n'
             data.append('%s\n%s' % (head, body.replace('\n>From', '\nFrom')))
-            envelope.append(buffer[start+5:newline].strip())
+            envelope.append(buffer[start + 5:newline].strip())
             start = end + 2
         self.data += data
         self.envelope += envelope
