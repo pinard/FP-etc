@@ -39,6 +39,11 @@ else
   shell=sh
 fi
 
+# Emacs M-x shell redefines EMACS to t.  Not nice!
+if [ "$EMACS" = t ]; then
+  prefix=emacs-
+fi
+
 case "$LOGNAME" in
   root)
     user=super
@@ -58,16 +63,18 @@ if [ -n "$DOSWIN" ]; then
   # Le bash de DJGPP ajoute plusieurs blancs suffixes à \h.
   ident=' '$LOGNAME'@'$HOST': \w'
 else
-  case $shell in
-    sh)
-      ident=' '$name$HOST
-      ;;
+  case $prefix$shell in
     bash)
       ident='\[\e]0;'$name'\h: \w\a\]'
-      #ident=' '$name'\h: \w'
-      #PROMPT_DIRTRIM=2
       ;;
-    zsh)
+    emacs-bash)
+      ident=' '$name'\h: \w'
+      PROMPT_DIRTRIM=2
+      ;;
+    emacs-sh|sh)
+      ident=' '$name$HOST
+      ;;
+    emacs-zsh|zsh)
       case "$user" in
         super) ident=' %n@%m: %/' ;;
         normal) ident=' '$name'%m: %2~' ;;
