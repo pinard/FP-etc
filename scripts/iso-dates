@@ -10,7 +10,7 @@ Usage: iso-dates [OPTION] [FICHIER]...
   -l  Traiter la sortie de `ls' ou `pax'.
 """
 
-import fileinput, sys
+import sys
 from Etc import isodate
 
 

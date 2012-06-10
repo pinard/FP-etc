@@ -80,7 +80,7 @@ class Main:
             if nouveau_str != vieux_str:
                 if os.path.exists(nouveau_str):
                     sys.stderr.write("# %r écraserait %r, non renommé!\n"
-                                     % (vieux_nom_str, nouveau_nom_str))
+                                     % (vieux_str, nouveau_str))
                     continue
                 if self.volubile:
                     sys.stderr.write('mv %s %s\n' % (vieux_nom, nouveau_nom))

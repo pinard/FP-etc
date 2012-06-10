@@ -154,6 +154,7 @@ These sublists taken whole are still topologically sorted within the result.
         else:
             # If not zero, the vertex is necessarily part of a cycle.
             # Find the shortest path back to self.
+            vertex = vertices.pop()
             cycle = [vertex]
             # ...
             sublist = []

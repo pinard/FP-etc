@@ -23,6 +23,7 @@ répertoire courant, ainsi que tous ses sous-répertoires, récursivement.
 # un fichier nommé "test_*.py", dans le projet à vérifier, qui
 # contienne la ligne: "from Local.pypoux import *".
 
+import os
 import sys
 
 

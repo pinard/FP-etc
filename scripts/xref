@@ -134,13 +134,9 @@ class Main:
                         selon_identificateur[fragments[-1]] = [noeud]
 
     def etudier_references(self, repertoire):
-        import sys
-        write = sys.stdout.write
         # Accumuler l'information.
         selon_identificateur = self.declarations_selon_identificateur
-        selon_position = self.declarations_selon_position
         for nom, module in self.tous_fichiers_analysables(repertoire):
-            fichier = trouver_fichier(nom)
             source = None
             for lineno, info in self.tous_identificateurs(nom, module):
                 if isinstance(info, tuple):
@@ -183,7 +179,7 @@ class Main:
 
     def tous_identificateurs(self, nom, module):
         from tokenize import generate_tokens, COMMENT, NL
-        from tokenize import NAME, NEWLINE, INDENT, DEDENT
+        from tokenize import NAME, INDENT, DEDENT
         #from token import tok_name
         fragments = [module]
         niveaux = [-1]
@@ -200,7 +196,6 @@ class Main:
                         declaration = DEF
                     elif declaration is None:
                         yield lineno, texte
-                        action = None
                     else:
                         if niveau > niveaux[-1]:
                             fragments.append(texte)
@@ -209,7 +204,7 @@ class Main:
                             assert niveau == niveaux[-1], (niveau, niveaux)
                             fragments[-1] == texte
                         yield lineno, (declaration, tuple(fragments))
-                        action = declaration = None
+                        declaration = None
                 else:
                     if code == INDENT:
                         niveau += 1

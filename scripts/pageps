@@ -21,7 +21,10 @@ If -g and no explicit OUTPUT file name, there is no standard output.
 Without -lp, use the orientation which best fit the diagram.
 """
 
+import subprocess
 import sys
+
+encoding = 'UTF-8'
 
 page_dx = int(72 * 8.5)
 page_dy = int(72 * 11.0)
@@ -137,7 +140,7 @@ class Main:
             sys.stderr.write(command + '\n')
         subprocess.Popen(
                 command, shell=True,
-                stdin=subprocess.PIPE).stdin.write(buffer)
+                stdin=subprocess.PIPE).stdin.write(buffer.encode(encoding))
 
 run = Main()
 main = run.main

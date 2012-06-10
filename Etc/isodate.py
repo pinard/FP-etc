@@ -140,7 +140,7 @@ class Rule_Posix_2(Rule):
                 % (self.month, self.month_day, self.year))
             .search)
 
-    def replace(self, mahch):
+    def replace(self, match):
         return '%d-%02d-%02d ' % (int(match.group(3)),
                                   self.which_month[match.group(1)],
                                   int(match.group(2)))

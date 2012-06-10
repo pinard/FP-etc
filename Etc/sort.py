@@ -727,7 +727,6 @@ class Polyphase:
 
     def heapify_files(self, right):
         # Establish the priority queue invariant over a HEAP[:RIGHT] of files.
-        heap = self.heap
         left = (right + 1) // 2
         while left > 0:
             left -= 1

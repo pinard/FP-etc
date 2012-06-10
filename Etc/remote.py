@@ -371,7 +371,6 @@ class SSH_Server(Remote_Server):
         import tempfile
         temporary = tempfile.mktemp()
         os.system('scp -pq %s:%s %s' % (self.host, remote, temporary))
-        text = file(temporary).read()
         os.remove(temporary)
 
     def upload(self, text, remote):

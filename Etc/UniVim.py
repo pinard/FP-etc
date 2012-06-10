@@ -75,7 +75,7 @@ class Buffer(Wrapper):
 
 
 class Vim(Wrapper):
-    import vim as object
+    #import vim as object
 
     def __init__(self):
         pass

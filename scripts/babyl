@@ -352,8 +352,8 @@ class BabylOutput(Output):
         else:
             self.write = open(output_name, 'wb').write
             if run.verbose:
-                feedback.write('making new Babyl file: %s\n'
-                               % self.output_name)
+                run.report.write("making new Babyl file: %s\n"
+                                 % self.output_name)
             self.write('BABYL OPTIONS: -*- rmail -*-\n'
                        'Version: 5\n'
                        'Labels:\n'
@@ -415,7 +415,7 @@ class MboxOutput(Output):
             if match:
                 try:
                     from email.utils import parsedate
-                except importError:
+                except ImportError:
                     from email.Utils import parsedate
                 date = parsedate(match.group(1))
                 if date is None:

@@ -82,5 +82,3 @@ if __name__ == '__main__':
     package = 'conf'
     version = '?.?'
     main(*sys.argv[1:])
-else:
-    from __main__ import package, version

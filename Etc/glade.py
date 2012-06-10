@@ -33,6 +33,3 @@ class Glade:
         import gtk
         while gtk.events_pending():
             gtk.mainiteration()
-
-if __name__ == '__main__':
-    main(*sys.argv[1:])

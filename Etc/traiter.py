@@ -84,7 +84,6 @@ def main(*arguments):
     else:
         # L'appel se fait probablement via un shell interactif.  Étudier les
         # arguments fournis par l'utilisateur.
-        option_trace = False
         import getopt
         options, arguments = getopt.getopt(arguments, 'w')
         for option, valeur in options:

@@ -33,6 +33,7 @@ import gtk
 def main(*arguments):
     gui = Gui()
     gtk.main()
+    del gui  # for pyflakes
 
 
 def compute_math(hfactor, vfactor, phase, xmax, ymax, point_count):
@@ -241,5 +242,4 @@ def gcd(a, b):
     return a
 
 if __name__ == '__main__':
-    import sys
     main(*sys.argv[1:])

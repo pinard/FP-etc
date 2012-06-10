@@ -30,9 +30,9 @@ def gcd(u, v):
     """\
 Return greatest common divisor of integers U and V.
 """
-    while b:
-        a, b = b, a % b
-    return a
+    while v:
+        u, v = v, u % v
+    return u
 
 
 def gcd_extended(u, v):
