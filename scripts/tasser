@@ -152,7 +152,7 @@ class Sortie:
         if not self.page:
             return
         self.page[-1][0] = None         # FIXME: faire mieux que ça!
-        espacement = (run.largeur_page - self.largeur_page) / len(self.page)
+        espacement = (run.largeur_page - self.largeur_page) // len(self.page)
         longueur = 0
         for largeur, colonne in self.page:
             longueur = max(longueur, len(colonne))
