@@ -26,7 +26,7 @@ The `allout-vim' package may be downloaded from:
 Installation directives may be found at:
     http://fp-etc.progiciels-bpi.ca/allout-vim.html
 Source files for Allout Vim are available as:
-    http://github.com/pinard/FP-etc/blob/master/allout-vim/
+    https://github.com/pinard/FP-etc/blob/master/allout-vim/
 
 While syntax colouring of Allout files should work in almost any Vim,
 Allout specific commands and mappings require a Python-enabled Vim.
