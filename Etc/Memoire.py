@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 # Copyright © 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, décembre 2002.
 
@@ -171,18 +172,17 @@ class Graphique:
             return
         self.references = Collection("Nombre références")
         self.statm = list(map(Collection, ("Mémoire totale (K)",
-                                      "Mémoire résidente (K)",
-                                      "Mémoire partagée (K)",
-                                      "Mémoire pure (K)",
-                                      "Mémoire impure (K)",
-                                      "Mémoire bibliothèque (K)",
-                                      "Mémoire modifiée (K)")))
+                                           "Mémoire résidente (K)",
+                                           "Mémoire partagée (K)",
+                                           "Mémoire pure (K)",
+                                           "Mémoire impure (K)",
+                                           "Mémoire bibliothèque (K)",
+                                           "Mémoire modifiée (K)")))
         self.fichier = os.popen(
             # REVOIR: Comment faire ça tout en Python?
-            'sh -c \'trap "" 1; %s -persist\'' % nom, 'w',
-            'ISO-8859-1')
+            'sh -c \'trap "" 1; %s -persist\'' % nom, 'w')
         write = self.fichier.write
-        write('set data style lines\n'
+        write('set style data lines\n'
               'set key right bottom\n')
         if self.echelle_logarithmique:
             write('set logscale y\n')
