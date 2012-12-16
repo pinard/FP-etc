@@ -335,8 +335,8 @@ class Buffer:
     def __repr__(self):
         return 'Buffer-%d' % self.ordinal
 
-    def __cmp__(self, other):
-        return cmp(self.ordinal, other.ordinal)
+    def __lt__(self, other):
+        return self.ordinal < other.ordinal
 
     def __len__(self):
         return len(self.start)
@@ -370,10 +370,12 @@ class Block:
             return text[start:end + 1]
         return text[start:end] + '\n'
 
-    def __cmp__(self, other):
-        return (cmp(self.buffer, other.buffer)
-                or cmp(self.first, other.first)
-                or cmp(other.limit, self.limit))
+    def __lt__(self, other):
+        if self.buffer < other.buffer:
+            return True
+        if self.first < other.first:
+            return True
+        return other.limit < self.limit
 
     def reference(self):
         name = self.buffer.name
