@@ -1,8 +1,0 @@
-syntax: glob
-*.pyc
-*.wpu
-build
-*~
-allout-vim/admin
-pynits/admin
-web
