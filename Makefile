@@ -5,7 +5,7 @@
 PYSETUP = python3 setup.py
 DISTRIBUTION = Etc-0.2
 
-all:
+all pregithub:
 	$(PYSETUP) --quiet build
 
 install: all
