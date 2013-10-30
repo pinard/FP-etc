@@ -54,9 +54,9 @@ class Main:
         tree = os.popen('git mktree < %s' % tempname).read().rstrip()
         os.remove(tempname)
         commit = subprocess.check_output(
-                'echo %s | git commit-tree %s'
-                % (shell_quoted(self.message or tag), tree),
-                shell=True).rstrip()
+            ('echo %s | git commit-tree %s'
+             % (shell_quoted(self.message or tag), tree)),
+            shell=True).rstrip()
         subprocess.call(['git', 'tag', tag, commit])
 
 
