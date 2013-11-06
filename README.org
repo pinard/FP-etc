@@ -1,0 +1,304 @@
+#+TITLE: FP etc.
+#+OPTIONS: H:2 toc:2
+
+** Introduction
+
+This package contains a random collection of files which are useful to
+me (so the *FP* initials), and probably might be useful to others as
+well.  However, these files are too small to warrant a package on
+their own, and this is why they just get bundled into this catch-all
+(so the *-etc*).
+
+It is possible that I delete some of these tools over time, or extract
+others into their own separate project.  Smallish projects were a
+burden to maintain, but the advent of GitHub changes how I see things.
+
+*** Components
+
+The remaining sections of this page summarize the various components
+(roughly logical sub-packages) of this package.  The first sections
+describe what was published first here, these programs usually have a
+separate documentation.
+
+*** Fetching
+
+If you happen to have Git installed, you may get most of these files,
+and their history as well, through the command:
+
+: git clone https://github.com/pinard/FP-etc.git
+
+*** Installation
+
+One may install everything at once by =cd='ing in the proper directory,
+then executing:
+
+: python setup.py install
+
+You might prefer hand-installing only the scripts which interest you,
+as the whole might pollute your execution search path with too many
+names.
+
+** Allout-Vim
+
+This package offers Allout mode, as found within Emacs, within a
+Python-enabled Vim.  This is my first packaging of a Vim script.  See
+the [[http://fp-etc.progiciels-bpi.ca/allout-vim.html][README file for Allout-Vim]] and the [[http://fp-etc.progiciels-bpi.ca/allout-vim-doc.html][Allout-Vim documentation file]].
+
+** Babyl
+
+This [[http://fp-etc.progiciels-bpi.ca/scripts/babyl][Python script]] is able to read message files either in Babyl
+format (used by Emacs RMAIL), Unix mailbox format, Usenet articles,
+and a few others.  It may produce a mere summary of the given message
+file, convert it to either Babyl or mbox, or produce an enscript
+listing of it.
+
+By converting a message file to the format it already has, the tool
+may also be used for repairing slightly damaged files.
+
+** Gantt
+
+This [[http://fp-etc.progiciels-bpi.ca/scripts/gantt][Python script]] is an activity scheduler, and Gantt diagram
+printer.  It can read many projects simultaneously and automatically
+distribute unassigned project tasks to workers.
+
+- [[http://dilbert.com/strips/comic/2011-08-18/?][Dilbert on agendas!]]
+
+Tasks may depend on dates, or on one another.  Workers may be known to
+be only partially available, or only some specific weekdays.
+Printouts /do not/ rely on fancy bitmapped graphics, they rather can be
+seen on a dumb terminal or sent in simple emails.  There is a short
+[[http://fp-etc.progiciels-bpi.ca/gantt.html][User manual]], written in French.
+
+** Pynits
+
+This package offers a few useful commands while editing Python sources
+within a Python-enabled Vim.  In particular, the tool may tidy up long
+(or even short!) lines.  See the [[http://fp-etc.progiciels-bpi.ca/pynits.html][README file for Pynits]] and the [[http://fp-etc.progiciels-bpi.ca/pynits-doc.html][Pynits
+documentation file]].
+
+** Remote
+
+The /Etc.remote/ Python module may be imported in a Python program which
+needs RPC (Remote Procedure Call) services.  Given SSH keys have been
+properly exchanged so remote links could be established without
+passwords, this module automatically uploads and uses a server as
+needed.  See the [[http://fp-etc.progiciels-bpi.ca/remote.html][French user manual]] for more information.
+
+** Traiter
+
+This powerful tool, which I've been using for a lot of years,
+pre-processes most of the HTML contents on my own sites.  It may also
+be used as a CGI script for dynamically generated pages.  It uses a
+directive language much inspired from Python, and linking with Python
+internally, yet the keywords are set in French.
+
+This script gets installed along the /Miscellaneous scripts/, below.
+There is a [[http://fp-etc.progiciels-bpi.ca/traiter.html][French manual]] describing its usage.
+
+By now, Traiter is old and obsolete.  As an XSL exercise, I once
+replaced most simple usages I had for it by XSLT procedures.  Some
+other usages had to be replaced by a bit more elaborate machinery, as
+indeed, XSLT has practical limits! ☺ I'm merely adding a a few
+miscellaneous thought about Traiter, here.  Some comments as well in
+the /From CherryPy to Yaws/ section of [[http://pinard.progiciels-bpi.ca/org/Web.html][this document]].
+
+*** Python for the Web?
+
+[2001-07-02 lun] When I needed dynamic Web pages, I took a few days to see things available in Python, and many things I found indeed.  From simple things (sometimes quite clever) to the ambitious ZOPE.  I also looked at SSI, and various other avenues.  Despite PHP has many good ideas, I was rather rebuked by the aspect of the language.
+
+I merely decided to make an ad hoc tool for my Web designers, inspired from Python for the overall flow of preprocessing conditional and loops, but also allowing tight Python for more serious tasks, database access, and such.  I called my tool Traiter, short of a better name; I wrote the first draft in half a day.  I polished it afterwards as needed, probably a few weeks overall.  It has been very satisfying to us so far.
+
+Since the tool was essentially simple, I did not think about publishing it, as I presumed others could also do similar things as fast as I did this one.  In fact, I acquired the opinion at the time that Python is just the proper tool for implementing dynamic Web pages simply, and that it was probably not worth debating the virtues of similar tools, nor harassing potential users with such debates.  (I keep ZOPE aside as a notable special case, as it is a whole framework, not just a quickly made tool like mine and others'.)
+
+Yet, sometimes, I wonder if I should not document Traiter and make it available, just as a kind of reply to those who seem do consider Python bad if they have to write a few lines of it to get their Web job done!  Documenting Traiter does not attract me much, as my actual users do not read English.  I should at least write French documentation.  Currently, my users just walk in my office when they have a question or a need… Documenting Traiter would be more about its setup, and the good tricks that make it so useful, as these are usually not apparent solely from its code.
+
+*** Where Traiter fits in the project?
+
+[2001-07-17 mar] Not so long ago, we had a rather complex application
+in C that was meant to be used in batch mode on massive input,
+delivering massive output.  We wanted to include it in a Web
+application for processing one set of input at a time.  The problem
+was that this application had a big start-up time really, as it
+preconditioned itself a great deal, studying databases and
+precompiling scenarios, for later very speedy processing.  I spent
+some time studying many avenues, and experimenting some of them.
+Finally, I opted for something very simple, clean, and quick to
+implement.
+
+- We added a program call option to the big application telling if it
+  was used through a server, instead of in batch.  With that option,
+  the C program had to produce a recognisable delimiter on its output
+  to mean End-of-Result and then flush all its output.  That option
+  was also making the program more lenient than drastic about a few
+  errors.  This application's input and output are line oriented.
+
+- I wrote a small server in Python, to be run on the same machine the
+  big application was.  That server essentially listens to a socket,
+  decodes the request and produces a fragment of input for the big
+  application.  It then starts the big application if not already (the
+  Web application has to wait a while for its very first request), it
+  also restarts it while logging an error if the application died.  It
+  then reads the big application's output, but also its standard error
+  (playing with *select* and a doing a few tricks) before packaging a
+  result to return.
+
+- On the Web service machine, I merely wrote another smallish Python
+  module meant to receive a request from various CGI-scripts, package
+  it for the server, establish a one-shot communication to read the
+  analysis from the big application, and return the result to the
+  scripts.  The socket communication between that Python module and
+  the Python server is structure driven (not line driven), and I
+  merely transit compressed pickled data between both.  Very simple to
+  write, and effective in practice.
+
+- The CGI-scripts are written as Python-active HTML pages.  For being
+  able to directly embed Python code within HTML pages, I wrote a
+  light and clean, yet powerful active templating system.  As we
+  regroup functionalities within *import*-able functions, Python code
+  stays unobtrusive within HTML.  I used two levels: the embedded code
+  is rather pure Python, while the control of HTML generation with
+  conditionals, loops and other facilities, merely uses Python-like
+  concepts, in French, within special HTML comments.
+
+All of this was surprisingly fast to implement.  However, once done, I
+spent some time refining the last part of the project (the templating
+tool), so it could be used in other projects of ours, as well.
+Besides per-project configurability, I added various facilities so
+HTML-writers could get more extensive debugging feedback, better
+inclusion design, etc.  And merely to please myself, I managed to
+clean out internals and to get some more speed: not really that we
+needed it, but because I feel better that way. ☺
+
+*** Integrating HTML and code?
+
+[2002-04-29 lun] On the Python mailing list, Jon Ribbens (the author
+of [[http://jonpy.sourceforge.net/][jonpy]]) wrote:
+
+#+BEGIN_QUOTE
+/Not sure what kind of designers you are used to, but in my experience
+they, and/or the tools they use are incapabale of editing the HTML
+without destroying the code.  I must admit I have never yet seen a
+system which integrates HTML and code in the same file without the
+file ending up an unreadable mess./
+#+END_QUOTE
+
+Strange.  For more than one year now, we never had the shadow of a
+problem with HTML designers.  Everybody is competent in his field and
+respectful for the work of others.  There is no /we are good they are
+rotten/ speak here.  Maybe you are not working with the proper people,
+and this had some influence on *jonpy* design?
+
+Agreed that HTML is pretty messy to start with, especially the HTML as
+output by some Web editor tools.  Included Javascript is not always
+nice either.  When I had to massage many HTML files, a few years ago,
+I wrote something named [[https://github.com/pinard/xxml][xxml.el]] to re-indent and re-fill HTML more
+nicely (*xxml.el* extends on Lennart Staflin's PSGML), and surprisingly
+to me, from a friend to another, *xxml.el* spreaded and acquired some
+popularity in the community over the years.  Once the HTML cleaned up,
+turning it into active pages, even with embedded Python, has been
+rather clean in my eyes.  This is my experience, at least.
+
+Before writing my own templating engine, I glanced around to see what
+was written, and my overall feeling was that systems were either
+weakish or over-bloated.  PHP is a clear example of bloat, among
+others!  PHP has a lot of things, and is a little monstrous to learn
+fully.  The extra power is not worth all the time it takes for one to
+study the tool, and easily defeated with only a few lines of Python,
+here and there, as needed.  One may nicely marry Python with
+templating to get an extremely powerful system, while staying very
+simple.
+
+Jon also wrote:
+
+#+BEGIN_QUOTE
+/I do not think that code of any sort should be in the HTML pages.
+Code and HTML are separate things that belong in separate files rather
+than muddled together./
+#+END_QUOTE
+
+I presume this is debatable.  Up to now, I found easier having single
+files, for the case you are adjusting both aspects in a single editing
+session.
+
+This is a bit like if a programming language was forcing comments in a
+file and code in another.  It is more easy editing comments and the
+code together.  Or course, we have separate manuals for bigger things
+— but I like to think that active HTML pages are like very small
+projects, edited as needed by both by the HTML designer (who is not
+necessarily a programmer) and the application programmer (who is not
+necessarily an HTML designer).  Yet, seeing the whole thing, both the
+designer and the programmer can leave the page in a consistent state,
+even if not fluent in the /other/ field.  (The same applies for *awk* or
+*yacc* which mixes patterns or grammars with actions related to them.
+And for all kind of literate programming.)
+
+I felt a need for simplicity, leaving the bulk of the power to Python
+itself.  My experience taught me that it is attractively simple to use
+a single file instead of two, for linking HTML and Python into active
+pages.  Of course, if we have lengths of Python code, these are best
+kept in separate (and compiled) modules, merely imported from the HTML
+page.  For better style, and a bit for better speed, the amount of
+Python code in HTML pages should stay small.
+
+*** Coup d'oeil sur Mako
+
+[2011-01-02 dim] Très rapide coup d'oeil, ce matin, sur la
+[[http://www.makotemplates.org/docs/][documentation de Mako]].  [[http://www.pylonsproject.org/][Pylons]] y fait référence, [[http://www.openerp.com/][OpenERP]] l'utilise,
+[[http://coobs.eu.org/xrecord/][XRecord]] m'a tout récemment amené à l'installer, et Claude Petit m'en a
+dit du bien! ☺
+
+J'y trouve quelques ressemblances avec l'[[http://fp-etc.progiciels-bpi.ca/traiter.html][outil Traiter]] que j'avais
+autrefois écrit pour le projet Webert : Python demeure central dans le
+langage qui dynamise les pages engendrées, la vitesse de production
+est soignée, les contextes d'évaluation y sont importants, les jeux de
+directives se ressemblent aussi (j'avais francisé les miennes en
+fonction de mes usagers, à ce moment-là).  J'avais écrit Traiter après
+avoir examiné plusieurs autres systèmes de gabarits pour le Web qui
+m'avaient un peu tous déçus à l'époque: ou bien trop faibles, ou bien
+trop touffus et compliqués, et souvent inélégants ou carrément laids.
+
+Mako me semble avoir à peu près la juste mesure, quoiqu'un peu plus
+fourni que je l'aurais idéalement souhaité.  Il manque un peu de
+simplicité au niveau du balisage aussi: alors que Traiter utilisait
+uniquement deux mécanismes, j'en compte au moins cinq dans Mako.  Pour
+compenser, Mako a vraiment beaucoup plus de maturité que Traiter, et
+aujourd'hui, je le choisirais probablement.
+
+Quelques ennuis découverts à l'usage de Traiter ont une solution
+attrayante dans Mako.  Par contre, d'autres difficultés ne sont pas
+mieux résolues avec Mako qu'avec Traiter — comme quoi, dans le fond,
+/Rien n'est parfait en ce bas monde/!
+
+J'ai récemment vu rouler Mako soit avec CherryPy, soit avec WSGI.  Si
+je voulais en faire l'essai à titre personnel, j'aurais tendance à le
+combiner à NodeJS, qui sert présentement pour mes sites Web, mais ce
+mariage de JavaScript à Python semble bien moins naturel.  Rien ne
+presse pour cette expérience, et je laisserai mijoter l'idée en
+attendant.  On verra bien!
+
+P.S. En passant, il m'a amusé de voir mon propre nom cité, à
+l'intérieur d'[[http://docs.makotemplates.org/en/latest/usage.html#babel][un exemple]] dans le manuel de Mako.  Je ne m'y attendais
+vraiment pas… ☺
+
+** Miscellaneous scripts
+
+A little flurry of miscellaneous scripts once were in my own =~/bin/=
+directory and have been moved here in view of sharing.  I excluded
+those which are only meaningful for myself, or are otherwise
+intimately tied either to my own file setup or to the configuration of
+the machines I use.
+
+Most of these scripts have some comments at the beginning describing
+their use, some offer an help option.  I might construct here a short
+summary listing their name and use.
+
+Three scripts (*PythonTidy*, *unsymblink* and *vib*) have been imported from
+somewhere else, I should most likely delete them — maybe keeping a
+documentation reference to the original author and URL.
+
+** Python modules
+
+This package also installs a Python package named /Etc/, which holds
+some functionality that may be imported from Python programs.  As for
+scripts, most of these modules have some comments at the beginning
+describing their use, and I might produce a content summary here.
