@@ -247,7 +247,7 @@ Python code in HTML pages should stay small.
 [[http://coobs.eu.org/xrecord/][XRecord]] m'a tout récemment amené à l'installer, et Claude Petit m'en a
 dit du bien! ☺
 
-J'y trouve quelques ressemblances avec l'[[http://fp-etc.progiciels-bpi.ca/traiter.html][outil Traiter]] que j'avais
+J'y trouve quelques ressemblances avec [[*Traiter][l'outil Traiter]] que j'avais
 autrefois écrit pour le projet Webert : Python demeure central dans le
 langage qui dynamise les pages engendrées, la vitesse de production
 est soignée, les contextes d'évaluation y sont importants, les jeux de
