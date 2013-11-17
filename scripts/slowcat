@@ -28,7 +28,7 @@ class Main:
 
     def traiter(self, fichier):
         from time import sleep
-        write = sys.stderr.write
+        write = sys.stdout.write
         delai = self.delai
         for ligne in fichier:
             for caractere in ligne:
