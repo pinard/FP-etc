@@ -112,9 +112,9 @@ def all_groups(arguments):
     for line in subprocess.Popen(
             'find %s -type f -print0 | xargs -r0 md5sum | sort'
             % ' '.join(arguments),
-            shell=True, output=subprocess.PIPE).stdout:
+            shell=True, stdout=subprocess.PIPE).stdout:
         sum, name = line[:-1].split(None, 1)
-        if name.startswith('./'):
+        if name.startswith(b'./'):
             name = name[2:]
         info = os.stat(name)
         dev = info[stat.ST_DEV]
