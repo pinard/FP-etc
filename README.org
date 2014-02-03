@@ -100,7 +100,7 @@ replaced most simple usages I had for it by XSLT procedures.  Some
 other usages had to be replaced by a bit more elaborate machinery, as
 indeed, XSLT has practical limits! ☺ I'm merely adding a a few
 miscellaneous thought about Traiter, here.  Some comments as well in
-the /From CherryPy to Yaws/ section of [[http://pinard.progiciels-bpi.ca/org/Web.html][this document]].
+the /From CherryPy to Yaws/ section of [[http://pinard.progiciels-bpi.ca/notes/Web.html][this document]].
 
 *** Python for the Web?
 
