@@ -10,21 +10,21 @@ Usage: . set-prompt [INDICE]...
 Le style de l'invite est choisi par zéro, un ou plusieurs indices, les
 indices manquants sont déterminés automatiquement autant que possible.
 
-Un INDICE «pale», «white», «w» ou «blanc» colore l'invite sur un
-fond d'écran pâle.  Un INDICE «dark», «black», «b» ou «noir», colore
+Un INDICE «pale», «white», «w» ou «blanc» colore l'invite sur un fond
+d'écran pâle.  Un INDICE «dark», «black», «b» ou «noir», colore
 l'invite sur un fond d'écran foncé.  Un INDICE «simple» ou «unknown»
 empêche la coloration de l'invite, mais «simple» empêche aussi l'heure
-d'en faire partie.  Le fond des fenêtres sous X Windows est considéré pâle.
-Autrement, pour les terminaux «emacs», «eterm», «linux», «kermit»
-ou «screen», le fond est considéré foncé.  Pour un «vt100», indice
-probable d'un émulateur de terminal, «set-prompt» demande interactivement
-à l'usager d'indiquer si le fond est pâle ou non.
+d'en faire partie.  Pour les terminaux «emacs», «eterm», «linux»,
+«kermit» ou «screen», le fond est considéré foncé.  Pour un «vt100»,
+indice probable d'un émulateur de terminal, «set-prompt» demande
+interactivement à l'usager d'indiquer si le fond est pâle ou non.
 
 Un INDICE «super», normalement réservé au super-usager, utilise des
-couleurs plus mordantes pour l'invite, alors qu'un INDICE «normal» utilise
-des couleurs un peu plus douces.  Un INDICE valant «sh», «bash» ou «zsh»
-indique le shell en usage.  La coloration et l'heure dans l'invite n'ont
-un sens que si le shell en usage est «bash» ou «zsh».
+couleurs plus mordantes pour l'invite, alors qu'un INDICE «normal»
+utilise des couleurs un peu plus douces.  Un INDICE valant «sh»,
+«bash» ou «zsh» indique le shell en usage.  La coloration et l'heure
+dans l'invite n'ont un sens que si le shell en usage est «bash» ou
+«zsh».
 "
 
 # Ce script fabriquait sur «stdout» des commandes shell à évaluer (via
@@ -59,25 +59,24 @@ case "$LOGNAME" in
     ;;
 esac
 
+[ -n "$HOST" ] || export HOST=`hostname`
+
 if [ -n "$DOSWIN" ]; then
   # Le bash de DJGPP ajoute plusieurs blancs suffixes à \h.
-  ident=' '$LOGNAME'@'$HOST': \w'
+  ident=' '$name$HOST':\w'
 else
   case $prefix$shell in
-    bash)
-      ident='\[\e]0;'$name'\h: \w\a\]'
-      ;;
-    emacs-bash)
-      ident=' '$name'\h: \w'
+    bash|emacs-bash)
+      ident=' '$name'\h:\w'
       PROMPT_DIRTRIM=2
       ;;
-    emacs-sh|sh)
+    sh|emacs-sh)
       ident=' '$name$HOST
       ;;
-    emacs-zsh|zsh)
+    zsh|emacs-zsh)
       case "$user" in
-        super) ident=' %n@%m: %/' ;;
-        normal) ident=' '$name'%m: %2~' ;;
+        super) ident=' %n@%m:%/' ;;
+        normal) ident=' '$name'%m:%2~' ;;
       esac
       ;;
   esac
@@ -102,13 +101,12 @@ if [ $fond = none ]; then
     fond=simple
   else
     case $TERM in
-      cygwin|emacs|eterm|linux|kermit-*|screen|xterm)
+      cygwin|emacs|eterm|linux|kermit-*|screen*|xterm)
         fond=dark ;;
       *)
-        echo 1>&2 -n "Est-ce que le fond est pâle (o/y/n)? [o] "
+        echo >&2 -n "Est-ce que le fond est pâle (o/y/n)? [o] "
         read answer
-        [ -z "$answer" ] && answer=y
-        case "$answer" in
+        case ${answer:-y} in
           o|y) fond=pale ;;
           *) fond=dark ;;
         esac
@@ -146,36 +144,36 @@ case $fond-$user-$shell in
      PS2='%T %?'$ident' + '
      ;;
   dark-normal-bash)
-     PS1='\[[;32;40m\]\t $?\[[36m\]'$ident'\[[32m\] $\[[0m\] '
-     PS2='\[[;32;40m\]\t $?\[[37m\]'$ident'\[[32m\] +\[[0m\] '
+     PS1='\[[;32;40m\]\t\[[36;1m\]'$ident'[;37;40m\] $?\[[32;1m\] $\[[0m\] '
+     PS2='\[[;30;40m\]\t'$ident' $?\[[32;1m\] +\[[0m\] '
      ;;
   dark-normal-zsh)
-     PS1='%{[;32;40m%}%T %?%{[36m%}'$ident'%{[32m%} $%{[0m%} '
-     PS2='%{[;32;40m%}%T %?%{[37m%}'$ident'%{[32m%} +%{[0m%} '
+     PS1='%{[;32;40m%}%T%{[36;1m%}'$ident'%{[;37;40m%} %?%{[32;1m%} $%{[0m%} '
+     PS2='%{[;30;40m%}%T'$ident' %?%{[32;1m%} +%{[0m%} '
      ;;
   dark-super-bash)
-     PS1='\[[;32;40m\]\t $?\[[33m\]'$ident'\[[31m\] #\[[0m\] '
-     PS2='\[[;32;40m\]\t $?\[[37m\]'$ident'\[[31m\] +\[[0m\] '
+     PS1='\[[;32;40m\]\t\[[33;1m\]'$ident'[;37;40m\] $?\[[31;1m\] #\[[0m\] '
+     PS2='\[[;30;40m\]\t'$ident' $?\[[31;1m\] +\[[0m\] '
      ;;
   dark-super-zsh)
-     PS1='%{[;32;40m%}%T %?%{[33m%}'$ident'%{[31m%} #%{[0m%} '
-     PS2='%{[;32;40m%}%T %?%{[37m%}'$ident'%{[31m%} +%{[0m%} '
+     PS1='%{[;32;40m%}%T%{[33;1m%}'$ident'%{[;37;40m%} %?%{[31;1m%} #%{[0m%} '
+     PS2='%{[;30;40m%}%T'$ident' %?%{[31;1m%} +%{[0m%} '
      ;;
   pale-normal-bash)
-     PS1='\[[;30;42m\]\t $?\[[46m\]'$ident'\[[42m\] $\[[0m\] '
-     PS2='\[[;30;42m\]\t $?\[[47m\]'$ident'\[[42m\] +\[[0m\] '
+     PS1='\[[;30;42m\]\t\[[46m\]'$ident'\[[;37;42m\] $? $\[[0m\] '
+     PS2='\[[;32;42m\]\t\[[36;46m\]'$ident'\[[32;42m\] $? +\[[0m\] '
      ;;
   pale-normal-zsh)
-     PS1='%{[;30;42m%}%T %?%{[46m%}'$ident'%{[42m%} $%{[0m%} '
-     PS2='%{[;30;42m%}%T %?%{[47m%}'$ident'%{[42m%} +%{[0m%} '
+     PS1='%{[;30;42m%}%T%{[46m%}'$ident'%{[;37;42m%} %? $%{[0m%} '
+     PS2='%{[;32;42m%}%T%{[36;46m%}'$ident'{[32;42m%} %?% +%{[0m%} '
      ;;
   pale-super-bash)
-     PS1='\[[;30;42m\]\t $?\[[43m\]'$ident'\[[41m\] #\[[0m\] '
-     PS2='\[[;30;42m\]\t $?\[[47m\]'$ident'\[[41m\] +\[[0m\] '
+     PS1='\[[;30;42m\]\t\[[43m\]'$ident'\[[;37;41m\] $? #\[[0m\] '
+     PS2='\[[;32;42m\]\t\[[33;43m\]'$ident'\[[;31;41m\] $? +\[[0m\] '
      ;;
   pale-super-zsh)
-     PS1='%{[;30;42m%}%T %?%{[43m%}'$ident'%{[41m%} #%{[0m%} '
-     PS2='%{[;30;42m%}%T %?%{[47m%}'$ident'%{[41m%} +%{[0m%} '
+     PS1='%{[;30;42m%}%T%{[43m%}'$ident'%{[;30;47m%} %?%{[37;41m%} #%{[0m%} '
+     PS2='%{[;32;42m%}%T%{[33;43m%}'$ident'%{[;37;47m%} %?%{[37;41m%} +%{[0m%} '
      ;;
   *)
      echo "$usage"
