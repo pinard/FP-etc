@@ -6,7 +6,7 @@ export LANG=fr_CA.UTF-8
 
 if [ -n "$DISPLAY" ]; then
   echo '\033]5379;encoding=UTF-8;bg_color=ivory\007\c'
-elif type 2>/dev/null unicode_start; then
+elif type -p unicode_start >/dev/null; then
   unicode_start
 fi
 
