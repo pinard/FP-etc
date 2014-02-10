@@ -157,7 +157,7 @@ class Test_Poux:
         self.garantir_tampon(fichier)
         if not self.tampon:
             return
-        self.position = self.tampon.find('# -*- coding: UTF-8 -*-\n')
+        self.position = self.tampon.find('# -*- coding: utf-8 -*-\n')
         if self.position < 0:
             self.position = 0
             assert False, self.rapporter("Biscuit coding manquant.")

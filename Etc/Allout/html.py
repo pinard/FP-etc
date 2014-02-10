@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
+# -*- coding: utf-8 -*-
 # Copyright © 2001, 2002, 2003 Progiciels Bourbeau-Pinard inc.
 # François Pinard <pinard@iro.umontreal.ca>, 2001.
 
@@ -23,7 +23,9 @@ s'effectue sur l'arbre après les simplifications décrites plus haut.
 """
 
 __metaclass__ = type
-import cgi, sys
+import cgi
+import sys
+
 
 class Main:
     def __init__(self):
@@ -52,6 +54,7 @@ class Main:
 
 main = Main().main
 
+
 def write_html(structure, write=sys.stdout.write):
     # Transformer l'arbre STRUCTURE en HTML.
     # Le résultat est écrit sur OUTPUT, qui doit être une fonction
@@ -69,6 +72,7 @@ def write_html(structure, write=sys.stdout.write):
     write_html_recursive(structure, write, 1)
     write(' </body>\n'
           + '</html>\n')
+
 
 def write_html_recursive(structure, write, level):
     # SPACING est True à l'entrée si la structure précédente s'imprimait sur
