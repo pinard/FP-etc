@@ -62,7 +62,7 @@ class Main:
             for name in names:
                 within[name] = ''
             packages = {}
-            for line in os.popen('rpm -qf %s 2> /dev/null' % ' '.join(names)):
+            for line in os.popen('rpm -qf %s 2>/dev/null' % ' '.join(names)):
                 packages[line.strip()] = None
             packages = list(packages.keys())
             packages.sort()

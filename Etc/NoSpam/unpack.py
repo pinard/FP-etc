@@ -319,7 +319,7 @@ class Self_Extracting_LHA(Self_Extracting):
                 and 'LHA' in buffer)
 
     #            echo "Lharcing self extracting $E" >> ${self.tmpdir}/${logfile}
-    #            ${lha} efq $name > /dev/null 2>&1
+    #            ${lha} efq $name >/dev/null 2>&1
     #            if ${test} $? -eq 0
     #            then
     #              mv $name ${self.tmpdir}/unpacked/self-extracting
@@ -473,7 +473,7 @@ class Arj(Archiver):
         return 'ARJ' in hint
 
     #        echo "UnARJing $E" >> ${self.tmpdir}/${logfile}
-    #        ${unarj} e $name > /dev/null
+    #        ${unarj} e $name >/dev/null
     #        if ${test} $? -eq 0
     #        then
     #          rm $name
@@ -488,7 +488,7 @@ class Lha(Archiver):
         return re.search('LHA', hint) # FIXME: fgrep -i
 
     #        echo "UnLHArcing $E" >> ${self.tmpdir}/${logfile}
-    #        ${lha} efq $name > /dev/null 2>&1
+    #        ${lha} efq $name >/dev/null 2>&1
     #        if ${test} $? -eq 0
     #        then
     #          rm $name
