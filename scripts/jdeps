@@ -118,8 +118,8 @@ class Main:
                 handle = open(self.graph_file, 'w')
             else:
                 handle = subprocess.Popen(
-                        'dot -Tps > %s' % self.graph_file, shell=True,
-                        input=subprocess.PIPE).stdin
+                    'dot -Tps > %s' % self.graph_file, shell=True,
+                    input=subprocess.PIPE).stdin
             self.produce_dot(handle.write)
 
     def study_sources(self, arguments):
@@ -132,8 +132,8 @@ class Main:
                 if self.verbose:
                     letter = 'ab'[self.pass_2]
                     sys.stderr.write(
-                            '%d/%d%s. %s\n'
-                            % (counter + 1, len(arguments), letter, argument))
+                        '%d/%d%s. %s\n'
+                        % (counter + 1, len(arguments), letter, argument))
                 text = open(argument).read()
                 if not self.pass_2:
                     self.total_lines += text.count('\n')

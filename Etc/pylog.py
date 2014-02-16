@@ -7,8 +7,10 @@
 import sys
 import collections
 
+
 class Error(Exception):
     pass
+
 
 class Message_X(object):
 
@@ -34,6 +36,7 @@ class Message_X(object):
         return prefix + content
 
     __str__ = __unicode__
+
 
 class Producer(object):
     Message = Message_X
@@ -72,12 +75,15 @@ class Producer(object):
 
 default = Producer('default')
 
+
 def _getstate():
     return Producer.keywords2consumer.copy()
+
 
 def _setstate(state):
     Producer.keywords2consumer.clear()
     Producer.keywords2consumer.update(state)
+
 
 def default_consumer(msg):
     sys.stdout.write(str(msg) + '\n')
@@ -86,6 +92,7 @@ Producer.keywords2consumer['default'] = default_consumer
 
 ### Adapté à partir de codespeak/log/consumer.py
 ### ============================================
+
 
 class File(object):
 
@@ -96,6 +103,7 @@ class File(object):
 
     def __call__(self, msg):
         self._file.write(str(msg) + '\n')
+
 
 class Path(object):
 
@@ -109,7 +117,7 @@ class Path(object):
 
     def _openfile(self):
         self._file = file(self._filename,
-                          self._append and 'a' or 'w',
+                          'a' if self._append else 'w',
                           #buffering=self._buffering,
                           )
 
@@ -118,15 +126,19 @@ class Path(object):
             self._openfile()
         self._file.write(str(msg) + '\n')
 
+
 def STDOUT(msg):
     sys.stdout.write(str(msg) + '\n')
+
 
 def STDERR(msg):
     progression.preparer_interruption()
     sys.stderr.write(str(msg) + '\n')
 
+
 def ERROR(msg):
     raise Error(str(msg) + '\n')
+
 
 def setconsumer(keywords, consumer):
     if isinstance(keywords, str):
@@ -145,6 +157,7 @@ def setconsumer(keywords, consumer):
 ### Adapté à partir de codespeak/log/logger.py
 ### ==========================================
 
+
 class Message(object):
 
     def __init__(self, processor, *args):
@@ -161,6 +174,7 @@ class Message(object):
     def __unicode__(self):
         return self.strprefix() + self.strcontent()
 
+
 class Processor(object):
 
     def __init__(self, logger, name, consume):
@@ -176,6 +190,7 @@ class Processor(object):
         if consume is not None:
             msg = Message(self, *args)
             consume(msg)
+
 
 class Logger(object):
     _key2logger = {}
@@ -207,6 +222,7 @@ class Logger(object):
         assert '_' not in name
         setattr(self, name, Processor(self, name, dest))
 
+
 def get(ident='global', **kwargs):
     try:
         log = Logger._key2logger[ident]
@@ -216,6 +232,7 @@ def get(ident='global', **kwargs):
     return log
 
 ## Traitement des progressions.
+
 
 class Progression:
     largeur_ligne = 79
@@ -291,6 +308,7 @@ class Progression:
             self.colonne = 0
 
 progression = Progression()
+
 
 def surveiller_memoire(force=False):
     # Fonction bidon, que l'appelant doit remplacer.

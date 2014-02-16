@@ -22,10 +22,10 @@ be a list, or a list of values to display vertically one under another.
                 if isinstance(values, list):
                     for value in values:
                         widths[counter] = max(
-                                widths[counter], len(str(value)))
+                            widths[counter], len(str(value)))
                 else:
                     widths[counter] = max(
-                            widths[counter], len(str(values)))
+                        widths[counter], len(str(values)))
 
     # Produce the table itself.
     for line in table:
@@ -33,7 +33,7 @@ be a list, or a list of values to display vertically one under another.
             write('|')
             for counter, width in enumerate(widths):
                 write('-' * (width + 2))
-                write(counter == len(widths) - 1 and '|' or '+')
+                write('|' if counter == len(widths) - 1 else '+')
             write('\n')
         else:
             more = True
